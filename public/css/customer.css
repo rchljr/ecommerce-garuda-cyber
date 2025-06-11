@@ -1,0 +1,237 @@
+.cus-auth-header {
+    background: #fff;
+    border-bottom: 1px solid #e5e7eb;
+    padding: 0;
+}
+
+.cus-auth-header-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 32px;
+}
+
+.cus-auth-logo {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #3a3a3a;
+    text-decoration: none;
+    letter-spacing: 1px;
+}
+
+.cus-auth-title {
+    font-size: 1.1rem;
+    color: #888;
+}
+
+.cus-auth-help {
+    color: #6b7280;
+    font-size: 0.98rem;
+    text-decoration: none;
+}
+
+.cus-auth-main {
+    min-height: 80vh;
+    background: #f6f7fb;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 0;
+}
+
+.cus-auth-hero {
+    width: 100%;
+    max-width: 900px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 48px;
+}
+
+.cus-auth-hero-left {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.cus-auth-hero-logo {
+    width: 80px;
+    height: 80px;
+    background: #e5e7eb;
+    border-radius: 16px;
+    margin-bottom: 18px;
+    background-image: url('/images/brand-icon.svg');
+    /* Ganti sesuai logo Anda */
+    background-size: 60% auto;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.cus-auth-hero-brand {
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: #3a3a3a;
+    margin-bottom: 8px;
+}
+
+.cus-auth-hero-brand span {
+    color: #4f46e5;
+    /* accent color netral, bisa diganti sesuai tema */
+}
+
+.cus-auth-hero-desc {
+    font-size: 1.05rem;
+    color: #6b7280;
+    margin-bottom: 12px;
+}
+
+.cus-auth-card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 16px rgba(60, 60, 67, 0.07);
+    padding: 32px 32px 24px 32px;
+    width: 340px;
+    max-width: 95vw;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+}
+
+.cus-auth-card-title {
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin-bottom: 24px;
+    color: #4f46e5;
+    text-align: center;
+}
+
+.cus-auth-input {
+    width: 100%;
+    padding: 11px 14px;
+    margin-bottom: 16px;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 7px;
+    font-size: 1rem;
+    background: #f7f7fa;
+    transition: border 0.2s;
+}
+
+.cus-auth-input:focus {
+    border-color: #4f46e5;
+    outline: none;
+}
+
+.cus-auth-btn {
+    width: 100%;
+    padding: 12px 0;
+    background: #4f46e5;
+    color: #fff;
+    font-weight: bold;
+    border: none;
+    border-radius: 7px;
+    font-size: 1rem;
+    cursor: pointer;
+    margin-bottom: 16px;
+    transition: background 0.2s;
+}
+
+.cus-auth-btn:hover {
+    background: #3730a3;
+}
+
+.cus-auth-divider {
+    text-align: center;
+    color: #bdbdbd;
+    margin: 12px 0;
+    font-size: 0.95rem;
+    position: relative;
+}
+
+.cus-auth-divider::before,
+.cus-auth-divider::after {
+    content: "";
+    display: inline-block;
+    width: 38%;
+    height: 1px;
+    background: #e5e7eb;
+    vertical-align: middle;
+    margin: 0 8px;
+}
+
+.cus-auth-social {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 14px;
+}
+
+.cus-auth-social-btn {
+    flex: 1;
+    background: #f3f4f6;
+    color: #444;
+    border: 1px solid #e5e7eb;
+    border-radius: 7px;
+    padding: 9px 0;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background 0.2s, border 0.2s;
+}
+
+.cus-auth-social-btn:hover {
+    background: #e0e7ef;
+    border-color: #4f46e5;
+}
+
+.cus-auth-switch {
+    margin-top: 8px;
+    text-align: center;
+    font-size: 0.98rem;
+}
+
+.cus-auth-switch a {
+    color: #4f46e5;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.cus-auth-switch a:hover {
+    text-decoration: underline;
+}
+
+.cus-auth-footer {
+    background: #fff;
+    border-top: 1px solid #e5e7eb;
+    text-align: center;
+    color: #888;
+    font-size: 14px;
+    padding: 18px 0;
+    margin-top: 24px;
+}
+
+@media (max-width: 800px) {
+    .cus-auth-hero {
+        flex-direction: column;
+        gap: 18px;
+        align-items: center;
+    }
+
+    .cus-auth-hero-left {
+        margin-bottom: 12px;
+    }
+}
+
+@media (max-width: 500px) {
+    .cus-auth-card {
+        padding: 18px 6vw;
+    }
+
+    .cus-auth-header-inner,
+    .cus-auth-footer-inner {
+        padding: 0 8px;
+    }
+}
