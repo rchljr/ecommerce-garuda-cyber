@@ -7,7 +7,7 @@
                         Nikmati kebebasan untuk tumbuh dan berinovasi tanpa batas.
                     </p>
                     <div class="buttons">
-                        <a href="{{ route('register') }}" class="btn-banner btn-primary-banner">Daftar</a>
+                        <a href="{{ route('register.form') }}" class="btn-banner btn-primary-banner">Daftar</a>
                         <a href="#" class="btn-banner btn-outline-banner">
                             <span class="play-icon"></span> Lihat Demo
                         </a>

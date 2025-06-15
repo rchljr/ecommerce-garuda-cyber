@@ -1093,4 +1093,73 @@ select {
     .dashboard-bg-motif {
         display: none !important;
     }
+
+/* dashboard-mitra */
+
+/* Background and global layout */
+.body-bg-mitra {
+    background-color: #f3f4f6; /* Mirip bg-gray-100 */
+    min-height: 100vh;
+    margin: 0;
+    font-family: sans-serif;
+}
+
+.layout-container-mitra {
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar-mitra {
+    width: 100%;
+    background-color: #1f2937; /* bg-gray-800 */
+    color: white;
+    padding: 16px;
+}
+
+.main-content-mitra {
+    flex: 1;
+    padding: 24px;
+}
+
+.profile-mitra {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 24px;
+}
+
+.profile-img-mitra {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+}
+
+.profile-name-mitra {
+    font-size: 1.125rem; /* 18px */
+    font-weight: 600;
+}
+
+.footer-mitra {
+    margin-top: 40px;
+    text-align: center;
+    font-size: 14px;
+    color: #6b7280; /* gray-500 */
+}
+
+/* Responsive layout for larger screens */
+@media (min-width: 768px) {
+    .layout-container-mitra {
+        flex-direction: row;
+    }
+
+    .sidebar-mitra {
+        width: 250px;
+        height: auto;
+    }
+
+    .main-content-mitra {
+        padding: 32px;
+    }
+}
+
 }

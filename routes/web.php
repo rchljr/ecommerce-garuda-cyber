@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\ProductController;
 
 //---ADMIN ROUTES---//
 
@@ -64,3 +65,12 @@ Route::get('/login-cust', function () {
 Route::get('/register-cust', function () {
     return view('customer.auth.register');
 })->name('register-cust');
+
+
+//---MITRA ROUTES---//
+
+//Product
+Route::prefix('dashboard-mitra')->name('dashboard-mitra.')->group(function () {
+    // CRUD route untuk produk
+    Route::resource('products', ProductController::class);
+});

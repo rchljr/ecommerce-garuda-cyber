@@ -33,7 +33,7 @@
 
                 <div class="login_bt">
                     <ul>
-                        <li><a href="{{ route('register') }}" class="btn btn-outline-primary">Daftar</a></li>
+                        <li><a href="{{ route('register.form') }}" class="btn btn-outline-primary">Daftar</a></li>
                         <li><a href="{{ route('login') }}" class="btn btn-primary">Masuk</a></li>
                     </ul>
                 </div>
