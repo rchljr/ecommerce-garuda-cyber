@@ -14,14 +14,12 @@ return new class extends Migration {
             $table->uuid('id')->primary();
             $table->string('package_name', 100);
             $table->text('description')->nullable();
-            $table->decimal('monthly-price', 15, 2);
-            $table->decimal('yearly-price', 15, 2);
-            $table->decimal('discount_month', 15, 2)->nullable();
-            $table->decimal('discount_year', 15, 2)->nullable();
-            $table->text('features')->nullable();
+            $table->unsignedBigInteger('monthly_price')->nullable();
+            $table->unsignedBigInteger('yearly_price')->nullable();
+            $table->unsignedTinyInteger('discount_year')->default(0);
+
             $table->boolean('is_trial')->default(false);
-            $table->integer('trial_days')->nullable();
-            $table->string('status', 30)->nullable();
+            $table->unsignedSmallInteger('trial_days')->nullable();
             $table->timestamps();
         });
     }

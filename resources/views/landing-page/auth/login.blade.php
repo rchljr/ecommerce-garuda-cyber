@@ -1,53 +1,59 @@
-<!DOCTYPE html>
-<html lang="en">
+@extends('layouts.auth')
 
-<head>
-    @section('title', 'Login')
-    @include('layouts._partials.head')
-</head>
+@section('title', 'Login')
 
-<body>
-    <div class="login-wrapper">
-        @include('layouts._partials.auth')
-        <div class="login-right">
-            <form class="login-form" method="POST" action="{{ route('login.submit') }}">
+@section('content')
+    <div class="flex items-center justify-center h-full">
+        <div class="w-full max-w-md">
+            <div class="text-center mb-8">
+                <h2 class="text-3xl font-bold text-gray-900">Login</h2>
+            </div>
+
+            <form method="POST" action="{{ route('login.submit') }}" class="space-y-6">
                 @csrf
-                <h2 class="form-title">Login</h2>
-                <div class="form-group">
-                    <label for="email">Email</label>
-                    <input type="email" id="email" name="email" placeholder="Masukkan Email Anda" required
-                        value="{{ old('email') }}">
+
+                {{-- Menampilkan pesan error umum --}}
+                @if(session('error'))
+                    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+                        <span class="block sm:inline">{{ session('error') }}</span>
+                    </div>
+                @endif
+
+                <div>
+                    <label for="email" class="block text-base font-semibold text-gray-800 mb-2">Email</label>
+                    <input type="email" id="email" name="email"
+                        class="block w-full h-14 px-4 border-2 border-gray-300 rounded-lg bg-white focus:border-[#B20000] focus:ring-0 transition"
+                        placeholder="Masukkan Email Anda" required value="{{ old('email') }}">
                     @error('email')
-                        <small class="text-danger">{{ $message }}</small>
+                        <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                     @enderror
                 </div>
-                <div class="form-group">
-                    <label for="password">Kata Sandi</label>
-                    <input type="password" id="password" name="password" placeholder="Masukkan Kata Sandi" required>
+
+                <div>
+                    <div class="flex items-center mb-2">
+                        <label for="password" class="block text-base font-semibold text-gray-800">Kata Sandi</label>
+                    </div>
+                    <input type="password" id="password" name="password"
+                        class="block w-full h-14 px-4 border-2 border-gray-300 rounded-lg bg-white focus:border-[#B20000] focus:ring-0 transition"
+                        placeholder="Masukkan Kata Sandi" required>
                     @error('password')
-                        <small class="text-danger">{{ $message }}</small>
+                        <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                     @enderror
+                        {{-- <a href="#" class="flex justify-end mt-2 text-sm font-semibold text-red-600 hover:underline">Lupa Kata Sandi?</a> --}}
                 </div>
-                <button type="submit" class="login-btn">Login</button>
+
+                <div class="pt-4">
+                    <button type="submit"
+                        class="w-full bg-[#B20000] text-white font-semibold py-4 rounded-lg hover:bg-[#900000] transition-colors text-lg">
+                        Login
+                    </button>
+                </div>
+
+                <p class="text-center text-gray-600">
+                    Belum punya akun? <a href="{{ route('register.form') }}"
+                        class="font-semibold text-red-600 hover:underline">Daftar di sini</a>
+                </p>
             </form>
         </div>
     </div>
-
-    @include('layouts._partials.scripts')
-</body>
-
-@push('styles')
-    <style>
-        .body {
-            background: #f6f6f6;
-            font-family: 'Nunito', 'Poppins', Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-        }
-    </style>
-@endpush
-
-{{-- @push('scripts')
-@endpush --}}
-
-</html>
+@endsection

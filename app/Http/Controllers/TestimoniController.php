@@ -1,64 +1,72 @@
 <?php
+// File: app/Http/Controllers/TestimonialController.php
 
 namespace App\Http\Controllers;
 
+use App\Services\TestimonialService;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
-class TestimoniController extends BaseController
+class TestimoniController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
+    protected $testimonialService;
+
+    public function __construct(TestimonialService $testimonialService)
+    {
+        $this->testimonialService = $testimonialService;
+    }
+
     public function index()
     {
-        //
+        $testimonials = $this->testimonialService->getAllTestimonials();
+        return view('dashboard-admin.kelola-testimoni', compact('testimonials'));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
-        //
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'content' => 'required|string',
+            'rating' => 'required|integer|min:1|max:5',
+            'status' => ['required', Rule::in(['published', 'pending'])],
+        ]);
+
+        $this->testimonialService->create($validated);
+        return redirect()->route('admin.testimoni.index')->with('success', 'Testimoni berhasil ditambahkan.');
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
+    public function showJson($id)
     {
-        //
+        return response()->json($this->testimonialService->getTestimonialById($id));
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
+    public function update(Request $request, $id)
     {
-        //
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'content' => 'required|string',
+            'rating' => 'required|integer|min:1|max:5',
+            'status' => ['required', Rule::in(['published', 'pending'])],
+        ]);
+
+        $this->testimonialService->update($id, $validated);
+        return redirect()->route('admin.testimoni.index')->with('success', 'Testimoni berhasil diperbarui.');
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
+    public function updateStatus(Request $request, $id)
     {
-        //
+        $validated = $request->validate([
+            'status' => ['required', Rule::in(['published', 'pending'])],
+        ]);
+
+        $this->testimonialService->updateStatus($id, $validated['status']);
+        $message = $validated['status'] === 'published' ? 'Testimoni berhasil ditampilkan.' : 'Testimoni berhasil disembunyikan.';
+        return back()->with('success', $message);
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
+    public function destroy($id)
     {
-        //
+        $this->testimonialService->delete($id);
+        return redirect()->route('admin.testimoni.index')->with('success', 'Testimoni berhasil dihapus.');
     }
 }

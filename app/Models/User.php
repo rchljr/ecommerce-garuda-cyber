@@ -4,25 +4,29 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Support\Str;
+use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable, HasUuids, HasRoles;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var list<string>
-     */
-    protected $primaryKey = 'id';
     public $incrementing = false;
     protected $keyType = 'string';
-    protected $fillable = ['username', 'position', 'email', 'phone','password',  'role', 'status'];
 
+    protected $fillable = [
+        'id',
+        'name',
+        'email',
+        'password',
+        'phone',
+        'position',
+        'status',
+    ];
     /**
      * The attributes that should be hidden for serialization.
      *
@@ -41,15 +45,22 @@ class User extends Authenticatable
     protected function casts(): array
     {
         return [
-            'password_verified_at' => 'datetime',
+            'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
     }
 
-    protected static function boot()
+    public function shop()
     {
-        parent::boot();
-        static::creating(fn($model) => $model->id = $model->id ?? (string) Str::uuid());
+        return $this->hasOne(Shop::class);
+    }
+    public function subdomain()
+    {
+        return $this->hasOne(Subdomain::class);
+    }
+    public function userPackage()
+    {
+        return $this->hasOne(UserPackage::class);
     }
 
 }

@@ -15,7 +15,7 @@ return new class extends Migration {
             $table->uuid('user_id');
             $table->uuid('order_id')->nullable();
             $table->uuid('subs_package_id')->nullable();
-            $table->string('midtrans_order_id', 100)->nullable();
+            $table->string('midtrans_order_id')->nullable()->comment('Order ID dari Midtrans');
             $table->string('midtrans_transaction_status', 50)->nullable();
             $table->string('midtrans_payment_type', 50)->nullable();
             $table->string('midtrans_va_number', 50)->nullable();

@@ -6,35 +6,39 @@ use App\Models\User;
 use Illuminate\Support\Str;
 use App\Models\SubscriptionPackage;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class UserPackage extends Model
 {
-    protected $primaryKey = 'id';
+    use HasFactory, HasUuids;
     public $incrementing = false;
     protected $keyType = 'string';
+
     protected $fillable = [
         'user_id',
         'subs_package_id',
-        'plan_type', // 'monthly' atau 'yearly
+        'plan_type',
+        'price_paid',
         'active_date',
         'expired_date',
         'status',
-        'price_paid'
     ];
 
-    protected static function boot()
+    public function subscriptionPackage(): BelongsTo
     {
-        parent::boot();
-        static::creating(fn($model) => $model->id = $model->id ?? (string) Str::uuid());
-    }
-
-    public function user()
-    {
-        return $this->belongsTo(User::class, 'user_id', 'id');
-    }
-
-    public function subscriptionPackage()
-    {
+        // 'subs_package_id' adalah foreign key di tabel ini.
+        // 'id' adalah primary key di tabel subscription_packages.
         return $this->belongsTo(SubscriptionPackage::class, 'subs_package_id', 'id');
     }
+
+    /**
+     * Relasi ke model User.
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
 }

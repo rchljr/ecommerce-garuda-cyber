@@ -3,24 +3,59 @@
 namespace App\Models;
 
 use App\Models\User;
+use App\Traits\UploadFile;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Database\Eloquent\Model;
+use \Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Shop extends Model
 {
-    protected $primaryKey = 'id';
+    use HasFactory, HasUuids, UploadFile;
+
     public $incrementing = false;
     protected $keyType = 'string';
-    protected $fillable = ['user_id', 'shop_name', 'year_founded', 'shop_address', 'product_categories', 'sku', 'shop_photo', 'npwp', 'ktp', 'nib', 'iumk'];
 
-    protected static function boot()
+    protected $fillable = [
+        'user_id',
+        'shop_name',
+        'year_founded',
+        'shop_address',
+        'product_categories',
+        'shop_photo',
+        'ktp',
+        'sku',
+        'npwp',
+        'nib',
+        'iumk',
+    ];
+
+    protected $casts = ['year_founded' => 'date'];
+
+    /**
+     * 3. Daftarkan model event 'deleting' di sini.
+     *
+     * Metode ini akan dipanggil secara otomatis oleh Laravel
+     * TEPAT SEBELUM sebuah record 'Shop' akan dihapus dari database.
+     */
+    protected static function booted(): void
     {
-        parent::boot();
-        static::creating(fn($model) => $model->id = $model->id ?? (string) Str::uuid());
+        static::deleting(function (Shop $shop) {
+            Log::info("Menghapus file untuk Shop ID: {$shop->id}");
+
+            // Panggil method deleteFile dari trait untuk setiap kolom yang berisi path file
+            $shop->deleteFile($shop->shop_photo);
+            $shop->deleteFile($shop->ktp);
+            $shop->deleteFile($shop->sku);
+            $shop->deleteFile($shop->npwp);
+            $shop->deleteFile($shop->nib);
+            $shop->deleteFile($shop->iumk);
+        });
     }
 
     public function user()
     {
-        return $this->belongsTo(User::class, 'user_id', 'id');
+        return $this->belongsTo(User::class);
     }
 }

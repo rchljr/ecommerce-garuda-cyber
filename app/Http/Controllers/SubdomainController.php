@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Subdomain;
 use Illuminate\Http\Request;
 
 class SubdomainController extends BaseController
@@ -9,10 +10,19 @@ class SubdomainController extends BaseController
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function checkSubdomain(Request $request)
     {
-        //
+        $request->validate(['subdomain' => 'required|string']);
+
+        $exists = Subdomain::where('subdomain_name', $request->subdomain)->exists();
+
+        return response()->json([
+            'subdomain' => $request->subdomain,
+            'available' => !$exists,
+            'status' => $exists ? 'Tidak Tersedia' : 'Tersedia',
+        ]);
     }
+
 
     /**
      * Show the form for creating a new resource.

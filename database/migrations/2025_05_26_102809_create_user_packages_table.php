@@ -14,11 +14,11 @@ return new class extends Migration {
             $table->uuid('id')->primary();
             $table->uuid('user_id');
             $table->uuid('subs_package_id');
-            $table->string('plan_type', 30); // 'monthly' atau 'yearly'
+            $table->string('plan_type'); // 'monthly' atau 'yearly'
+            $table->decimal('price_paid', 15, 2)->nullable();
             $table->date('active_date')->nullable();
             $table->date('expired_date')->nullable();
-            $table->string('status', 30)->nullable();
-            $table->decimal('price_paid', 15, 2)->nullable();
+            $table->enum('status', ['active', 'pending', 'expired'])->default('pending');
             $table->timestamps();
 
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');

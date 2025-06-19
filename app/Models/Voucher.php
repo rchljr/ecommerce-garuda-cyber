@@ -2,33 +2,41 @@
 
 namespace App\Models;
 
-use App\Models\User;
-use Illuminate\Support\Str;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Voucher extends Model
 {
+    use HasFactory, HasUuids;
+
+    protected $table = 'vouchers';
     protected $primaryKey = 'id';
     public $incrementing = false;
     protected $keyType = 'string';
+
+    /**
+     * The attributes that are mass assignable.
+     * Disesuaikan dengan skema database baru Anda.
+     */
     protected $fillable = [
         'user_id',
         'voucher_code',
         'description',
-        'discount',
+        'discount', 
+        'min_spending',
         'start_date',
         'expired_date',
-        'min_spending'
     ];
 
-    protected static function boot()
-    {
-        parent::boot();
-        static::creating(fn($model) => $model->id = $model->id ?? (string) Str::uuid());
-    }
-
-    public function user()
-    {
-        return $this->belongsTo(User::class, 'user_id', 'id');
-    }
+    /**
+     * The attributes that should be cast.
+     */
+    protected $casts = [
+        'discount' => 'float',
+        'min_spending' => 'float',
+        'start_date' => 'date:Y-m-d',
+        'expired_date' => 'date:Y-m-d',
+    ];
 }
+

@@ -17,10 +17,10 @@ return new class extends Migration {
             $table->date('year_founded')->nullable();
             $table->text('shop_address');
             $table->string('product_categories');
-            $table->text('sku')->nullable();
             $table->text('shop_photo');
-            $table->text('npwp')->nullable();
             $table->text('ktp');
+            $table->text('sku')->nullable();
+            $table->text('npwp')->nullable();
             $table->text('nib')->nullable();
             $table->text('iumk')->nullable();
             $table->timestamps();

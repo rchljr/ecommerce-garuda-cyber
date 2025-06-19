@@ -1,8 +1,6 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\PaymentController; // Pastikan ini ada di atas
 
-Route::get('/test', function () {
-    return response()->json(['message' => 'API route works!']);
-});
+Route::post('/midtrans/webhook', [PaymentController::class, 'handleWebhook'])->name('midtrans.webhook');

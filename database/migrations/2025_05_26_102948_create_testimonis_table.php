@@ -12,13 +12,12 @@ return new class extends Migration {
     {
         Schema::create('testimonis', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->uuid('user_id');
-            $table->integer('rating');
-            $table->text('review')->nullable();
-            $table->string('status', 30)->nullable();
+            $table->foreignUuid('user_id')->nullable()->constrained('users')->onDelete('set null');
+            $table->string('name')->comment('Nama pemberi testimoni jika ditambahkan oleh admin');
+            $table->text('content');
+            $table->unsignedTinyInteger('rating')->default(5)->comment('Rating dari 1 sampai 5');
+            $table->enum('status', ['published', 'pending'])->default('pending')->comment('Status testimoni: ditampilkan atau menunggu');
             $table->timestamps();
-
-            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
         });
     }
 

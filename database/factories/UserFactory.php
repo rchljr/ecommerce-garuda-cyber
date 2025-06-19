@@ -25,9 +25,13 @@ class UserFactory extends Factory
     {
         return [
             'name' => fake()->name(),
+            'position' => fake()->randomElement(['direktur', 'owner']),
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
-            'password' => static::$password ??= Hash::make('password'),
+            'password' => static::$password ??= Hash::make('password12345'),
+            'phone' => fake()->phoneNumber(),
+            'role' => fake()->randomElement(['admin', 'calon-mitra', 'mitra', 'customer']),
+            'status' => fake()->randomElement(['active', 'pending','inactive']),
             'remember_token' => Str::random(10),
         ];
     }

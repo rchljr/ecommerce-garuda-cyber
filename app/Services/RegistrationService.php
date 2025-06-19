@@ -1,0 +1,88 @@
+<?php
+
+namespace App\Services;
+
+use Exception;
+use App\Models\Shop;
+use App\Models\User;
+use App\Models\Order;
+use App\Models\Subdomain;
+use App\Traits\UploadFile;
+use App\Models\UserPackage;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
+use App\Models\SubscriptionPackage;
+use Illuminate\Support\Facades\Hash;
+
+class RegistrationService
+{
+    use UploadFile;
+
+    protected $multiStep;
+
+    public function __construct(MultiStepRegistrationService $multiStep)
+    {
+        $this->multiStep = $multiStep;
+    }
+
+    public function processRegistration()
+    {
+        return DB::transaction(function () {
+            $allData = $this->multiStep->getAllData();
+
+            if (empty($allData['user']) || empty($allData['plan']) || empty($allData['subdomain']) || empty($allData['shop'])) {
+                // Lemparkan exception jika data tidak lengkap
+                throw new Exception('Data registrasi tidak lengkap. Sesi mungkin telah berakhir.');
+            }
+
+            // 1. Buat User baru
+            $user = User::create([
+                'name' => $allData['user']['name'],
+                'email' => $allData['user']['email'],
+                'password' => Hash::make($allData['user']['password']),
+                'phone' => $allData['user']['phone'],
+                'position' => $allData['user']['position']
+            ]);
+
+            // 2. Berikan role 'calon-mitra' ke user baru
+            $user->assignRole('calon-mitra');
+
+            /// 3. Simpan Data Toko
+            Shop::create(array_merge($allData['shop'], ['user_id' => $user->id]));
+
+            // 4. Simpan Subdomain
+            Subdomain::create([
+                'user_id' => $user->id,
+                'subdomain_name' => $allData['subdomain']['subdomain'],
+                'status' => 'pending',
+            ]);
+
+            // 5. Ambil detail paket dan harga
+            $package = SubscriptionPackage::findOrFail($allData['plan']['plan_id']);
+            $price = $allData['plan']['plan_type'] === 'yearly' ? $package->yearly_price : $package->monthly_price;
+
+            // 6. Buat Order
+            $order = Order::create([
+                'user_id' => $user->id,
+                'voucher_id' => null, // Voucher diterapkan nanti di halaman pembayaran
+                'status' => 'pending',
+                'order_date' => now(),
+                'total_price' => $price,
+            ]);
+
+            // 7. Simpan Paket Langganan User
+            UserPackage::create([
+                'user_id' => $user->id,
+                'subs_package_id' => $package->id,
+                'plan_type' => $allData['plan']['plan_type'],
+                'price_paid' => $price, // Harga asli sebelum diskon
+                'status' => 'pending',
+            ]);
+
+            // Bersihkan session
+            $this->multiStep->clear();
+
+            return $user;
+        });
+    }
+}

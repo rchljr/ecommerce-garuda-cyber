@@ -18,7 +18,7 @@ return new class extends Migration {
             $table->decimal('discount', 15, 2);
             $table->date('start_date');
             $table->date('expired_date');
-            $table->decimal('min_spending', 15, 2)->nullable();
+            $table->decimal('min_spending', 15, 2)->default(0);
             $table->timestamps();
 
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');

@@ -1,0 +1,87 @@
+<div class="w-full mx-auto flex flex-col h-full">
+    <div class="flex-shrink-0">
+        <a href="{{ route('register.form', ['step' => 1]) }}"
+            class="inline-flex items-center text-gray-600 hover:text-gray-900 mb-6">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+            </svg>
+        </a>
+        <h2 class="text-3xl font-bold text-gray-900 mb-4">Lengkapi Data Diri Anda</h2>
+    </div>
+
+    <form action="{{ route('register.step2') }}" method="POST" class="flex-grow flex flex-col">
+        @csrf
+        <div class="flex-grow space-y-3">
+            {{-- Nama Lengkap --}}
+            <div>
+                <label for="name" class="block text-base font-semibold text-gray-800 mb-1">Nama Lengkap<span
+                        class="text-red-600">*</span></label>
+                <input type="text" id="name" name="name" value="{{ old('name') }}"
+                    class="block w-full h-12 px-4 border-2 rounded-lg bg-white hover:border-red-600 focus:border-red-600 focus:ring-0 transition @error('name') border-red-500 @else border-gray-300 @enderror"
+                    placeholder="Masukkan Nama Lengkap Anda" required>
+                @error('name')
+                    <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                @enderror
+            </div>
+            
+            {{-- Jabatan --}}
+            <div>
+                <label for="position" class="block text-base font-semibold text-gray-800 mb-1">Jabatan<small
+                        class="font-normal">(Opsional)</small></label>
+                <input type="text" id="position" name="position" value="{{ old('position') }}"
+                    class="block w-full h-12 px-4 border-2 border-gray-300 rounded-lg bg-white hover:border-red-600 focus:border-red-600 focus:ring-0 transition"
+                    placeholder="Masukkan Jabatan Anda">
+            </div>
+
+            {{-- Email --}}
+            <div>
+                <label for="email" class="block text-base font-semibold text-gray-800 mb-1">Email <span
+                        class="text-red-600">*</span></label>
+                <input type="email" id="email" name="email" value="{{ old('email') }}"
+                    class="block w-full h-12 px-4 border-2 rounded-lg bg-white hover:border-red-600 focus:border-red-600 focus:ring-0 transition @error('email') border-red-500 @else border-gray-300 @enderror"
+                    placeholder="Masukkan Email Anda" required>
+                @error('email')
+                    <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                @enderror
+            </div>
+
+            {{-- No HP/Whatsapp --}}
+            <div>
+                <label for="phone" class="block text-base font-semibold text-gray-800 mb-1">No HP/Whatsapp <span
+                        class="text-red-600">*</span></label>
+                <input type="tel" id="phone" name="phone" value="{{ old('phone') }}"
+                    class="block w-full h-12 px-4 border-2 rounded-lg bg-white hover:border-red-600 focus:border-red-600 focus:ring-0 transition @error('phone') border-red-500 @else border-gray-300 @enderror"
+                    placeholder="e.g., 6281234567890" required>
+                @error('phone')
+                    <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                @enderror
+            </div>
+
+            {{-- Kata Sandi --}}
+            <div>
+                <label for="password" class="block text-base font-semibold text-gray-800 mb-1">Kata Sandi <span
+                        class="text-red-600">*</span></label>
+                <input type="password" id="password" name="password"
+                    class="block w-full h-12 px-4 border-2 rounded-lg bg-white hover:border-red-600 focus:border-red-600 focus:ring-0 transition @error('password') border-red-500 @else border-gray-300 @enderror"
+                    placeholder="Masukkan Kata Sandi Anda" required>
+                <span class="text-xs text-gray-500">*Minimal 8 karakter</span>
+                @error('password')
+                    <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                @enderror
+            </div>
+
+            {{-- Konfirmasi Kata Sandi --}}
+            <div>
+                <label for="password_confirmation" class="block text-base font-semibold text-gray-800 mb-1">Konfirmasi
+                    Kata Sandi <span class="text-red-600">*</span></label>
+                <input type="password" id="password_confirmation" name="password_confirmation"
+                    class="block w-full h-12 px-4 border-2 border-gray-300 rounded-lg bg-white hover:border-red-600 focus:border-red-600 focus:ring-0 transition"
+                    placeholder="Masukkan ulang kata sandi" required>
+            </div>
+        </div>
+        <div class="flex-shrink-0 pt-4">
+            <button type="submit"
+                class="w-full bg-red-700 text-white font-semibold py-3 rounded-lg hover:bg-red-800 transition-colors text-lg">Lanjut</button>
+        </div>
+    </form>
+</div>

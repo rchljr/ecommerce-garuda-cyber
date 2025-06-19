@@ -2,29 +2,38 @@
 
 namespace App\Models;
 
-use Illuminate\Support\Str;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 
 class SubscriptionPackage extends Model
 {
+    use HasUuids;
+
+    protected $table = 'subscription_packages';
     protected $primaryKey = 'id';
-    public $incrementing = false;
     protected $keyType = 'string';
+    public $incrementing = false;
+
     protected $fillable = [
         'package_name',
         'description',
-        'price',
-        'discount_month',
+        'monthly_price',
+        'yearly_price',
         'discount_year',
-        'features',
         'is_trial',
         'trial_days',
-        'status'
     ];
 
-    protected static function boot()
+    protected $casts = [
+        'is_trial' => 'boolean',
+        'monthly_price' => 'integer',
+        'yearly_price' => 'float',
+        'discount_year' => 'integer',
+        'trial_days' => 'integer',
+    ];
+
+    public function features()
     {
-        parent::boot();
-        static::creating(fn($model) => $model->id = $model->id ?? (string) Str::uuid());
+        return $this->hasMany(SubscriptionPackageFeature::class, 'subscription_package_id', 'id');
     }
 }

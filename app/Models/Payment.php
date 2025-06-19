@@ -7,12 +7,23 @@ use App\Models\Order;
 use Illuminate\Support\Str;
 use App\Models\SubscriptionPackage;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Payment extends Model
 {
-    protected $primaryKey = 'id';
+    use HasFactory, HasUuids;
     public $incrementing = false;
     protected $keyType = 'string';
+    protected static function boot()
+    {
+        parent::boot();
+        static::creating(function ($model) {
+            if (empty($model->{$model->getKeyName()})) {
+                $model->{$model->getKeyName()} = (string) Str::uuid();
+            }
+        });
+    }
     protected $fillable = [
         'user_id',
         'order_id',
@@ -26,12 +37,6 @@ class Payment extends Model
         'total_payment',
         'admin_fee'
     ];
-
-    protected static function boot()
-    {
-        parent::boot();
-        static::creating(fn($model) => $model->id = $model->id ?? (string) Str::uuid());
-    }
 
     public function user()
     {

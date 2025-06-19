@@ -13,4 +13,17 @@ trait UploadFile
         $filename = Str::uuid() . '.' . $file->getClientOriginalExtension();
         return $file->storeAs($folder, $filename, 'public');
     }
+
+    /**
+     * Menghapus file dari storage publik.
+     *
+     * @param string|null $path Path file yang akan dihapus (seperti yang disimpan di database).
+     * @return void
+     */
+    public function deleteFile(?string $path): void
+    {
+        if ($path && Storage::disk('public')->exists($path)) {
+            Storage::disk('public')->delete($path);
+        }
+    }
 }

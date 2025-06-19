@@ -2,19 +2,23 @@
 
 namespace App\Models;
 
-use Illuminate\Support\Str;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Category extends Model
 {
-    protected $primaryKey = 'id';
+    use HasFactory, HasUuids;
+
+    protected $table = 'categories';
     public $incrementing = false;
     protected $keyType = 'string';
-    protected $fillable = ['category_name', 'description'];
 
-    protected static function boot()
+    protected $fillable = ['name', 'slug'];
+
+    public function subcategories(): HasMany
     {
-        parent::boot();
-        static::creating(fn($model) => $model->id = $model->id ?? (string) Str::uuid());
+        return $this->hasMany(SubCategory::class);
     }
 }

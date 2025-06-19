@@ -1,66 +1,131 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\VoucherController;
+use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\TestimoniController;
+use App\Http\Controllers\Admin\MitraController;
+use App\Http\Controllers\LandingPageController;
+use App\Http\Controllers\VerificationController;
+use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\PendapatanController;
+use App\Http\Controllers\SubscriptionPackageController;
 
-//---ADMIN ROUTES---//
+/*
+|--------------------------------------------------------------------------
+| Web Routes
+|--------------------------------------------------------------------------
+*/
 
-// Landing Page
-Route::get('/', function () {
-    return view('landing-page.index');
-})->name('beranda');
+//== RUTE PUBLIK & AUTENTIKASI ==//
+Route::get('/', [LandingPageController::class, 'home'])->name('beranda');
 
-
-// Auth
-Route::get('/register', [AuthController::class, 'showRegisterForm'])->name('register.form');
-Route::post('/register/step0', [AuthController::class, 'registerStep0'])->name('register.step0');
-Route::post('/register/step1', [AuthController::class, 'registerStep1'])->name('register.step1');
-Route::post('/register/step2', [AuthController::class, 'registerStep2'])->name('register.step2');
-Route::post('/register/step3', [AuthController::class, 'registerStep3'])->name('register.step3');
-
-Route::get('/login', function () {
-    return view('landing-page.auth.login');
-})->name('login');
-
+// Auth (Proses Registrasi dan Login)
+Route::get('/login', fn() => view('landing-page.auth.login'))->name('login');
 Route::post('/login', [AuthController::class, 'login'])->name('login.submit');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-
-// Dashboard
-Route::middleware(['auth', 'role:admin'])->group(function () {
-    Route::get('/dashboard', function () {
-        return view('dashboard-admin.dashboard');
-    })->name('dashboard');
-    Route::get('kelola-mitra', function () {
-        return view('dashboard-admin.kelola-mitra');
-    })->name('kelola-mitra');
-    Route::get('verifikasi-mitra', function () {
-        return view('dashboard-admin.verifikasi-mitra');
-    })->name('verifikasi-mitra');
-    Route::get('kelola-landing', function () {
-        return view('dashboard-admin.kelola-landing');
-    })->name('kelola-landing');
-    Route::get('kelola-paket', function () {
-        return view('dashboard-admin.kelola-paket');
-    })->name('kelola-paket');
-    Route::get('kelola-pendapatan', function () {
-        return view('dashboard-admin.kelola-pendapatan');
-    })->name('kelola-pendapatan');
-    Route::get('kelola-voucher', function () {
-        return view('dashboard-admin.kelola-voucher');
-    })->name('kelola-voucher');
-    Route::get('kelola-testimoni', function () {
-        return view('dashboard-admin.kelola-testimoni');
-    })->name('kelola-testimoni');
+// Proses Registrasi Multi-Langkah (Publik)
+Route::prefix('register')->name('register.')->group(function () {
+    Route::get('/', [AuthController::class, 'showRegisterForm'])->name('form');
+    Route::post('/step0', [AuthController::class, 'registerStep0'])->name('step0');
+    Route::post('/step1', [AuthController::class, 'registerStep1'])->name('step1');
+    Route::post('/step2', [AuthController::class, 'registerStep2'])->name('step2');
+    Route::post('/step3', [AuthController::class, 'registerStep3'])->name('step3');
 });
 
-//---CUSTOMER ROUTES---//
+//== MIDTRANS WEBHOOK (TIDAK MEMERLUKAN AUTH/CSRF) ==//
+//dikomen karena masih menggunakan route API, digunakan jika sudah hosting
+//Route::post('/midtrans/webhook', [PaymentController::class, 'handleWebhook'])->name('midtrans.webhook');
 
-// Auth
-Route::get('/login-cust', function () {
-    return view('customer.auth.login');
-})->name('login-cust');
+// == GRUP RUTE UNTUK PENGGUNA YANG SUDAH LOGIN ==
+Route::middleware(['auth'])->group(function () {
+    /// Rute yang bisa diakses oleh semua user yang login
+    Route::post('/voucher/apply', [VoucherController::class, 'apply'])->name('voucher.apply');
+    Route::get('/payment/token', [PaymentController::class, 'generateSnapToken'])->name('payment.token');
 
-Route::get('/register-cust', function () {
-    return view('customer.auth.register');
-})->name('register-cust');
+    ///== ADMIN ROUTES ==//
+    // Hanya user dengan role 'admin' yang bisa mengakses grup ini.
+    Route::middleware(['role:admin'])->prefix('admin')->name('admin.')->group(function () {
+        // Dashboard
+        Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+        // Verifikasi Mitra
+        Route::prefix('verifikasi-mitra')->name('mitra.')->group(function () {
+            Route::get('/', [VerificationController::class, 'index'])->name('verifikasi');
+            Route::put('/{user}/approve', [VerificationController::class, 'approve'])->name('approve');
+            Route::delete('/{user}/reject', [VerificationController::class, 'reject'])->name('reject');
+        });
+
+        // Kelola Mitra
+        Route::get('kelola-mitra', [MitraController::class, 'index'])->name('mitra.kelola');
+        Route::patch('kelola-mitra/{user}/status', [MitraController::class, 'updateStatus'])->name('mitra.updateStatus');
+
+        // Kelola Landing Page
+        Route::get('/landing-page', [LandingPageController::class, 'adminLanding'])->name('landing-page.statistics');
+        Route::put('/landing-page/update', [LandingPageController::class, 'update'])->name('landing-page.statistics.update');
+
+        // Kelola Paket Subscription
+        Route::prefix('paket')->name('paket.')->group(function () {
+            Route::get('/', [SubscriptionPackageController::class, 'index'])->name('index');
+            Route::post('/', [SubscriptionPackageController::class, 'store'])->name('store');
+            Route::get('/{id}/json', [SubscriptionPackageController::class, 'showJson'])->name('showJson');
+            Route::put('/{id}', [SubscriptionPackageController::class, 'update'])->name('update');
+            Route::delete('/{id}', [SubscriptionPackageController::class, 'destroy'])->name('destroy');
+        });
+
+        // Kelola Kategori
+        Route::prefix('kategori')->name('kategori.')->group(function () {
+            Route::get('/', [CategoryController::class, 'index'])->name('index');
+            Route::post('/', [CategoryController::class, 'store'])->name('store');
+            Route::get('/{id}/json', [CategoryController::class, 'showJson'])->name('showJson');
+            Route::put('/{id}', [CategoryController::class, 'update'])->name('update');
+            Route::delete('/{id}', [CategoryController::class, 'destroy'])->name('destroy');
+        });
+
+        // Kelola Voucher
+        Route::prefix('voucher')->name('voucher.')->group(function () {
+            Route::get('/', [VoucherController::class, 'index'])->name('index');
+            Route::post('/', [VoucherController::class, 'store'])->name('store');
+            Route::get('/{id}/json', [VoucherController::class, 'showJson'])->name('json');
+            Route::put('/{id}', [VoucherController::class, 'update'])->name('update');
+            Route::delete('/{id}', [VoucherController::class, 'destroy'])->name('destroy');
+        });
+
+        // Kelola Testimoni
+        Route::prefix('testimoni')->name('testimoni.')->group(function () {
+            Route::get('/', [TestimoniController::class, 'index'])->name('index');
+            Route::post('/', [TestimoniController::class, 'store'])->name('store');
+            Route::get('/{id}/json', [TestimoniController::class, 'showJson'])->name('showJson');
+            Route::put('/{id}', [TestimoniController::class, 'update'])->name('update');
+            Route::put('/{id}/status', [TestimoniController::class, 'updateStatus'])->name('updateStatus');
+            Route::delete('/{id}', [TestimoniController::class, 'destroy'])->name('destroy');
+        });
+
+        // Kelola Pendapatan
+        Route::prefix('pendapatan')->name('pendapatan.')->group(function () {
+            Route::get('/', [PendapatanController::class, 'index'])->name('index');
+            Route::get('/export', [PendapatanController::class, 'export'])->name('export');
+        });
+    });
+
+    //== MITRA ROUTES ==//
+    // Middleware untuk memastikan hanya role 'mitra' yang bisa akses
+    Route::middleware(['role:mitra'])->prefix('mitra')->name('mitra.')->group(function () {
+        Route::get('/dashboard', function () {
+            return view('dashboard-mitra.dashboard');
+        })->name('dashboard');
+        // Tambahkan rute lain untuk mitra di sini...
+        // Contoh: Route::get('/produk', [ProdukController::class, 'index'])->name('produk.index');
+    });
+
+    //== CUSTOMER ROUTES (PROTECTED) ==//
+    // Contoh jika Anda butuh halaman profil untuk customer
+    Route::middleware(['role:customer'])->prefix('customer')->name('customer.')->group(function () {
+        Route::get('/profile', function () { /* ... */})->name('profile');
+        // ... rute lain untuk customer yang sudah login ...
+    });
+
+});

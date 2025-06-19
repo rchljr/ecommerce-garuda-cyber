@@ -3,7 +3,8 @@
 <head>
     @include('layouts._partials.head')
 </head>
-<body>
+<body class="bg-white-50 text-gray-800">
+
     @include('layouts._partials.navbar') 
     
     <main>

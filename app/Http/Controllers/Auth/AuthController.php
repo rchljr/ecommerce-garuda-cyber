@@ -2,285 +2,258 @@
 
 namespace App\Http\Controllers\Auth;
 
-use App\Models\Shop;
+use Throwable;
 use App\Models\User;
+use App\Models\Order;
 use App\Models\Subdomain;
 use App\Traits\UploadFile;
-use App\Models\UserPackage;
-use Illuminate\Support\Str;
 use Illuminate\Http\Request;
-use Illuminate\Support\Carbon;
-use App\Models\SubscriptionPackage;
-use App\Http\Resources\UserResource;
+use App\Services\CategoryService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use App\Services\RegistrationService;
 use App\Http\Controllers\BaseController;
+use App\Services\SubscriptionPackageService;
+use Illuminate\Support\Facades\Notification;
+use App\Notifications\NewPartnerRegistration;
 use App\Services\MultiStepRegistrationService;
-use Illuminate\Validation\ValidationException;
 
 class AuthController extends BaseController
 {
     use UploadFile;
     protected $multiStep;
+    protected $registrationService;
+    protected $subscriptionPackageService;
+    protected $categoryService;
 
-    public function __construct(MultiStepRegistrationService $multiStep)
+    public function __construct(MultiStepRegistrationService $multiStep, RegistrationService $registrationService, SubscriptionPackageService $subscriptionPackageService, CategoryService $categoryService)
     {
         $this->multiStep = $multiStep;
+        $this->registrationService = $registrationService;
+        $this->subscriptionPackageService = $subscriptionPackageService;
+        $this->categoryService = $categoryService;
     }
 
-    // Tampilkan form register sesuai step
-    public function showRegisterForm()
+    /**
+     * Menampilkan form registrasi dan menangani pengalihan ke pembayaran.
+     */
+    public function showRegisterForm(Request $request)
     {
-        $step = session('register_step', 0);
-        return view('landing-page.auth.register', compact('step'));
+        $step = $request->query('step', session('register_step', 0));
+        session(['register_step' => $step]);
+        $data = ['step' => $step];
+
+        if ($step == 0) {
+            $packages = $this->subscriptionPackageService->getAllPackages();
+            $sortedPackages = $packages->sortBy(function ($package) {
+                if ($package->is_trial)
+                    return 0;
+                if (is_null($package->monthly_price))
+                    return 2;
+                return 1;
+            });
+            $data['packages'] = $sortedPackages;
+        }
+        if ($step == 3) {
+            $data['categories'] = $this->categoryService->getAllCategories();
+        }
+        if ($step == 4) {
+            $userId = session('newly_registered_user_id');
+            // Pastikan ada user id di session, lalu ambil data user
+            if ($userId) {
+                // Kirim objek user ke view dengan nama variabel 'statusUser'
+                $data['statusUser'] = User::find($userId);
+            }
+        }
+        if ($step == 5) {
+            if (!Auth::check()) {
+                return redirect()->route('login')->with('error', 'Silakan login untuk melanjutkan.');
+            }
+            $data['order'] = Order::where('user_id', Auth::id())
+                ->where('status', 'pending')
+                ->latest()
+                ->first();
+        }
+
+        return view('landing-page.auth.register', $data);
     }
+
 
     // Step 0: Pilih Paket
     public function registerStep0(Request $request)
     {
         $request->validate([
-            'plan_id' => 'required',         // ID paket
-            'plan_type' => 'required|in:monthly,yearly', // Tipe harga
+            'plan' => 'required',
+            'billing_period' => 'required|in:monthly,yearly',
         ]);
 
         $this->multiStep->setStepData(0, [
-            'plan_id' => $request->plan_id,
-            'plan_type' => $request->plan_type,
+            'plan_id' => $request->plan,
+            'plan_type' => $request->billing_period,
         ]);
-        // Saat user memilih paket dan tipe harga
-        session([
-            'register.plan_id' => $request->plan_id, // ID paket
-            'register.plan_type' => $request->plan_type, // 'monthly' atau 'yearly'
-            'register_step' => 1
-        ]);
-        return redirect()->route('register.form');
+
+        session(['register_step' => 1]);
+        return redirect()->route('register.form', ['step' => 1]);
     }
 
     // Step 1: Pilih Subdomain
     public function registerStep1(Request $request)
     {
-        $request->validate(['subdomain' => 'required']);
-        $exists = Subdomain::where('subdomain_name', $request->subdomain)->exists();
-        if ($exists) {
-            return back()->withErrors(['subdomain' => 'Tidak Tersedia']);
+        if ($request->has('choose_subdomain')) {
+            $subdomain = session('register.subdomain_normalized');
+            $this->multiStep->setStepData(1, ['subdomain' => $subdomain]);
+            session(['register_step' => 2]);
+            return redirect()->route('register.form', ['step' => 2]);
         }
-        // TODO: Cek ketersediaan subdomain di database
-        $this->multiStep->setStepData(1, $request->subdomain);
-        session(['register_step' => 2]);
-        return redirect()->route('register.form');
+
+        $originalInput = $request->input('subdomain');
+        $normalizedSubdomain = strtolower(str_replace(' ', '-', trim($originalInput)));
+        $request->merge(['subdomain_for_validation' => $normalizedSubdomain]);
+        $request->validate(['subdomain_for_validation' => 'required|string|max:63|alpha_dash']);
+
+        $exists = Subdomain::where('subdomain_name', $normalizedSubdomain)->exists();
+
+        session([
+            'register.original_subdomain_input' => $originalInput,
+            'register.subdomain_normalized' => $normalizedSubdomain,
+            'register.subdomain_status' => $exists ? 'Tidak Tersedia' : 'Tersedia',
+            'register_step' => 1
+        ]);
+
+        return redirect()->route('register.form', ['step' => 1]);
     }
 
     // Step 2: Data Diri
     public function registerStep2(Request $request)
     {
+        $phone = $request->input('phone');
+        if ($phone) {
+            $phone = preg_replace('/[^0-9]/', '', $phone);
+            if (!str_starts_with($phone, '62')) {
+                $phone = '62' . ltrim($phone, '0');
+            }
+        }
+        $request->merge(['phone' => $phone]);
+
         $request->validate([
-            'username' => 'required|string|max:255',
-            'position' => 'required|string|max:255',
+            'name' => 'required|string|max:255',
+            'position' => 'nullable|string|max:255',
             'email' => 'required|string|email|max:255|unique:users,email',
-            'phone' => 'nullable|string|max:30',
+            'phone' => ['nullable', 'string', 'max:30', 'regex:/^62[0-9]{8,15}$/'],
             'password' => 'required|string|min:8|confirmed',
         ]);
-        $data = $request->only(['username', 'position', 'email', 'phone', 'password']);
+
+        $data = $request->only(['name', 'position', 'email', 'password']);
+        $data['phone'] = $phone;
+
         $this->multiStep->setStepData(2, $data);
-        session(['register_step' => 3]);
-        return redirect()->route('register.form');
+        return redirect()->route('register.form', ['step' => 3]);
     }
 
     // Step 3: Data Toko & Simpan Semua Data ke Database
     public function registerStep3(Request $request)
     {
-        $request->validate([
+        $validatedShop = $request->validate([
             'shop_name' => 'required|string|max:255',
             'year_founded' => 'nullable|date',
-            'shop_address' => 'required',
-            'product_categories' => 'required',
-            'sku' => 'nullable|string|max:255',
-            'shop_photo' => 'required|image',
-            'npwp' => 'nullable|file|max:2048', // Maksimal 2MB
-            'ktp' => 'required|file|max:2048',
+            'shop_address' => 'required|string',
+            'product_categories' => 'required|string',
+            'shop_photo' => 'required|image|max:2048',
+            'ktp' => 'required|image|max:2048',
+            'sku' => 'nullable|file|max:2048',
+            'npwp' => 'nullable|file|max:2048',
             'nib' => 'nullable|file|max:2048',
             'iumk' => 'nullable|file|max:2048',
         ]);
 
-        $shopData = $request->only(['shop_name', 'year_founded', 'shop_address', 'product_categories']);
-        $shopData['shop_photo'] = $this->uploadFile($request->file('shop_photo'), 'shops');
-        $shopData['ktp'] = $this->uploadFile($request->file('ktp'), 'ktp');
-        // Upload file opsional jika ada
-        if ($request->hasFile('sku')) {
-            $shopData['sku'] = $this->uploadFile($request->file('sku'), 'sku');
-        }
-        if ($request->hasFile('npwp')) {
-            $shopData['npwp'] = $this->uploadFile($request->file('npwp'), 'npwp');
-        }
-        if ($request->hasFile('nib')) {
-            $shopData['nib'] = $this->uploadFile($request->file('nib'), 'nib');
-        }
-        if ($request->hasFile('iumk')) {
-            $shopData['iumk'] = $this->uploadFile($request->file('iumk'), 'iumk');
-        }
-
-        $this->multiStep->setStepData(3, $shopData);
-
-        // Ambil semua data dari session
-        $all = $this->multiStep->getAllData();
-
-        // Simpan ke database
-        // Buat user baru
-        $user = User::create([
-            'id' => (string) Str::uuid(),
-            'username' => $all['user']['username'],
-            'position' => $all['user']['position'],
-            'email' => $all['user']['email'],
-            'phone' => $all['user']['phone'] ?? null,
-            'password' => Hash::make($all['user']['password']),
-            'role' => 'calon-mitra',
-            'status' => 'pending',
-        ]);
-
-        // Simpan paket langganan
-        $planId = session('register.plan_id');
-        $planType = session('register.plan_type'); // 'monthly' atau 'yearly'
-
-        $package = SubscriptionPackage::findOrFail($planId);
-
-        // Set harga sesuai tipe
-        $price_paid = $planType === 'monthly' ? $package->{'monthly-price'} : $package->{'yearly-price'};
-
-        // Status default pending saat pendaftaran, aktif saat diverifikasi admin
-        $status = 'pending';
-
-        $user_package = UserPackage::create([
-            'user_id' => $user->id,
-            'subs_package_id' => $package->id,
-            'plan_type' => $planType, // 'monthly' atau 'yearly'
-            'active_date' => null,      // null saat pending, isi saat aktif
-            'expired_date' => null,
-            'status' => $status,
-            'price_paid' => $price_paid,
-        ]);
-
-        if ($user_package->status === 'active') {
-            $active_date = Carbon::now();
-            if ($user_package->plan_type === 'monthly-price') {
-                $expired_date = $active_date->copy()->addMonth();
-            } else {
-                $expired_date = $active_date->copy()->addYear();
+        foreach (['shop_photo', 'ktp', 'sku', 'nib', 'npwp', 'iumk'] as $fileKey) {
+            if ($request->hasFile($fileKey)) {
+                $validatedShop[$fileKey] = $this->uploadFile($request->file($fileKey), $fileKey);
             }
-            $user_package->update([
-                'status' => 'active',
-                'active_date' => $active_date,
-                'expired_date' => $expired_date,
-            ]);
         }
 
-        // Simpan subdomain
-        $subdomain = Subdomain::create([
-            'user_id' => $user->id,
-            'subdomain_name' => $all['subdomain'],
-            'status' => 'pending',
-        ]);
-
-        // Saat user diverifikasi dan status user jadi 'active'
-        if ($user->status === 'active') {
-            $subdomain->update([
-                'status' => 'active',
-            ]);
+        $this->multiStep->setStepData(3, $validatedShop);
+        try {
+            $user = $this->registrationService->processRegistration();
+        } catch (Throwable $e) {
+            // Error ini biasanya terjadi jika sesi berakhir dan data dari langkah sebelumnya
+            // (misalnya, data pengguna, data paket) hilang.
+            if ($e instanceof \ErrorException && str_contains($e->getMessage(), 'Trying to access array offset on value of type null')) {
+                // Sesi data tidak lengkap. Bersihkan dan arahkan pengguna ke awal.
+                // Asumsi: $this->multiStep memiliki metode clear() untuk membersihkan data sesi.
+                $this->multiStep->clear();
+                return redirect()->route('register.form', ['step' => 0])
+                    ->with('error', 'Sesi Anda telah berakhir. Silakan ulangi proses pendaftaran dari awal.');
+            }
+            // Jika ini adalah error yang berbeda, lebih baik untuk melihatnya agar bisa di-debug.
+            throw $e;
         }
-        
-        // Simpan data toko
-        $shop = Shop::create([
-            'user_id' => $user->id,
-            'shop_name' => $all['shop']['shop_name'],
-            'year_founded' => $all['shop']['year_founded'] ? Carbon::parse($all['shop']['year_founded']) : null,
-            'shop_address' => $all['shop']['shop_address'],
-            'product_categories' => $all['shop']['product_categories'],
-            'sku' => $all['shop']['sku'] ?? null,
-            'shop_photo' => $all['shop']['shop_photo'],
-            'npwp' => $all['shop']['npwp'] ?? null,
-            'ktp' => $all['shop']['ktp'],
-            'nib' => $all['shop']['nib'] ?? null,
-            'iumk' => $all['shop']['iumk'] ?? null,
-        ]);
 
-        $this->multiStep->clear();
+        // Simpan ID pengguna yang baru dibuat ke dalam sesi.
+        session(['newly_registered_user_id' => $user->id]);
+
+        //  Menggunakan query Spatie untuk mencari admin
+        $admins = User::role('admin')->get();
+
+        if ($admins->isNotEmpty()) {
+            Notification::send($admins, new NewPartnerRegistration($user));
+        }
+
         session(['register_step' => 4]);
-        return redirect()->route('register.form');
+        return redirect()->route('register.form', ['step' => 4]);
     }
 
-    // Step 4: Status Verifikasi (View Only)
-    // Step 5: Pembayaran (View Only, setelah diverifikasi)
-
-    public function register(Request $request)
-    {
-        $validated = $request->validate([
-            'username' => 'required|string|max:255',
-            'position' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users,email',
-            'password' => 'required|string|min:8|confirmed',
-            'phone' => 'nullable|string|max:30',
-            'role' => 'nullable|string|max:50',
-            'status' => 'nullable|string|max:30',
-        ]);
-
-        $user = User::create([
-            'id' => (string) Str::uuid(),
-            'username' => $validated['username'],
-            'position' => $validated['position'],
-            'email' => $validated['email'],
-            'password' => Hash::make($validated['password']),
-            'phone' => $validated['phone'] ?? null,
-            'role' => $validated['role'] ?? 'mitra',
-            'status' => $validated['status'] ?? 'active',
-        ]);
-
-        $token = $user->createToken('auth_token')->plainTextToken;
-
-        $data = [
-            'access_token' => $token,
-            'token_type' => 'Bearer',
-            'user' => new UserResource($user),
-        ];
-
-        return $this->sendResponse($data, 'Registrasi Toko Anda Berhasil', 201);
-    }
-
-    // Login
+    /**
+     * Menangani proses login pengguna.
+     */
     public function login(Request $request)
     {
+        // 1. Validasi input dasar
         $credentials = $request->validate([
             'email' => ['required', 'email'],
             'password' => ['required'],
         ]);
 
-        if (!Auth::attempt($credentials)) {
-            return back()->withErrors([
-                'email' => 'Email atau password salah.',
-            ])->withInput();
+        // 2. Tambahkan syarat 'status' => 'active' ke dalam kredensial untuk percobaan login
+        $credentialsWithStatus = array_merge($credentials, ['status' => 'active']);
+
+        // 3. Coba login dengan kredensial lengkap (email, password, DAN status active)
+        if (Auth::attempt($credentialsWithStatus)) {
+            $request->session()->regenerate();
+            $user = Auth::user();
+
+            if ($user->hasRole('admin')) {
+                return redirect()->route('admin.dashboard')->with('success', 'Anda berhasil masuk sebagai admin.');
+            }
+            if ($user->hasRole('mitra')) {
+                return redirect()->route('mitra.dashboard');
+            }
+            if ($user->hasRole('calon-mitra')) {
+                // Kasus ini menangani 'calon-mitra' yang sudah disetujui (status: active) tapi belum bayar.
+                $hasPendingOrder = Order::where('user_id', $user->id)->where('status', 'pending')->exists();
+                return $hasPendingOrder
+                    ? redirect()->route('register.form', ['step' => 5])
+                    : redirect()->route('mitra.dashboard');
+            }
+
+            return redirect()->route('beranda');
         }
 
-        $user = Auth::user();
+        // 4. Jika login gagal, cari tahu penyebabnya untuk memberikan pesan error yang lebih baik.
+        $user = User::where('email', $credentials['email'])->first();
 
-        // dd($user);
-        // if (!$user) {
-        //     throw ValidationException::withMessages([
-        //         'email' => 'Email tidak ditemukan.',
-        //     ]);
-        // }
-
-        // Cek role admin
-        if ($user->role !== 'admin') {
-            Auth::logout();
-            return back()->withErrors([
-                'email' => 'Anda tidak memiliki akses ke dashboard admin.',
-            ]);
+        // Cek apakah user ada dan passwordnya benar, tapi statusnya salah
+        if ($user && Hash::check($credentials['password'], $user->password)) {
+            if ($user->status === 'pending') {
+                return back()->withErrors(['email' => 'Akun Anda sedang menunggu verifikasi admin.'])->withInput();
+            }
+            if ($user->status === 'inactive') {
+                return back()->withErrors(['email' => 'Akun Anda telah dinonaktifkan.'])->withInput();
+            }
         }
 
-        $request->session()->regenerate();
-
-        return redirect()->route('dashboard')
-            ->with('success', 'Anda berhasil masuk ke dashboard admin.');
-
-
+        // Jika sampai di sini, berarti email atau passwordnya yang salah.
+        return back()->withErrors(['email' => 'Email atau password yang Anda masukkan salah.'])->withInput();
     }
 
     // Logout
@@ -289,7 +262,7 @@ class AuthController extends BaseController
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
-
         return redirect()->route('beranda');
     }
 }
+

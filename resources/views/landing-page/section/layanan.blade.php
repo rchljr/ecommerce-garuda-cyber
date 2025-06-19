@@ -1,49 +1,49 @@
-<!-- services section start -->
-<div id="layanan" class="services-section">
-    <h2 class="services-title">Layanan Terbaik Untuk Anda</h2>
-    <div class="services-cards-bg">
-        <div class="services-cards">
-            <!-- Card 1 -->
-            <div class="service-card">
-                <div class="service-icon">
-                    <img src="images/layanan1.png" alt="Kustomisasi Toko Online">
+<!-- Layanan Section -->
+<section id="layanan" class="relative py-16 md:py-24 bg-white overflow-hidden">
+    <!-- Elemen dekoratif kanan atas -->
+    <div class="absolute top-10 right-0 w-48 h-48 z-0">
+        <img src="images/bg-layanan1.png" alt="Elemen plus" class="opacity-100">
+    </div>
+    <!-- Elemen dekoratif kiri bawah -->
+    <div class="absolute bottom-10 left-0 w-48 h-48 z-0">
+        <img src="images/bg-layanan2.png" alt="Elemen plus" class="opacity-100">
+    </div>
+
+    <div class="relative z-10 container mx-auto px-6">
+        <div class="text-center mb-12">
+            <h2 class="text-5xl font-bold text-gray-900">Layanan Terbaik Untuk Anda</h2>
+        </div>
+        <div class="bg-red-700 rounded-3xl p-8 md:p-12">
+            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+                <!-- Card Layanan 1 -->
+                <div
+                    class="bg-gray-100 p-8 rounded-2xl text-center shadow-lg transition-transform transform hover:-translate-y-2">
+                    <img src="images/layanan1.png" alt="Ikon Kustomisasi Toko Online" class="mx-auto mb-4 rounded-lg">
+                    <h3 class="text-xl font-bold text-red-700 mb-2">Kustomisasi Toko Online</h3>
+                    <p class="text-gray-600">Built Wicket longer admire do barton vanity itself do in it.</p>
                 </div>
-                <div class="service-title">Kustomisasi Toko Online</div>
-                <div class="service-desc">
-                    Built Wicket longer admire do barton vanity itself do in it.
+                <!-- Card Layanan 2 -->
+                <div
+                    class="bg-gray-100 p-8 rounded-2xl text-center shadow-lg transition-transform transform hover:-translate-y-2">
+                    <img src="images/layanan2.png" alt="Ikon Solusi Pembayaran" class="mx-auto mb-4 rounded-lg">
+                    <h3 class="text-xl font-bold text-red-700 mb-2">Solusi Pembayaran Fleksibel</h3>
+                    <p class="text-gray-600">Engrossed listening. Park gate sell they west hard for the.</p>
                 </div>
-            </div>
-            <!-- Card 2 -->
-            <div class="service-card">
-                <div class="service-icon">
-                    <img src="images/layanan2.png" alt="Solusi Pembayaran Fleksibel">
+                <!-- Card Layanan 3 -->
+                <div
+                    class="bg-gray-100 p-8 rounded-2xl text-center shadow-lg transition-transform transform hover:-translate-y-2">
+                    <img src="images/layanan3.png" alt="Ikon Dashboard Analytics" class="mx-auto mb-4 rounded-lg">
+                    <h3 class="text-xl font-bold text-red-700 mb-2">Dashboard analytics</h3>
+                    <p class="text-gray-600">Barton vanity itself do in it. Prefer to men it engrossed listening.</p>
                 </div>
-                <div class="service-title">Solusi Pembayaran Fleksibel</div>
-                <div class="service-desc">
-                    Engrossed listening. Park gate sell they west hard for the.
-                </div>
-            </div>
-            <!-- Card 3 -->
-            <div class="service-card">
-                <div class="service-icon">
-                    <img src="images/layanan3.png" alt="Dashboard analytics">
-                </div>
-                <div class="service-title">Dashboard analytics</div>
-                <div class="service-desc">
-                    Barton vanity itself do in it. Prefer to men it engrossed listening.
-                </div>
-            </div>
-            <!-- Card 4 -->
-            <div class="service-card">
-                <div class="service-icon">
-                    <img src="images/layanan4.png" alt="Meta ads">
-                </div>
-                <div class="service-title">Meta ads</div>
-                <div class="service-desc">
-                    outsourced aviation services for military customers
+                <!-- Card Layanan 4 -->
+                <div
+                    class="bg-gray-100 p-8 rounded-2xl text-center shadow-lg transition-transform transform hover:-translate-y-2">
+                    <img src="images/layanan4.png" alt="Ikon Meta Ads" class="mx-auto mb-4 rounded-lg">
+                    <h3 class="text-xl font-bold text-red-700 mb-2">Meta ads</h3>
+                    <p class="text-gray-600">outsourced aviation services for military customers</p>
                 </div>
             </div>
         </div>
     </div>
-</div>
-<!-- services section end -->
+</section>

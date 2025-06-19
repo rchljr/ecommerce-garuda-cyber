@@ -2,71 +2,92 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\BaseController;
-use App\Services\LandingPageService;
-use App\Http\Resources\LandingPageResource;
+use App\Models\Testimoni;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
+use App\Models\SubscriptionPackage;
+use App\Services\LandingPageService;
+use App\Services\SubscriptionPackageService;
 
 class LandingPageController extends BaseController
 {
-    protected $service;
+    protected $landingPageService;
+    protected $subscriptionPackageService; // 2. Tambahkan properti
 
-    public function __construct(LandingPageService $service)
+    // 3. Inject kedua service di constructor
+    public function __construct(LandingPageService $landingPageService, SubscriptionPackageService $subscriptionPackageService)
     {
-        $this->service = $service;
+        $this->landingPageService = $landingPageService;
+        $this->subscriptionPackageService = $subscriptionPackageService;
     }
 
-    public function index()
+    public function home()
     {
-        $data = $this->service->getAll();
-        return $this->sendResponse(LandingPageResource::collection($data), 'Landing pages retrieved successfully.');
-    }
+        // Ambil data statistik
+        $stats = $this->landingPageService->getStatistics();
 
-    public function show($id)
-    {
-        try {
-            $data = $this->service->getById($id);
-            return $this->sendResponse(new LandingPageResource($data), 'Landing page retrieved successfully.');
-        } catch (\Exception $e) {
-            return $this->sendError('Landing page not found.', 404);
-        }
-    }
+        // Ambil data testimoni
+        $testimonials = Testimoni::where('status', 'published')->latest()->take(10)->get();
 
-    public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'total_users' => 'required|integer|min:0',
-            'total_shops' => 'required|integer|min:0',
-            'total_visitors' => 'required|integer|min:0',
-            'total_transactions' => 'required|integer|min:0',
+        // 4. Ambil paket menggunakan service agar relasi 'features' ikut terbawa
+        $packages = $this->subscriptionPackageService->getAllPackages();
+
+        // Urutkan paket seperti di halaman registrasi
+        $sortedPackages = $packages->sortBy(function ($package) {
+            if ($package->is_trial)
+                return 0;
+            if (is_null($package->monthly_price))
+                return 2;
+            return 1;
+        });
+
+        // 5. Kirim semua data yang dibutuhkan ke view
+        return view('landing-page.index', [
+            'stats' => $stats,
+            'testimonials' => $testimonials,
+            'packages' => $sortedPackages
         ]);
-        $data = $this->service->create($validated);
-        return $this->sendResponse(new LandingPageResource($data), 'Landing page created successfully.', 201);
+    }
+    /**
+     * Menampilkan halaman kelola statistik.
+     */
+    public function adminLanding()
+    {
+        $stats = $this->landingPageService->getStatistics();
+        return view('dashboard-admin.kelola-landing', compact('stats'));
     }
 
-    public function update(Request $request, $id)
+    /**
+     * Memperbarui nilai statistik.
+     */
+    public function update(Request $request)
     {
+        // Daftar kolom yang diizinkan untuk diupdate
+        $allowedKeys = ['total_users', 'total_shops', 'total_visitors', 'total_transactions'];
+
+        // Validasi input berdasarkan kunci (nama kolom), bukan nama tampilan
         $validated = $request->validate([
-            'total_users' => 'required|integer|min:0',
-            'total_shops' => 'required|integer|min:0',
-            'total_visitors' => 'required|integer|min:0',
-            'total_transactions' => 'required|integer|min:0',
+            'stat_key' => ['required', 'string', Rule::in($allowedKeys)],
+            'stat_value' => 'required|integer|min:0',
         ]);
-        try {
-            $data = $this->service->update($id, $validated);
-            return $this->sendResponse(new LandingPageResource($data), 'Landing page updated successfully.');
-        } catch (\Exception $e) {
-            return $this->sendError('Landing page not found.', 404);
-        }
-    }
 
-    public function destroy($id)
-    {
-        try {
-            $this->service->delete($id);
-            return $this->sendResponse(null, 'Landing page deleted successfully.');
-        } catch (\Exception $e) {
-            return $this->sendError('Landing page not found.', 404);
-        }
+        // Siapkan data untuk service
+        $data = [
+            $validated['stat_key'] => $validated['stat_value'],
+        ];
+
+        $this->landingPageService->updateStatistics($data);
+
+        // Mapping kunci ke nama tampilan untuk pesan sukses yang lebih ramah
+        $keyToNameMap = [
+            'total_users' => 'Total Pengguna',
+            'total_shops' => 'Total Toko',
+            'total_visitors' => 'Total Pengunjung',
+            'total_transactions' => 'Total Transaksi',
+        ];
+
+        $statName = $keyToNameMap[$validated['stat_key']] ?? 'Statistik';
+
+        return back()->with('success', "Statistik \"$statName\" berhasil diperbarui.");
     }
 }

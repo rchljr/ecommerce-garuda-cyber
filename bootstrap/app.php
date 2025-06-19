@@ -2,11 +2,9 @@
 
 use App\Http\Middleware\CheckRole;
 use Illuminate\Foundation\Application;
+use Spatie\Permission\Middlewares\RoleMiddleware;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
-
-
-require_once __DIR__ . '/../vendor/autoload.php';
 
 // Buat instance aplikasi Laravel
 $app = Application::configure(basePath: dirname(__DIR__));
@@ -14,8 +12,9 @@ $app = Application::configure(basePath: dirname(__DIR__));
 // Daftarkan middleware route alias
 $app->withMiddleware(function (Middleware $middleware) {
     $middleware->alias([
-        'role' => CheckRole::class,
-        // Anda bisa daftarkan alias middleware lain di sini
+        'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
+        'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
+        'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
     ]);
 });
 
