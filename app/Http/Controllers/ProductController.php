@@ -9,21 +9,58 @@ use Illuminate\Support\Facades\Auth;
 
 class ProductController extends Controller
 {
-    // Menampilkan semua produk
+    // *** Metode untuk Halaman Penuh (akses utama) ***
+    
+    // Tampilkan semua produk (halaman penuh)
     public function index()
     {
         $products = Product::with('category', 'user')->latest()->get();
         return view('dashboard-mitra.products.index', compact('products'));
     }
 
-    // Menampilkan form tambah produk
+    // Tampilkan form tambah produk
     public function create()
     {
         $categories = Category::all();
         return view('dashboard-mitra.products.create', compact('categories'));
     }
 
-    // Simpan produk baru
+    // Detail produk
+    public function show($id)
+    {
+        $product = Product::with('category', 'user')->findOrFail($id);
+        return view('dashboard-mitra.products.show', compact('product'));
+    }
+
+    // Form edit produk
+    public function edit($id)
+    {
+        $product = Product::findOrFail($id);
+        $categories = Category::all();
+        return view('dashboard-mitra.products.edit', compact('product', 'categories'));
+    }
+
+    // *** Metode untuk Partial/AJAX ***
+
+    // Partial daftar produk
+    public function getProductsContent()
+    {
+        $products = Product::with('category', 'user')->latest()->get();
+
+        // Pastikan view partial tersedia: resources/views/dashboard-mitra/products/product_list_partial.blade.php
+        return view('dashboard-mitra.products.product_list_partial', compact('products'));
+    }
+
+    // Partial form tambah produk
+    public function getCreateProductFormContent()
+    {
+        $categories = Category::all();
+
+        // Pastikan view partial tersedia: resources/views/dashboard-mitra/products/create_form_partial.blade.php
+        return view('dashboard-mitra.products.create_form_partial', compact('categories'));
+    }
+
+    // *** Simpan Produk Baru ***
     public function store(Request $request)
     {
         $request->validate([
@@ -40,7 +77,6 @@ class ProductController extends Controller
         $data = $request->all();
         $data['user_id'] = Auth::id();
 
-        // Upload thumbnail
         if ($request->hasFile('thumbnail')) {
             $file = $request->file('thumbnail');
             $filename = time() . '_' . $file->getClientOriginalName();
@@ -50,25 +86,11 @@ class ProductController extends Controller
 
         Product::create($data);
 
+        // Pastikan route name sesuai (lihat web.php)
         return redirect()->route('dashboard-mitra.products.index')->with('success', 'Produk berhasil ditambahkan.');
     }
 
-    // Menampilkan detail produk
-    public function show($id)
-    {
-        $product = Product::with('category', 'user')->findOrFail($id);
-        return view('dashboard-mitra.products.show', compact('product'));
-    }
-
-    // Menampilkan form edit
-    public function edit($id)
-    {
-        $product = Product::findOrFail($id);
-        $categories = Category::all();
-        return view('dashboard-mitra.products.edit', compact('product', 'categories'));
-    }
-
-    // Simpan perubahan produk
+    // *** Update Produk ***
     public function update(Request $request, $id)
     {
         $product = Product::findOrFail($id);
@@ -86,7 +108,6 @@ class ProductController extends Controller
 
         $data = $request->all();
 
-        // Upload thumbnail jika ada
         if ($request->hasFile('thumbnail')) {
             $file = $request->file('thumbnail');
             $filename = time() . '_' . $file->getClientOriginalName();
@@ -99,7 +120,7 @@ class ProductController extends Controller
         return redirect()->route('dashboard-mitra.products.index')->with('success', 'Produk berhasil diperbarui.');
     }
 
-    // Hapus produk
+    // *** Hapus Produk ***
     public function destroy($id)
     {
         $product = Product::findOrFail($id);

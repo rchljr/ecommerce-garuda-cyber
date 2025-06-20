@@ -3,6 +3,8 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\SlideController;
+use App\Http\Controllers\HomeController;
 
 //---ADMIN ROUTES---//
 
@@ -69,8 +71,38 @@ Route::get('/register-cust', function () {
 
 //---MITRA ROUTES---//
 
-//Product
 Route::prefix('dashboard-mitra')->name('dashboard-mitra.')->group(function () {
-    // CRUD route untuk produk
+    Route::get('/', function () {
+        return view('dashboard-mitra.dashboardmitra');
+    })->name('dashboard');
+
+    Route::get('/produk', function () {
+        return view('dashboard-mitra.products.index');
+    })->name('produk');
+
     Route::resource('products', ProductController::class);
+    Route::get('products-content', [ProductController::class, 'getProductsContent'])->name('products.content');
+    Route::get('products-create-content', [ProductController::class, 'getCreateProductFormContent'])->name('products.create.content');
+
+    Route::get('slides-content', [SlideController::class, 'index'])->name('slides.content');
+    Route::get('slides/create-form', [SlideController::class, 'create'])->name('slides.create.form');
+    Route::post('slides', [SlideController::class, 'store'])->name('slides.store');
+    Route::get('slides/{slide}/edit-form', [SlideController::class, 'edit'])->name('slides.edit.form');
+    Route::put('slides/{slide}', [SlideController::class, 'update'])->name('slides.update');
+    Route::delete('slides/{slide}', [SlideController::class, 'destroy'])->name('slides.destroy');
 });
+
+// Rute untuk halaman depan (homepage)
+Route::get('/homepage', [HomeController::class, 'index'])->name('homepage'); 
+
+    // // Rute untuk konten Pesanan via AJAX
+    // Route::get('orders-content', [OrderController::class, 'getOrdersContent'])->name('orders.content');
+
+    // // Rute untuk konten Pelanggan via AJAX
+    // Route::get('customers-content', [CustomerController::class, 'getCustomersContent'])->name('customers.content');
+
+    // // Rute untuk konten Laporan via AJAX
+    // Route::get('reports-content', [ReportController::class, 'getReportsContent'])->name('reports.content');
+
+    // // Rute untuk konten Pengaturan via AJAX
+    // Route::get('settings-content', [SettingController::class, 'getSettingsContent'])->name('settings.content');

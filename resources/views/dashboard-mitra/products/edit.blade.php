@@ -2,13 +2,14 @@
 
 @section('content')
 <div class="container">
-    <h2>Edit Produk</h2>
+    <h1 class="mb-4">Edit Produk</h1>
 
-    <form action="{{ route('products.update', $product->id) }}" method="POST" enctype="multipart/form-data">
+    <form action="{{ route('dashboard-mitra.products.update', $product->id) }}" method="POST" enctype="multipart/form-data">
         @csrf
         @method('PUT')
-        @include('products._form', ['product' => $product])
-        <button type="submit" class="btn btn-primary">Update</button>
+
+        @include('dashboard-mitra.products._form', ['submit' => 'Update'])
+
     </form>
 </div>
 @endsection
