@@ -9,38 +9,45 @@
         <div class="bg-gray-50 rounded-lg p-6 border">
             @if(isset($order))
                 @php
-                    // Relasi untuk mendapatkan detail paket dari order
                     $userPackage = $order->user->userPackage ?? null;
                     $subscriptionPackage = $userPackage ? $userPackage->subscriptionPackage : null;
                 @endphp
                 <div class="space-y-3">
-                    <div class="flex justify-between items-center py-2 border-b border-gray-200">
+                    <div class="flex justify-between items-center py-2 border-b">
                         <span class="text-gray-600">Nama Paket</span>
                         <span
-                            class="font-semibold text-gray-800">{{ optional($subscriptionPackage)->package_name ?? 'Pendaftaran Mitra' }}</span>
+                            class="font-semibold text-gray-800">{{ optional($subscriptionPackage)->package_name ?? 'N/A' }}</span>
                     </div>
-                    <div class="flex justify-between items-center py-2 border-b border-gray-200">
+                    <div class="flex justify-between items-center py-2 border-b">
                         <span class="text-gray-600">Durasi</span>
                         <span
                             class="font-semibold text-gray-800">{{ optional($userPackage)->plan_type == 'yearly' ? '12 Bulan' : '1 Bulan' }}</span>
                     </div>
-                    <div class="flex justify-between items-center py-2">
-                        <span class="text-gray-600">Harga Awal</span>
-                        <span class="font-semibold text-gray-800">{{ format_rupiah($order->total_price) }}</span>
-                    </div>
-                    <div id="discount-row"
-                        class="hidden justify-between items-center py-2 border-t border-dashed border-gray-200 text-green-600">
-                        <span id="discount-label">Diskon Voucher</span>
-                        <span id="discount-amount" class="font-semibold"></span>
-                    </div>
+
+                    {{-- Tampilkan rincian harga dan diskon --}}
+                    @if(optional($userPackage)->plan_type == 'yearly' && optional($subscriptionPackage)->yearly_discount > 0)
+                        <div class="flex justify-between items-center py-2 border-b">
+                            <span class="text-gray-600">Harga Asli Tahunan</span>
+                            <span
+                                class="font-semibold text-gray-800 line-through">{{ format_rupiah(optional($subscriptionPackage)->yearly_price) }}</span>
+                        </div>
+                        <div class="flex justify-between items-center py-2 text-green-600">
+                            <span class="">Diskon ({{ optional($subscriptionPackage)->yearly_discount }}%)</span>
+                            @php
+                                $discountAmount = (optional($subscriptionPackage)->yearly_price * optional($subscriptionPackage)->yearly_discount) / 100;
+                            @endphp
+                            <span class="font-semibold">- {{ format_rupiah($discountAmount) }}</span>
+                        </div>
+                    @endif
                 </div>
+                {{-- Total Pembayaran --}}
                 <div class="flex justify-between items-center pt-4 mt-4 border-t border-gray-300">
                     <span class="text-lg font-bold text-gray-900">Total Pembayaran</span>
                     <span id="total-payment"
                         class="text-lg font-bold text-red-600">{{ format_rupiah($order->total_price) }}</span>
                 </div>
             @else
-                <p class="text-center text-gray-500">Detail pembayaran tidak ditemukan. Silakan periksa inbox pada email Anda atau hubungi admin.</p>
+                <p class="text-center text-gray-500">Detail pembayaran tidak ditemukan.</p>
             @endif
         </div>
 

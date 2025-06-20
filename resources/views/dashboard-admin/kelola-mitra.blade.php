@@ -1,3 +1,4 @@
+
 @extends('layouts.admin')
 @section('title', 'Kelola Mitra')
 @section('content')
@@ -20,7 +21,7 @@
                         <path d="M19 19l-4.35-4.35M9 16a7 7 0 1 0 0-14 7 7 0 0 0 0 14Z" stroke="#232323" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
                     </svg>
                 </button>
-            </div>
+            </div> 
         </div>
 
         {{-- Tabel Mitra --}}
@@ -141,3 +142,30 @@
         </div>
     </div>
 @endsection
+
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const searchBtn = document.getElementById('search-icon-btn');
+        const searchForm = document.getElementById('search-form');
+        const searchInput = searchForm.querySelector('input');
+
+        if (searchBtn && searchForm && searchInput) {
+            // Jika ada nilai pencarian, tampilkan form
+            if (searchInput.value) {
+                searchForm.classList.remove('hidden');
+            }
+
+            searchBtn.addEventListener('click', function () {
+                // Toggle tampilan form
+                searchForm.classList.toggle('hidden');
+                
+                // Jika form sekarang terlihat, langsung fokuskan ke inputnya
+                if (!searchForm.classList.contains('hidden')) {
+                    searchInput.focus();
+                }
+            });
+        }
+    });
+</script>
+@endpush

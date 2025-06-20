@@ -1,3 +1,4 @@
+
 <section class="py-16 md:py-24 bg-gray-100">
     <div class="container mx-auto px-6">
         <div class="grid lg:grid-cols-2 gap-12 items-center">
@@ -50,6 +51,7 @@
                             {{ number_format($stats->total_transactions ?? 0) }}</p>
                         <p class="text-red-600">Payments</p>
                     </div>
+
                 </div>
             </div>
         </div>

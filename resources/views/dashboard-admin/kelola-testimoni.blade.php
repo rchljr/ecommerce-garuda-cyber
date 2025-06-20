@@ -10,17 +10,13 @@
                     <h1 class="text-4xl font-bold text-gray-800">Kelola Testimoni</h1>
                     <p class="text-lg text-gray-500 mt-6">Daftar Testimoni dari Mitra</p>
                 </div>
-                <input type="text" id="table-search-input" class="hidden w-full h-16 px-4 text-2xl border-2 border-gray-300 rounded-lg focus:border-red-600 focus:ring-0 transition" placeholder="Ketik untuk mencari...">
+                {{-- Form pencarian bisa diimplementasikan di sini nanti --}}
             </div>
             <div class="flex items-center gap-4 ml-4">
                 <button id="search-btn" class="p-2 rounded-full hover:bg-gray-100" title="Cari">
-                    <svg width="20" height="20" fill="none">
-                        <path d="M19 19l-4.35-4.35M9 16a7 7 0 1 0 0-14 7 7 0 0 0 0 14Z" stroke="#232323" stroke-width="2"
-                            stroke-linecap="round" stroke-linejoin="round" />
-                    </svg>
+                    <svg width="20" height="20" fill="none"><path d="M19 19l-4.35-4.35M9 16a7 7 0 1 0 0-14 7 7 0 0 0 0 14Z" stroke="#232323" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
                 </button>
-                <button id="add-testimonial-btn"
-                    class="bg-red-700 text-white font-semibold px-4 py-2 rounded-lg hover:bg-red-800 flex items-center gap-2 transition-colors">
+                <button id="add-testimonial-btn" class="bg-red-700 text-white font-semibold px-4 py-2 rounded-lg hover:bg-red-800 flex items-center gap-2 transition-colors">
                     <img src="{{ asset('images/tambah-db.png') }}" alt="Tambah" class="w-5 h-5">
                     <span>Tambah Testimoni</span>
                 </button>
@@ -40,10 +36,9 @@
                         <th class="px-6 py-3 border-b-2 border-gray-300">Aksi</th>
                     </tr>
                 </thead>
-                {{-- PERBAIKAN: Memisahkan id dan class dengan benar --}}
-                <tbody id="testimonials-table-body" class="searchable-table divide-y divide-gray-200" data-fetch-url="{{ route('admin.testimoni.showJson', ['id' => 'TESTIMONIAL_ID']) }}">
+                <tbody id="testimonials-table-body" class="divide-y divide-gray-200" data-fetch-url="{{ route('admin.testimoni.showJson', ['id' => 'TESTIMONIAL_ID']) }}">
                     @forelse ($testimonials as $testimonial)
-                        <tr class="text-gray-700 text-center search-row">
+                        <tr class="text-gray-700 text-center">
                             <td class="px-6 py-4">
                                 <div class="font-bold text-black">{{ $testimonial->user->name ?? $testimonial->name }}</div>
                             </td>
@@ -62,6 +57,23 @@
                                 @endif
                             </td>
                             <td class="px-6 py-8 flex justify-center gap-4">
+                                {{-- PERUBAHAN: Tombol Aksi Status --}}
+                                <form action="{{ route('admin.testimoni.updateStatus', $testimonial->id) }}" method="POST">
+                                    @csrf
+                                    @method('PUT')
+                                    @if ($testimonial->status == 'published')
+                                        <input type="hidden" name="status" value="pending">
+                                        <button type="submit" class="p-1 text-gray-600 hover:text-yellow-600" title="Sembunyikan">
+                                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a9.97 9.97 0 01-1.563 3.029m0 0l-3.29-3.29m0 0l-3.29 3.29"></path></svg>
+                                        </button>
+                                    @else
+                                        <input type="hidden" name="status" value="published">
+                                        <button type="submit" class="p-1 text-gray-600 hover:text-green-600" title="Tampilkan">
+                                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.522 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                                        </button>
+                                    @endif
+                                </form>
+
                                 <button class="edit-btn p-1 text-gray-600 hover:text-blue-600" data-id="{{ $testimonial->id }}" title="Edit">
                                     <img src="{{ asset('images/edit.png') }}" alt="Edit" class="w-6 h-6">
                                 </button>
@@ -76,14 +88,15 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="text-center text-gray-500 py-8">Belum ada testimoni dari mitra.</td>
+                            <td colspan="6" class="text-center text-gray-500 py-8">Belum ada testimoni.</td>
                         </tr>
                     @endforelse
-                    <tr class="no-results-row hidden">
-                        <td colspan="6" class="text-center text-gray-500 py-8">Data tidak ditemukan.</td>
-                    </tr>
                 </tbody>
             </table>
+        </div>
+        
+        <div class="mt-4">
+            {{ $testimonials->links() }}
         </div>
     </div>
 
@@ -99,33 +112,25 @@
                 @csrf
                 {{-- Method PUT akan disisipkan oleh JS --}}
                 <div>
-                    <label for="name" class="block text-base font-semibold text-gray-800 mb-1">Nama Pemberi Testimoni<span class="text-red-600">*</span></label>
+                    <label for="name" class="block text-base font-semibold text-gray-800 mb-1">Nama Pemberi<span class="text-red-600">*</span></label>
                     <input type="text" id="name" name="name" class="block w-full h-12 px-4 border-2 border-gray-300 rounded-lg focus:border-red-600 focus:ring-0 transition" required>
                 </div>
                 <div>
                     <label for="content" class="block text-base font-semibold text-gray-800 mb-1">Isi Testimoni<span class="text-red-600">*</span></label>
                     <textarea id="content" name="content" rows="4" class="block w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-red-600 focus:ring-0 transition" required></textarea>
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-base font-semibold text-gray-800 mb-1">Rating<span class="text-red-600">*</span></label>
-                        <div id="star-rating-container" class="flex items-center text-3xl text-gray-300">
-                            <span class="star cursor-pointer" data-value="1">★</span>
-                            <span class="star cursor-pointer" data-value="2">★</span>
-                            <span class="star cursor-pointer" data-value="3">★</span>
-                            <span class="star cursor-pointer" data-value="4">★</span>
-                            <span class="star cursor-pointer" data-value="5">★</span>
-                        </div>
-                        <input type="hidden" name="rating" id="rating_value" value="5" required>
+                <div>
+                    <label class="block text-base font-semibold text-gray-800 mb-1">Rating<span class="text-red-600">*</span></label>
+                    <div id="star-rating-container" class="flex items-center text-3xl text-gray-300">
+                        <span class="star cursor-pointer" data-value="1">★</span>
+                        <span class="star cursor-pointer" data-value="2">★</span>
+                        <span class="star cursor-pointer" data-value="3">★</span>
+                        <span class="star cursor-pointer" data-value="4">★</span>
+                        <span class="star cursor-pointer" data-value="5">★</span>
                     </div>
-                    <div>
-                        <label for="status" class="block text-base font-semibold text-gray-800 mb-1">Status<span class="text-red-600">*</span></label>
-                        <select id="status" name="status" class="block w-full h-12 px-4 border-2 border-gray-300 rounded-lg focus:border-red-600 focus:ring-0 transition" required>
-                            <option value="published">Tampilkan</option>
-                            <option value="pending">Menunggu</option>
-                        </select>
-                    </div>
+                    <input type="hidden" name="rating" id="rating_value" value="5" required>
                 </div>
+                {{-- PERUBAHAN: Input status dihapus dari sini --}}
                 <div class="flex justify-end pt-4 gap-3 border-t mt-4">
                     <button type="button" id="cancel-modal-btn" class="px-6 py-2 rounded-lg text-gray-700 bg-gray-200 hover:bg-gray-300">Batal</button>
                     <button type="submit" class="px-6 py-2 rounded-lg text-white bg-red-700 hover:bg-red-800">Simpan</button>
@@ -192,7 +197,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             document.getElementById('name').value = data.name || '';
             document.getElementById('content').value = data.content || '';
-            document.getElementById('status').value = data.status || 'pending';
+            // PERUBAHAN: baris untuk mengisi status dihapus
             
             currentRating = data.rating || 5;
             ratingValueInput.value = currentRating;

@@ -1,8 +1,6 @@
 @extends('layouts.landing')
-
 @section('title')
 @section('content')
-
     @include('landing-page.section.banner')
     @include('landing-page.section.layanan')
     @include('landing-page.section.highlight')
@@ -11,6 +9,7 @@
     @include('landing-page.section.slogan')
     @include('landing-page.section.faq')
     @include('landing-page.section.testimoni')
+    @include('landing-page.section.add-testimoni')
 
 @endsection
 

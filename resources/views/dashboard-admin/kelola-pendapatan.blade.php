@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 @extends('layouts.admin')
 @section('title', 'Kelola Pendapatan')
 @section('content')

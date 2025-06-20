@@ -1,3 +1,4 @@
+
 @extends('layouts.auth')
 
 @section('title', 'Registrasi')

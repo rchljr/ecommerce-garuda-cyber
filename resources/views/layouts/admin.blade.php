@@ -8,8 +8,8 @@
     <meta name="keywords" content="ecommerce, garuda cyber, toko online, produk, jasa">
     <meta name="description" content="E-Commerce Garuda Cyber: Temukan berbagai produk dan layanan terbaik.">
     <meta name="author" content="Garuda Cyber">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
     <link rel="icon" href="{{ asset('images/gci.png') }}" type="image/png">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -70,5 +70,4 @@
     @include('layouts._partials.scripts')
     @stack('scripts')
 </body>
-
 </html>

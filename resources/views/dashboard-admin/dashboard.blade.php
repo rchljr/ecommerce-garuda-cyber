@@ -52,7 +52,7 @@
                 <canvas id="chart"></canvas>
             </div>
         </div>
-    </div>
+</div>
 @endsection
 
 @push('scripts')

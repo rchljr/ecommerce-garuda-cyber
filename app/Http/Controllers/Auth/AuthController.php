@@ -9,6 +9,7 @@ use App\Models\Subdomain;
 use App\Traits\UploadFile;
 use Illuminate\Http\Request;
 use App\Services\CategoryService;
+use App\Models\SubscriptionPackage;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use App\Services\RegistrationService;
@@ -173,34 +174,22 @@ class AuthController extends BaseController
         }
 
         $this->multiStep->setStepData(3, $validatedShop);
+
         try {
             $user = $this->registrationService->processRegistration();
-        } catch (Throwable $e) {
-            // Error ini biasanya terjadi jika sesi berakhir dan data dari langkah sebelumnya
-            // (misalnya, data pengguna, data paket) hilang.
-            if ($e instanceof \ErrorException && str_contains($e->getMessage(), 'Trying to access array offset on value of type null')) {
-                // Sesi data tidak lengkap. Bersihkan dan arahkan pengguna ke awal.
-                // Asumsi: $this->multiStep memiliki metode clear() untuk membersihkan data sesi.
-                $this->multiStep->clear();
-                return redirect()->route('register.form', ['step' => 0])
-                    ->with('error', 'Sesi Anda telah berakhir. Silakan ulangi proses pendaftaran dari awal.');
+
+            session(['newly_registered_user_id' => $user->id]);
+            $admins = User::role('admin')->get();
+            if ($admins->isNotEmpty()) {
+                Notification::send($admins, new NewPartnerRegistration($user));
             }
-            // Jika ini adalah error yang berbeda, lebih baik untuk melihatnya agar bisa di-debug.
-            throw $e;
+            session(['register_step' => 4]);
+            return redirect()->route('register.form', ['step' => 4]);
+        } catch (\Exception $e) {
+            $this->multiStep->clear(); 
+            return redirect()->route('register.form', ['step' => 0])
+                ->with('error', 'Sesi Anda telah berakhir. Silakan ulangi proses pendaftaran dari awal.');
         }
-
-        // Simpan ID pengguna yang baru dibuat ke dalam sesi.
-        session(['newly_registered_user_id' => $user->id]);
-
-        //  Menggunakan query Spatie untuk mencari admin
-        $admins = User::role('admin')->get();
-
-        if ($admins->isNotEmpty()) {
-            Notification::send($admins, new NewPartnerRegistration($user));
-        }
-
-        session(['register_step' => 4]);
-        return redirect()->route('register.form', ['step' => 4]);
     }
 
     /**

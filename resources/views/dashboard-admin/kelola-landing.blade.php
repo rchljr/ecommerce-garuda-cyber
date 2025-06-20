@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 @extends('layouts.admin')
 @section('title', 'Kelola Landing Page')
 
@@ -50,7 +51,6 @@
             </div>
         </div>
     </div>
-
     <!-- Modal Edit Nilai Statistik -->
     <div id="edit-stat-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
         <div class="relative top-20 mx-auto p-5 border w-full max-w-lg shadow-lg rounded-md bg-white">
@@ -79,6 +79,7 @@
             </form>
         </div>
     </div>
+
 @endsection
 
 @push('scripts')
@@ -120,6 +121,6 @@
 
             closeModalBtn.addEventListener('click', closeModal);
             cancelModalBtn.addEventListener('click', closeModal);
-        });
+});
     </script>
 @endpush

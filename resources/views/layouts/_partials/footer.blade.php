@@ -1,3 +1,4 @@
+
 <!-- Footer -->
 <footer class="bg-[#37383C] text-gray-300">
     <div class="container mx-auto px-6 py-12">

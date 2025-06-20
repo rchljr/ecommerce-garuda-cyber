@@ -15,7 +15,7 @@ class TestimonialSeeder extends Seeder
     public function run(): void
     {
         // Kosongkan tabel sebelum diisi untuk menghindari duplikasi
-        DB::table('testimoni')->truncate();
+        DB::table('testimonis')->truncate();
 
         $testimonials = [
             [

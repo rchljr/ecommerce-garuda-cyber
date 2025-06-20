@@ -26,4 +26,5 @@ trait UploadFile
             Storage::disk('public')->delete($path);
         }
     }
+
 }

@@ -20,7 +20,7 @@ class MitraController extends Controller
             ->select('users.*')
             ->join('user_packages', 'users.id', '=', 'user_packages.user_id')
             ->with(['shop', 'subdomain', 'userPackage.subscriptionPackage'])
-            // 4. Tambahkan klausa 'when' untuk menerapkan filter pencarian jika ada
+            // Tambahkan klausa 'when' untuk menerapkan filter pencarian jika ada
             ->when($search, function ($query, $search) {
                 return $query->where(function ($q) use ($search) {
                     // Cari berdasarkan nama atau email pengguna

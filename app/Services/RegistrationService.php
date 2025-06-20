@@ -9,16 +9,19 @@ use App\Models\Order;
 use App\Models\Subdomain;
 use App\Traits\UploadFile;
 use App\Models\UserPackage;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use App\Models\SubscriptionPackage;
 use Illuminate\Support\Facades\Hash;
+use App\Notifications\PartnerActivatedNotification;
 
 class RegistrationService
 {
     use UploadFile;
 
     protected $multiStep;
+    
 
     public function __construct(MultiStepRegistrationService $multiStep)
     {
@@ -83,6 +86,46 @@ class RegistrationService
             $this->multiStep->clear();
 
             return $user;
+        });
+    }
+
+    /**
+     * Mengaktifkan akun trial untuk pengguna.
+     *
+     * @param User $user Pengguna yang akan diaktifkan.
+     * @param SubscriptionPackage $package Paket trial yang dipilih.
+     * @return void
+     */
+    public function activateTrialPackage(User $user, SubscriptionPackage $package)
+    {
+        DB::transaction(function () use ($user, $package) {
+            // 1. Dapatkan data UserPackage yang dibuat saat registrasi
+            $userPackage = $user->userPackage;
+            if (!$userPackage) {
+                throw new Exception("UserPackage tidak ditemukan untuk user ID: {$user->id}");
+            }
+            
+            // 2. Update UserPackage untuk trial
+            $userPackage->update([
+                'status' => 'active',
+                'price_paid' => 0, // Harga 0 untuk trial
+                'active_date' => now(),
+                'expired_date' => now()->addDays($package->trial_days ?? 14), // Gunakan data dari DB atau default 14 hari
+            ]);
+
+            // 3. Update User menjadi Mitra Aktif
+            $user->status = 'active';
+            $user->removeRole('calon-mitra');
+            $user->assignRole('mitra');
+            $user->save();
+            
+            // 4. Update Subdomain menjadi aktif
+            if ($user->subdomain) {
+                $user->subdomain->update(['status' => 'active']);
+            }
+
+            // 5. Kirim notifikasi aktivasi
+            Notification::send($user, new PartnerActivatedNotification($user));
         });
     }
 }

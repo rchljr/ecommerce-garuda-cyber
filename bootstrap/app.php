@@ -6,6 +6,7 @@ use Spatie\Permission\Middlewares\RoleMiddleware;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 
+
 // Buat instance aplikasi Laravel
 $app = Application::configure(basePath: dirname(__DIR__));
 
@@ -15,6 +16,7 @@ $app->withMiddleware(function (Middleware $middleware) {
         'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
         'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
         'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
+
     ]);
 });
 

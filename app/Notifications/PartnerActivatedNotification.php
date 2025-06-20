@@ -49,6 +49,7 @@ class PartnerActivatedNotification extends Notification implements ShouldQueue
 
         // Arahkan ke halaman login
         $loginUrl = route('login');
+        $testimonialUrl = route('beranda') . '#add-testimonial';
 
         return (new MailMessage)
             ->subject('Akun Mitra Anda Telah Aktif!')
@@ -57,6 +58,8 @@ class PartnerActivatedNotification extends Notification implements ShouldQueue
             ->line('Subdomain Anda: **' . $this->user->subdomain->subdomain_name . '.garuda.id**') // Ganti '.garuda.id' jika perlu
             ->line('Paket Anda akan aktif hingga: **' . $expiredDateFormatted . '**')
             ->action('Masuk ke Dashboard Anda', $loginUrl)
+            ->line('Kami akan sangat senang mendengar pengalaman pertama Anda. Silakan bagikan testimoni Anda untuk membantu kami menjadi lebih baik.')
+            ->line('<a href="' . $testimonialUrl . '" class="button button-primary" style="text-decoration:none; color: #FFF; background-color: #22BC66; border-top: 10px solid #22BC66; border-right: 18px solid #22BC66; border-bottom: 10px solid #22BC66; border-left: 18px solid #22BC66;">Isi Testimoni Sekarang</a>')
             ->line('Terima kasih telah bergabung bersama kami!');
     }
 

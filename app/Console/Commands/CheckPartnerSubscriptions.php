@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 use App\Notifications\RenewalReminderNotification;
 use App\Notifications\PackageDeactivatedNotification;
+use App\Notifications\TrialEndingReminderNotification;
 
 class CheckPartnerSubscriptions extends Command
 {
@@ -105,6 +106,32 @@ class CheckPartnerSubscriptions extends Command
             Log::warning("AKUN AKAN DIHAPUS: User ID {$user->id}, Email: {$user->email}. Paket kedaluwarsa lebih dari 1 bulan.");
             // Hapus pengguna. Relasi akan terhapus secara cascade.
             $user->delete();
+        }
+    }
+
+    /**
+     * Mengirim notifikasi H-1 sebelum trial berakhir.
+     */
+    private function sendTrialReminders(Carbon $today)
+    {
+        // Cari paket yang akan berakhir tepat besok (H-1)
+        $targetDate = $today->copy()->addDay()->toDateString();
+        
+        $usersToRemind = User::role('mitra')
+            ->whereHas('userPackage', function ($query) use ($targetDate) {
+                // Pastikan ini adalah paket trial (asumsi ada kolom is_trial di user_packages)
+                // Atau cek dari relasi ke subscription package
+                $query->whereHas('subscriptionPackage', function ($subQuery) {
+                    $subQuery->where('is_trial', true);
+                })
+                ->where('status', 'active')
+                ->whereDate('expired_date', $targetDate);
+            })->get();
+
+        foreach ($usersToRemind as $user) {
+            // Buat notifikasi baru: php artisan make:notification TrialEndingReminderNotification
+            Notification::send($user, new TrialEndingReminderNotification($user));
+            Log::info("Notifikasi trial akan berakhir (H-1) dikirim ke: {$user->email}");
         }
     }
 }

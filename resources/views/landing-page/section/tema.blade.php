@@ -9,22 +9,31 @@
                     <div class="flex-shrink-0 w-72 bg-white rounded-2xl shadow-md p-4 text-center">
                         <img src="images/tema1.png" alt="Tema 1" class="w-full h-40 object-cover rounded-lg mb-4">
                         <h4 class="font-semibold text-gray-800">Coming Soon Landing Page</h4>
+                        <h2 class="font-semibold text-gray-600 mt-2">Makanan & Minuman</h2>
                     </div>
                     <div class="flex-shrink-0 w-72 bg-white rounded-2xl shadow-md p-4 text-center">
                         <img src="images/tema1.png" alt="Tema 2" class="w-full h-40 object-cover rounded-lg mb-4">
                         <h4 class="font-semibold text-gray-800">Beauty Salon</h4>
+                        {{-- Kategori Ditambahkan --}}
+                        <h2 class="font-semibold text-gray-600 mt-2">Kecantikan</h2>
                     </div>
                     <div class="flex-shrink-0 w-72 bg-white rounded-2xl shadow-md p-4 text-center">
                         <img src="images/tema1.png" alt="Tema 3" class="w-full h-40 object-cover rounded-lg mb-4">
                         <h4 class="font-semibold text-gray-800">Construction Company</h4>
+                        {{-- Kategori Ditambahkan --}}
+                        <h2 class="font-semibold text-gray-600 mt-2">Konstruksi</h2>
                     </div>
                     <div class="flex-shrink-0 w-72 bg-white rounded-2xl shadow-md p-4 text-center">
                         <img src="images/tema1.png" alt="Tema 4" class="w-full h-40 object-cover rounded-lg mb-4">
                         <h4 class="font-semibold text-gray-800">Construction Company</h4>
+                        {{-- Kategori Ditambahkan --}}
+                        <h2 class="font-semibold text-gray-600 mt-2">Konstruksi</h2>
                     </div>
                     <div class="flex-shrink-0 w-72 bg-white rounded-2xl shadow-md p-4 text-center">
                         <img src="images/tema1.png" alt="Tema 5" class="w-full h-40 object-cover rounded-lg mb-4">
                         <h4 class="font-semibold text-gray-800">Food & Beverage</h4>
+                        {{-- Kategori Ditambahkan --}}
+                        <h2 class="font-semibold text-gray-600 mt-2">Makanan & Minuman</h2>
                     </div>
                 </div>
             </div>
@@ -46,4 +55,3 @@
         </div>
     </div>
 </section>
-

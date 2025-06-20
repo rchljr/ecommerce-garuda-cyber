@@ -2,19 +2,26 @@
 
 namespace App\Services;
 
+use Exception;
 use App\Models\User;
-use App\Notifications\PartnerApprovedNotification;
-use App\Notifications\PartnerRejectedNotification;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
+use App\Notifications\PartnerApprovedNotification;
+use App\Notifications\PartnerRejectedNotification;
 
 class VerificationService
 {
+    protected $registrationService;
+
+    public function __construct(RegistrationService $registrationService)
+    {
+        $this->registrationService = $registrationService;
+    }
     /**
      * Mengambil semua pengguna dengan role 'calon-mitra' yang statusnya 'pending'.
      */
     public function getPendingPartners()
-    {   
+    {
         return User::role('calon-mitra')
             ->where('status', 'pending')
             ->with(['shop', 'subdomain', 'userPackage'])
@@ -28,13 +35,24 @@ class VerificationService
     public function approvePartner(User $user)
     {
         DB::transaction(function () use ($user) {
-            // 1. Ubah status dan role user
-            $user->update([
-                'status' => 'active', // Status user disetujui, siap untuk bayar
-            ]);
+            $user->load('userPackage.subscriptionPackage');
 
-            // 2. Kirim notifikasi email persetujuan
-            Notification::send($user, new PartnerApprovedNotification($user));
+            $userPackage = $user->userPackage;
+            $package = optional($userPackage)->subscriptionPackage;
+
+            if (!$package) {
+                throw new Exception("Paket langganan tidak ditemukan untuk user ID: {$user->id}");
+            }
+
+            // ---  Cek apakah paketnya trial ---
+            if ($package->is_trial) {
+                // Jika TRIAL, panggil metode untuk mengaktifkan semuanya
+                $this->registrationService->activateTrialPackage($user, $package);
+            } else {
+                // Jika BERBAYAR, hanya ubah status user agar bisa lanjut bayar
+                $user->update(['status' => 'active']);
+                Notification::send($user, new PartnerApprovedNotification($user));
+            }
         });
     }
 

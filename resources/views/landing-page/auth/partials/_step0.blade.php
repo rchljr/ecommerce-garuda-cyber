@@ -48,7 +48,7 @@
                     @endif
 
                     <ul class="space-y-3 text-gray-600 mb-8 flex-grow">
-                        @foreach ($package->features as $feature)
+                        @foreach ($package->features->sortBy('created_at') as $feature)
                             <li class="flex items-start">
                                 <svg class="w-5 h-5 text-red-500 mr-2 flex-shrink-0 mt-1" fill="currentColor"
                                     viewBox="0 0 20 20">

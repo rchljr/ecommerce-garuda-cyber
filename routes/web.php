@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\ProductController;
 use App\Http\Controllers\VoucherController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\Auth\AuthController;
@@ -21,6 +22,7 @@ use App\Http\Controllers\SubscriptionPackageController;
 
 //== RUTE PUBLIK & AUTENTIKASI ==//
 Route::get('/', [LandingPageController::class, 'home'])->name('beranda');
+Route::post('/testimonials', [TestimoniController::class, 'submitFromLandingPage'])->name('testimonials.store');
 
 // Auth (Proses Registrasi dan Login)
 Route::get('/login', fn() => view('landing-page.auth.login'))->name('login');
@@ -115,10 +117,10 @@ Route::middleware(['auth'])->group(function () {
     // Middleware untuk memastikan hanya role 'mitra' yang bisa akses
     Route::middleware(['role:mitra'])->prefix('mitra')->name('mitra.')->group(function () {
         Route::get('/dashboard', function () {
-            return view('dashboard-mitra.dashboard');
+            return view('dashboard-mitra.dashboardmitra');
         })->name('dashboard');
-        // Tambahkan rute lain untuk mitra di sini...
-        // Contoh: Route::get('/produk', [ProdukController::class, 'index'])->name('produk.index');
+        // CRUD route untuk produk
+        Route::resource('products', ProductController::class);
     });
 
     //== CUSTOMER ROUTES (PROTECTED) ==//
