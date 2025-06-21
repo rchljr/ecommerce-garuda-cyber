@@ -1,4 +1,5 @@
-@extends('layouts.app')
+@extends('layouts.mitra')
+@section('title', 'Daftar Produk')
 
 @section('content')
 <div class="container">

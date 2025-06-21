@@ -38,6 +38,30 @@ Route::prefix('register')->name('register.')->group(function () {
     Route::post('/step3', [AuthController::class, 'registerStep3'])->name('step3');
 });
 
+//Mitra Sementara
+Route::prefix('dashboard-mitra')->name('mitra.')->group(function () {
+    // Rute dashboard utama
+    Route::get('/', function () {
+        return view('dashboard-mitra.dashboard');
+    })->name('dashboard'); // Ini akan menjadi 'mitra.dashboard'
+
+    // Rute /produk (jika ini untuk daftar produk statis/tanpa controller ProductController)
+    // Jika Anda ingin menggunakan ProductController@index untuk /produk, hapus ini
+     Route::get('/produk', [ProductController::class, 'index'])->name('produk');
+
+    // CRUD route untuk produk menggunakan ProductController
+    // Penting: URI 'products' saja karena sudah ada prefix 'dashboard-mitra'
+    Route::resource('products', ProductController::class)->names([
+        'index'   => 'products.index',    // Ini akan menjadi 'mitra.products.index'
+        'create'  => 'products.create',   // Ini akan menjadi 'mitra.products.create'
+        'store'   => 'products.store',    // Ini akan menjadi 'mitra.products.store'
+        'show'    => 'products.show',     // Ini akan menjadi 'mitra.products.show'
+        'edit'    => 'products.edit',     // Ini akan menjadi 'mitra.products.edit'
+        'update'  => 'products.update',   // Ini akan menjadi 'mitra.products.update'
+        'destroy' => 'products.destroy',  // Ini akan menjadi 'mitra.products.destroy'
+    ]);
+});
+
 //== MIDTRANS WEBHOOK (TIDAK MEMERLUKAN AUTH/CSRF) ==//
 //dikomen karena masih menggunakan route API, digunakan jika sudah hosting
 //Route::post('/midtrans/webhook', [PaymentController::class, 'handleWebhook'])->name('midtrans.webhook');
@@ -115,19 +139,18 @@ Route::middleware(['auth'])->group(function () {
 
     //== MITRA ROUTES ==//
     // Middleware untuk memastikan hanya role 'mitra' yang bisa akses
-    Route::middleware(['role:mitra'])->prefix('mitra')->name('mitra.')->group(function () {
-        Route::get('/dashboard', function () {
-            return view('dashboard-mitra.dashboardmitra');
-        })->name('dashboard');
-        // CRUD route untuk produk
-        Route::resource('products', ProductController::class);
-    });
+    // Route::middleware(['role:mitra'])->prefix('mitra')->name('mitra.')->group(function () {
+    //     Route::get('/dashboard', function () {
+    //         return view('dashboard-mitra.dashboardmitra');
+    //     })->name('dashboard');
+    //     // CRUD route untuk produk
+    //     Route::resource('products', ProductController::class);
+    // });
 
-    //== CUSTOMER ROUTES (PROTECTED) ==//
-    // Contoh jika Anda butuh halaman profil untuk customer
-    Route::middleware(['role:customer'])->prefix('customer')->name('customer.')->group(function () {
-        Route::get('/profile', function () { /* ... */})->name('profile');
-        // ... rute lain untuk customer yang sudah login ...
-    });
-
+    // //== CUSTOMER ROUTES (PROTECTED) ==//
+    // // Contoh jika Anda butuh halaman profil untuk customer
+    // Route::middleware(['role:customer'])->prefix('customer')->name('customer.')->group(function () {
+    //     Route::get('/profile', function () { /* ... */})->name('profile');
+    //     // ... rute lain untuk customer yang sudah login ...
+    // });
 });
