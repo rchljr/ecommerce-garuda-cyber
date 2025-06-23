@@ -56,7 +56,6 @@
 @endsection
 
 @push('scripts')
-{{-- Pastikan Chart.js sudah di-load di layout utama Anda --}}
 <script>
     document.addEventListener('DOMContentLoaded', () => {
         const ctx = document.getElementById('chart');

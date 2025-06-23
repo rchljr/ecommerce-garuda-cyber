@@ -9,20 +9,29 @@
                 <h1 class="text-4xl font-bold text-gray-800">Kelola Mitra</h1>
                 <p class="text-lg text-gray-500 mt-6">Daftar mitra yang terdaftar di platform Anda.</p>
             </div>
-            <div class="flex items-center gap-2">
-                {{-- Form Pencarian (awalnya tersembunyi) --}}
-                <form id="search-form" action="{{ route('admin.mitra.kelola') }}" method="GET" class="hidden">
-                    <input type="text" name="search" value="{{ $search ?? '' }}" class="block w-full px-4 h-10 border-2 border-gray-300 rounded-lg bg-white focus:border-red-600 focus:ring-0 transition" placeholder="Cari nama, email, toko...">
+            <div class="relative w-full max-w-xs">
+                <form action="{{ route('admin.mitra.kelola') }}" method="GET">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3">
+                        <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                    </span>
+                    <input type="text" name="search" value="{{ $search ?? '' }}" class="block w-full pl-10 pr-4 py-2 h-12 border-2 border-gray-300 rounded-lg bg-white focus:border-red-600 focus:ring-0 transition" placeholder="Cari nama, email, toko...">
                 </form>
-
-                {{-- Tombol Ikon Pencarian --}}
-                <button id="search-icon-btn" class="p-2 rounded-full hover:bg-gray-100 flex-shrink-0" title="Cari">
-                    <svg width="20" height="20" fill="none">
-                        <path d="M19 19l-4.35-4.35M9 16a7 7 0 1 0 0-14 7 7 0 0 0 0 14Z" stroke="#232323" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                    </svg>
-                </button>
             </div> 
         </div>
+
+        {{-- Notifikasi --}}
+        @if(session('success'))
+            <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-4" role="alert">
+                <p>{{ session('success') }}</p>
+            </div>
+        @endif
+        @if(session('error'))
+            <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4" role="alert">
+                <p>{{ session('error') }}</p>
+            </div>
+        @endif
 
         {{-- Tabel Mitra --}}
         <div class="flex-grow overflow-auto bg-white rounded-lg shadow border border-gray-200">
@@ -128,8 +137,12 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="px-6 py-4 text-center text-gray-500">
-                                Belum ada data mitra yang ditemukan.
+                            <td colspan="7" class="px-6 py-4 text-center text-gray-500">
+                                @if(isset($search) && $search)
+                                    Tidak ada mitra yang cocok dengan pencarian "{{ $search }}".
+                                @else
+                                    Belum ada data mitra yang ditemukan.
+                                @endif
                             </td>
                         </tr>
                     @endforelse
@@ -143,7 +156,7 @@
     </div>
 @endsection
 
-@push('scripts')
+{{-- @push('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         const searchBtn = document.getElementById('search-icon-btn');
@@ -151,13 +164,14 @@
         const searchInput = searchForm.querySelector('input');
 
         if (searchBtn && searchForm && searchInput) {
-            // Jika ada nilai pencarian, tampilkan form
+            // Jika ada nilai pencarian (misalnya dari hasil pencarian),
+            // maka tampilkan form pencarian secara default.
             if (searchInput.value) {
                 searchForm.classList.remove('hidden');
             }
 
             searchBtn.addEventListener('click', function () {
-                // Toggle tampilan form
+                // Toggle (tampilkan/sembunyikan) form pencarian
                 searchForm.classList.toggle('hidden');
                 
                 // Jika form sekarang terlihat, langsung fokuskan ke inputnya
@@ -168,4 +182,4 @@
         }
     });
 </script>
-@endpush
+@endpush --}}

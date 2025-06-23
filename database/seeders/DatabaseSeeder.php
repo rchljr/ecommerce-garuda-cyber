@@ -18,6 +18,8 @@ class DatabaseSeeder extends Seeder
             InitialDataSeeder::class,
             RolesAndPermissionsSeeder::class,
             TestimonialSeeder::class,
+            VoucherSeeder::class,
+            PointRewardSeeder::class
         ]);
     }
 }

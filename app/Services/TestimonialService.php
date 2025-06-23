@@ -3,19 +3,28 @@
 namespace App\Services;
 
 use App\Models\Testimoni;
+use Illuminate\Http\Request;
 
 class TestimonialService
 {
-    public function getPaginatedTestimonials()
+    public function getPaginatedTestimonials(Request $request)
     {
+        $search = $request->input('search');
+
         return Testimoni::with('user')
+            ->when($search, function ($query, $search) {
+                // Cari berdasarkan nama atau isi testimoni
+                return $query->where('name', 'like', "%{$search}%")
+                    ->orWhere('content', 'like', "%{$search}%")
+                    // Cari juga berdasarkan nama user yang terkait
+                    ->orWhereHas('user', function ($subQuery) use ($search) {
+                    $subQuery->where('name', 'like', "%{$search}%");
+                });
+            })
             ->orderByRaw("CASE WHEN status = 'pending' THEN 0 ELSE 1 END")
             ->latest('created_at')
-            ->paginate(5);
-    }
-    public function getAllTestimonials()
-    {
-        return Testimoni::with('user')->latest()->get();
+            ->paginate(5)
+            ->appends($request->query());
     }
 
     public function getTestimonialById(string $id)

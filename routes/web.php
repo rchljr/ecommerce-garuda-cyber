@@ -13,6 +13,11 @@ use App\Http\Controllers\VerificationController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\PendapatanController;
 use App\Http\Controllers\SubscriptionPackageController;
+use App\Http\Controllers\Customer\CustomerOrderController;
+use App\Http\Controllers\Customer\CustomerProfileController;
+use App\Http\Controllers\Customer\CustomerVoucherController;
+use App\Http\Controllers\Customer\CustomerNotificationController;
+use App\Http\Controllers\Customer\CustomerPointController;
 
 /*
 |--------------------------------------------------------------------------
@@ -114,7 +119,6 @@ Route::middleware(['auth'])->group(function () {
     });
 
     //== MITRA ROUTES ==//
-    // Middleware untuk memastikan hanya role 'mitra' yang bisa akses
     Route::middleware(['role:mitra'])->prefix('mitra')->name('mitra.')->group(function () {
         Route::get('/dashboard', function () {
             return view('dashboard-mitra.dashboardmitra');
@@ -123,11 +127,30 @@ Route::middleware(['auth'])->group(function () {
         Route::resource('products', ProductController::class);
     });
 
-    //== CUSTOMER ROUTES (PROTECTED) ==//
-    // Contoh jika Anda butuh halaman profil untuk customer
+    //== CUSTOMER ROUTES ==//
     Route::middleware(['role:customer'])->prefix('customer')->name('customer.')->group(function () {
-        Route::get('/profile', function () { /* ... */})->name('profile');
-        // ... rute lain untuk customer yang sudah login ...
+        // default untuk customer, arahkan ke profil
+        Route::get('/', function () {
+            return redirect()->route('customer.profile');
+        })->name('dashboard');
+
+        // untuk menampilkan dan mengupdate profil
+        Route::get('/profile', [CustomerProfileController::class, 'show'])->name('profile');
+        Route::post('/profile', [CustomerProfileController::class, 'update'])->name('profile.update');
+
+        //  Pesanan Saya
+        Route::get('/orders', [CustomerOrderController::class, 'index'])->name('orders');
+
+        // Notifikasi Saya
+        Route::get('/notifications', [CustomerNotificationController::class, 'index'])->name('notifications');
+
+        // Voucher Saya
+        Route::get('/vouchers', [CustomerVoucherController::class, 'index'])->name('vouchers');
+        Route::post('/vouchers-claim', [CustomerVoucherController::class, 'claimVoucher'])->name('vouchers.claim');
+
+        // Poin Saya
+        Route::get('/points', [CustomerPointController::class, 'index'])->name('points');
+        Route::post('/points-redeem', [CustomerPointController::class, 'redeem'])->name('points.redeem');
     });
 
 });

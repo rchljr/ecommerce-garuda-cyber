@@ -26,7 +26,7 @@
             <h3 class="font-bold text-xl text-gray-800 mb-4">Subdomain Pilihan</h3>
             <div class="border border-gray-200 rounded-2xl p-7 flex justify-between items-center bg-white shadow-md">
                 {{-- PERBAIKAN: Menggunakan 'subdomain_normalized' untuk menampilkan hasil yang sudah diformat --}}
-                <p class="text-2xl font-bold text-gray-800">{{ session('register.subdomain_normalized') }}.garuda.id</p>
+                <p class="text-2xl font-bold text-gray-800">{{ session('register.subdomain_normalized') }}.gci.id</p>
                 <div class="flex items-center space-x-4">
                     @if(session('register.subdomain_status') == 'Tersedia')
                         <span class="text-base font-bold text-white px-6 py-2 rounded-full"

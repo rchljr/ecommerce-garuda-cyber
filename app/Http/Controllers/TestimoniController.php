@@ -16,10 +16,13 @@ class TestimoniController extends Controller
         $this->testimonialService = $testimonialService;
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        $testimonials = $this->testimonialService->getPaginatedTestimonials();
-        return view('dashboard-admin.kelola-testimoni', compact('testimonials'));
+        $testimonials = $this->testimonialService->getPaginatedTestimonials($request);
+
+        $search = $request->input('search');
+
+        return view('dashboard-admin.kelola-testimoni', compact('testimonials', 'search'));
     }
 
     public function store(Request $request)

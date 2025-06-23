@@ -13,14 +13,37 @@ class PendapatanController extends Controller
     /**
      * Menampilkan halaman daftar pendapatan.
      */
-    public function index()
+    public function index(Request $request)
     {
-        // Ambil semua data pembayaran dengan relasinya untuk ditampilkan
-        $payments = Payment::with(['user.userPackage', 'subscriptionPackage'])
-            ->latest()
-            ->paginate(10); // Tampilkan 15 data per halaman
+        $search = $request->input('search');
 
-        return view('dashboard-admin.kelola-pendapatan', compact('payments'));
+        $payments = Payment::with(['user.userPackage', 'subscriptionPackage'])
+            ->when($search, function ($query, $search) {
+                return $query->where(function ($q) use ($search) {
+                    $q->orWhereHas('user', function ($subQuery) use ($search) {
+                        $subQuery->where('name', 'like', "%{$search}%");
+                    })
+                        ->orWhereHas('subscriptionPackage', function ($subQuery) use ($search) {
+                        $subQuery->where('package_name', 'like', "%{$search}%");
+                    })
+                        ->orWhereHas('user.userPackage', function ($subQuery) use ($search) {
+                        $subQuery->where('plan_type', 'like', "%{$search}%");
+                    })
+                        ->orWhereDate('payments.created_at', 'like', "%{$search}%");
+
+                    if (stripos('lunas', $search) !== false) {
+                        $q->orWhereIn('midtrans_transaction_status', ['settlement', 'capture']);
+                    } elseif (stripos('belum lunas', $search) !== false) {
+                        $q->orWhereNotIn('midtrans_transaction_status', ['settlement', 'capture']);
+                    }
+                });
+            })
+            ->latest()
+            ->paginate(10)
+            ->appends($request->query());
+
+        // Kirim data ke view, termasuk variabel search
+        return view('dashboard-admin.kelola-pendapatan', compact('payments', 'search'));
     }
 
     /**

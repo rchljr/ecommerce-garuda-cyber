@@ -2,18 +2,27 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 
 class Voucher extends Model
 {
-    use HasFactory, HasUuids;
+    use HasFactory;
 
-    protected $table = 'vouchers';
-    protected $primaryKey = 'id';
+    // UUID setup
     public $incrementing = false;
     protected $keyType = 'string';
+    protected static function boot()
+    {
+        parent::boot();
+        static::creating(function ($model) {
+            if (empty($model->{$model->getKeyName()})) {
+                $model->{$model->getKeyName()} = (string) \Illuminate\Support\Str::uuid();
+            }
+        });
+    }
 
     /**
      * The attributes that are mass assignable.
@@ -38,5 +47,18 @@ class Voucher extends Model
         'start_date' => 'date:Y-m-d',
         'expired_date' => 'date:Y-m-d',
     ];
+
+    /**
+     * Definisikan Accessor & Mutator untuk voucher_code.
+     */
+    protected function voucherCode(): Attribute
+    {
+        return Attribute::make(
+            // Accessor: Otomatis mengubah ke uppercase saat data diambil
+            get: fn ($value) => strtoupper($value),
+            // Mutator: Otomatis mengubah ke lowercase sebelum data disimpan ke database
+            set: fn ($value) => strtolower($value),
+        );
+    }
 }
 
