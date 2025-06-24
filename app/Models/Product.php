@@ -6,9 +6,12 @@ use App\Models\User;
 use App\Models\Category;
 use Illuminate\Support\Str;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory; 
 
 class Product extends Model
 {
+    use HasFactory; 
+
     protected $primaryKey = 'id';
     public $incrementing = false;
     protected $keyType = 'string';
