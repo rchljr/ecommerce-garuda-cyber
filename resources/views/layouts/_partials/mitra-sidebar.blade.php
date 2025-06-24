@@ -11,12 +11,18 @@
             <span class="sidebar-text ml-4">Dashboard</span>
         </a>
 
-        {{-- <div class="sidebar-dropdown">
+         <a href="{{ route('mitra.produk') }}"
+            class="sidebar-item flex items-center p-3 rounded-lg hover:bg-red-800 transition-colors">
+            <span class="sidebar-icon">@include('dashboard-admin.icons.paket')</span>
+            <span class="sidebar-text ml-4">Kelola Produk</span>
+        </a>
+
+        <div class="sidebar-dropdown">
             <button
                 class="sidebar-item dropdown-toggle w-full flex items-center justify-between p-3 rounded-lg hover:bg-red-800 transition-colors">
                 <div class="flex items-center">
-                    <span class="sidebar-icon">@include('dashboard-admin.icons.mitra')</span>
-                    <span class="sidebar-text ml-4">Mitra</span>
+                    <span class="sidebar-icon">@include('dashboard-admin.icons.paket')</span>
+                    <span class="sidebar-text ml-4">Panel</span>
                 </div>
                 <svg class="w-4 h-4 text-white/70 dropdown-arrow sidebar-text" fill="none" stroke="currentColor"
                     viewBox="0 0 24 24">
@@ -24,23 +30,18 @@
                 </svg>
             </button>
             <div class="sidebar-submenu hidden mt-1 pl-8 space-y-1">
-                <a href="{{ route('admin.mitra.verifikasi') }}"
-                    class="sidebar-subitem block p-2 rounded-lg hover:bg-red-800 text-sm">Verifikasi Mitra</a>
-                <a href="{{ route('admin.mitra.kelola') }}"
-                    class="sidebar-subitem block p-2 rounded-lg hover:bg-red-800 text-sm">Kelola Mitra</a>
+                <a href="{{ route('mitra.panel') }}"
+                    class="sidebar-subitem block p-2 rounded-lg hover:bg-red-800 text-sm">Kelola Banner</a>
+                <a href="{{ route('mitra.pages.index') }}"
+                    class="sidebar-subitem block p-2 rounded-lg hover:bg-red-800 text-sm">Kelola Section</a>
             </div>
-        </div> --}}
+        </div>
         
-        <a href="{{ route('mitra.produk') }}"
-            class="sidebar-item flex items-center p-3 rounded-lg hover:bg-red-800 transition-colors">
-            <span class="sidebar-icon">@include('dashboard-admin.icons.paket')</span>
-            <span class="sidebar-text ml-4">Kelola Paket</span>
-        </a>
-        <a href="{{ route('admin.voucher.index') }}"
+        {{-- <a href="{{ route('mitra.panel') }}"
             class="sidebar-item flex items-center p-3 rounded-lg hover:bg-red-800 transition-colors">
             <span class="sidebar-icon">@include('dashboard-admin.icons.voucher')</span>
             <span class="sidebar-text ml-4">Kelola Voucher</span>
-        </a>
+        </a> --}}
         <a href="{{ route('admin.kategori.index') }}"
             class="sidebar-item flex items-center p-3 rounded-lg hover:bg-red-800 transition-colors">
             <span class="sidebar-icon">@include('dashboard-admin.icons.kategori')</span>
