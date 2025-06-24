@@ -36,7 +36,7 @@ use App\Http\Controllers\Customer\CustomerPointController;
 */
 
 //== RUTE PUBLIK & AUTENTIKASI ==//
-Route::get('/', [LandingPageController::class, 'home'])->name('beranda');
+Route::get('/', [LandingPageController::class, 'home'])->name('landing');
 Route::post('/testimonials', [TestimoniController::class, 'submitFromLandingPage'])->name('testimonials.store');
 
 // Auth (Proses Registrasi dan Login)
@@ -63,7 +63,6 @@ Route::get('/home', [HomeController::class, 'index']);
 //== MIDTRANS WEBHOOK (TIDAK MEMERLUKAN AUTH/CSRF) ==//
 //Route::post('/midtrans/webhook', [PaymentController::class, 'handleWebhook'])->name('midtrans.webhook');
 
-
 // == GRUP RUTE UNTUK PENGGUNA YANG SUDAH LOGIN ==
 Route::middleware(['auth'])->group(function () {
     /// Rute yang bisa diakses oleh semua user yang login
@@ -73,7 +72,7 @@ Route::middleware(['auth'])->group(function () {
     ///== ADMIN ROUTES ==//
     Route::middleware(['role:admin'])->prefix('admin')->name('admin.')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-
+        
         // Verifikasi Mitra
         Route::prefix('verifikasi-mitra')->name('mitra.')->group(function () {
             Route::get('/', [VerificationController::class, 'index'])->name('verifikasi');
@@ -90,25 +89,47 @@ Route::middleware(['auth'])->group(function () {
         Route::put('/landing-page/update', [LandingPageController::class, 'update'])->name('landing-page.statistics.update');
 
         // Kelola Paket Subscription
-        Route::resource('paket', SubscriptionPackageController::class)->except(['create', 'show']);
-        Route::get('paket/{id}/json', [SubscriptionPackageController::class, 'showJson'])->name('paket.showJson');
+        Route::prefix('paket')->name('paket.')->group(function () {
+            Route::get('/', [SubscriptionPackageController::class, 'index'])->name('index');
+            Route::post('/', [SubscriptionPackageController::class, 'store'])->name('store');
+            Route::get('/{id}/json', [SubscriptionPackageController::class, 'showJson'])->name('showJson');
+            Route::put('/{id}', [SubscriptionPackageController::class, 'update'])->name('update');
+            Route::delete('/{id}', [SubscriptionPackageController::class, 'destroy'])->name('destroy');
+        });
 
         // Kelola Kategori
-        Route::resource('kategori', CategoryController::class)->except(['create', 'show']);
-        Route::get('kategori/{id}/json', [CategoryController::class, 'showJson'])->name('kategori.showJson');
+        Route::prefix('kategori')->name('kategori.')->group(function () {
+            Route::get('/', [CategoryController::class, 'index'])->name('index');
+            Route::post('/', [CategoryController::class, 'store'])->name('store');
+            Route::get('/{id}/json', [CategoryController::class, 'showJson'])->name('showJson');
+            Route::put('/{id}', [CategoryController::class, 'update'])->name('update');
+            Route::delete('/{id}', [CategoryController::class, 'destroy'])->name('destroy');
+        });
 
         // Kelola Voucher
-        Route::resource('voucher', VoucherController::class)->except(['create', 'show']);
-        Route::get('voucher/{id}/json', [VoucherController::class, 'showJson'])->name('voucher.json');
+        Route::prefix('voucher')->name('voucher.')->group(function () {
+            Route::get('/', [VoucherController::class, 'index'])->name('index');
+            Route::post('/', [VoucherController::class, 'store'])->name('store');
+            Route::get('/{id}/json', [VoucherController::class, 'showJson'])->name('json');
+            Route::put('/{id}', [VoucherController::class, 'update'])->name('update');
+            Route::delete('/{id}', [VoucherController::class, 'destroy'])->name('destroy');
+        });
 
         // Kelola Testimoni
-        Route::resource('testimoni', TestimoniController::class)->except(['create', 'show']);
-        Route::get('testimoni/{id}/json', [TestimoniController::class, 'showJson'])->name('testimoni.showJson');
-        Route::put('testimoni/{id}/status', [TestimoniController::class, 'updateStatus'])->name('testimoni.updateStatus');
+        Route::prefix('testimoni')->name('testimoni.')->group(function () {
+            Route::get('/', [TestimoniController::class, 'index'])->name('index');
+            Route::post('/', [TestimoniController::class, 'store'])->name('store');
+            Route::get('/{id}/json', [TestimoniController::class, 'showJson'])->name('showJson');
+            Route::put('/{id}', [TestimoniController::class, 'update'])->name('update');
+            Route::put('/{id}/status', [TestimoniController::class, 'updateStatus'])->name('updateStatus');
+            Route::delete('/{id}', [TestimoniController::class, 'destroy'])->name('destroy');
+        });
 
         // Kelola Pendapatan
-        Route::get('pendapatan', [PendapatanController::class, 'index'])->name('pendapatan.index');
-        Route::get('pendapatan/export', [PendapatanController::class, 'export'])->name('pendapatan.export');
+        Route::prefix('pendapatan')->name('pendapatan.')->group(function () {
+            Route::get('/', [PendapatanController::class, 'index'])->name('index');
+            Route::get('/export', [PendapatanController::class, 'export'])->name('export');
+        });
     });
 
     //== MITRA ROUTES ==//

@@ -228,7 +228,7 @@ class AuthController extends BaseController
                 return redirect()->route('customer.profile');
             }
 
-            return redirect()->route('beranda');
+            return redirect()->route('landing');
         }
 
         // 4. Jika login gagal, cari tahu penyebabnya untuk memberikan pesan error yang lebih baik.
@@ -254,7 +254,7 @@ class AuthController extends BaseController
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
-        return redirect()->route('beranda');
+        return redirect()->route('landing');
     }
 }
 

@@ -99,6 +99,6 @@ class TestimoniController extends Controller
 
         $this->testimonialService->create($data);
 
-        return redirect()->route('beranda');
+        return redirect()->route('landing');
     }
 }

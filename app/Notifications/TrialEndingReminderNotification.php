@@ -48,7 +48,7 @@ class TrialEndingReminderNotification extends Notification implements ShouldQueu
         // Arahkan ke halaman login. Setelah login, sistem akan otomatis
         $expiredDateFormatted = format_tanggal($this->user->userPackage->expired_date);
         $loginUrl = route('login');
-        $testimonialUrl = route('beranda') . '#add-testimonial';
+        $testimonialUrl = route('landing') . '#add-testimonial';
 
         // 2. Buat string HTML untuk tombol testimoni
         $testimonialButton = '<a href="' . $testimonialUrl . '" class="button button-primary" style="box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, Helvetica, Arial, sans-serif, \'Apple Color Emoji\', \'Segoe UI Emoji\', \'Segoe UI Symbol\'; position: relative; -webkit-text-size-adjust: none; border-radius: 4px; color: #fff; display: inline-block; overflow: hidden; text-decoration: none; background-color: #22BC66; border-bottom: 8px solid #22BC66; border-left: 18px solid #22BC66; border-right: 18px solid #22BC66; border-top: 8px solid #22BC66;">Isi Testimoni Sekarang</a>';

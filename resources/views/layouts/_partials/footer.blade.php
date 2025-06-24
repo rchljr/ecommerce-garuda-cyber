@@ -4,7 +4,7 @@
         <div class="grid md:grid-cols-3 lg:grid-cols-4 gap-8">
             <!-- Kolom Logo -->
             <div class="col-span-1 lg:col-span-1">
-                <a href="{{ route('beranda') }}" title="Kembali ke Beranda">
+                <a href="{{ route('landing') }}" title="Kembali ke landing">
                     <img src="{{ asset('images/logosabi.png') }}" alt="Garuda Cyber" />
                 </a>
             </div>
@@ -12,7 +12,7 @@
             <div class="col-span-1 md:col-start-2">
                 <h4 class="font-semibold text-white mb-4">Navigasi</h4>
                 <ul class="space-y-2">
-                    <li><a href="{{ route('beranda') }}" class="hover:text-white transition-colors">Beranda</a></li>
+                    <li><a href="{{ route('landing') }}" class="hover:text-white transition-colors">Beranda</a></li>
                     <li><a href="#layanan" class="hover:text-white transition-colors">Layanan</a></li>
                     <li><a href="#faq" class="hover:text-white transition-colors">FAQs</a></li>
                     <li><a href="#testimoni" class="hover:text-white transition-colors">Testimoni</a></li>

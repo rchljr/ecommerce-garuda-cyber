@@ -5,7 +5,7 @@
 
             <!-- Kolom 1: Tentang Perusahaan -->
             <div class="md:col-span-2">
-                <a href="{{ route('beranda') }}" class="text-2xl font-bold text-white">NamaToko</a>
+                <a href="{{ route('landing') }}" class="text-2xl font-bold text-white">NamaToko</a>
                 <p class="mt-4 text-sm text-gray-400 max-w-sm">
                     Platform e-commerce Anda yang menyediakan kemudahan dan solusi terbaik untuk membantu bisnis Anda
                     tumbuh dan berkembang di dunia digital.

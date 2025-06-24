@@ -49,7 +49,7 @@ class PartnerActivatedNotification extends Notification implements ShouldQueue
 
         // Arahkan ke halaman login
         $loginUrl = route('login');
-        $testimonialUrl = route('beranda') . '#add-testimonial';
+        $testimonialUrl = route('landing') . '#add-testimonial';
 
         return (new MailMessage)
             ->subject('Akun Mitra Anda Telah Aktif!')

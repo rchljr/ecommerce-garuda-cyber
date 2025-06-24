@@ -114,7 +114,7 @@
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label for="discount" class="block text-base font-semibold text-gray-800 mb-1">Nominal Diskon (Rp)<span class="text-red-600">*</span></label>
+                        <label for="discount" class="block text-base font-semibold text-gray-800 mb-1">Nominal Diskon (%)<span class="text-red-600">*</span></label>
                         <input type="number" id="discount" name="discount" class="block w-full h-12 px-4 border-2 border-gray-300 rounded-lg focus:border-red-600 focus:ring-0 transition" required min="0">
                         <div class="form-error text-red-600 text-sm mt-1" data-input="discount"></div>
                     </div>

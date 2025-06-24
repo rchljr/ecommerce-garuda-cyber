@@ -155,7 +155,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.1/chart.min.js"></script>
 {{-- Muat SweetAlert2 CDN --}}
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-{{-- {!! showAlert() !!} --}}
-{{-- {!! deleteConfirmScript() !!}
-{!! deactivateConfirmScript() !!} --}}
+{!! showAlert() !!}
+{!! deleteConfirmScript() !!}
+{!! deactivateConfirmScript() !!} 
 @stack('scripts')
