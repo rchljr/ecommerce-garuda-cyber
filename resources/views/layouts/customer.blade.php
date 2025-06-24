@@ -63,7 +63,7 @@
                                 class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 ring-1 ring-black ring-opacity-5">
                                 <a href="{{ route('customer.profile') }}"
                                     class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Akun Saya</a>
-                                <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Pesanan
+                                <a href="{{ route('customer.orders') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Pesanan
                                     Saya</a>
                                 <div class="border-t border-gray-100 my-1"></div>
                                 <form id="logout-form-dropdown" action="{{ route('logout') }}" method="POST"
