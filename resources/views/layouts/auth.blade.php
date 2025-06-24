@@ -18,7 +18,9 @@
             <div class="relative z-10 p-12 flex flex-col justify-between h-full">
                 <div>
                     <div class="flex items-center gap-3 mb-12">
-                        <img src="{{ asset('images/GCI.png') }}" alt="Logo E-Commerce GCI" class="w-12 h-12">
+                        <a href="{{ route('beranda') }}" title="Kembali ke Beranda">
+                            <img src="{{ asset('images/GCI.png') }}" alt="Garuda Cyber" class="w-12 h-12" />
+                        </a>
                         <h1 class="font-bold text-2xl">E-COMMERCE GCI</h1>
                     </div>
 
@@ -29,28 +31,27 @@
                     </p>
                 </div>
 
+                @if(isset($randomTestimonial))
                 <div class="p-6 rounded-[19px] backdrop-blur-sm mb-10" style="background-color: #8C0B0B;">
-                    <h3 class="font-bold mt-2 mb-6">Solusi UMKM Yang Praktis Dan Ekonomis!</h3>
+                    <h3 class="font-bold mt-2 mb-6">Apa Kata Mereka?</h3>
                     <p class="text-sm text-white/80 mb-4">
-                        Dengan Smart Bisnis, saya bisa membuat website toko online tanpa harus memiliki pengetahuan
-                        teknis. Biayanya juga sangat terjangkau untuk UMKM. Dukungan pelanggannya cepat dan ramah, saya
-                        sangat puas dengan layanan ini.
+                        "{{ $randomTestimonial->content }}"
                     </p>
-                    <div class="flex items-center justify-between">
+                    <div class="flex items-center justify-between mt-10">
                         <div class="flex items-center">
-                            <div
-                                class="w-10 h-10 rounded-full flex items-center justify-center border-2 border-white/50 mr-3">
-                                <svg class="w-6 h-6 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                                    xmlns="http://www.w3.org/2000/svg">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                                </svg>
+                            <div class="w-10 h-10 rounded-full flex items-center justify-center border-2 border-white/50 mr-3">
+                                <img src="https://placehold.co/40x40/FFFFFF/B20000?text={{ strtoupper(substr($randomTestimonial->name, 0, 1)) }}" class="rounded-full" alt="Avatar">
                             </div>
-                            <p class="font-semibold">Amanda Lauren</p>
+                            <p class="font-semibold">{{ $randomTestimonial->name }}</p>
                         </div>
-                        <div class="flex text-yellow-400">★★★★☆</div>
+                        <div class="flex text-yellow-400">
+                            @for ($i = 0; $i < 5; $i++)
+                                {{ $i < $randomTestimonial->rating ? '★' : '☆' }}
+                            @endfor
+                        </div>
                     </div>
                 </div>
+                @endif
             </div>
         </div>
 

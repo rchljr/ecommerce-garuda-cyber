@@ -14,10 +14,13 @@ class VoucherController extends Controller
         $this->service = $service;
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        $vouchers = $this->service->getAllVouchers();
-        return view('dashboard-admin.kelola-voucher', compact('vouchers'));
+        $vouchers = $this->service->getPaginatedVouchers($request);
+        
+        $search = $request->input('search');
+
+        return view('dashboard-admin.kelola-voucher', compact('vouchers', 'search'));
     }
 
     public function store(Request $request)
@@ -26,15 +29,22 @@ class VoucherController extends Controller
             'voucher_code' => 'required|string|max:100|unique:vouchers,voucher_code',
             'description' => 'nullable|string',
             'discount' => 'required|numeric|min:0',
+            'min_spending' => 'required|numeric|min:0',
             'start_date' => 'required|date',
             'expired_date' => 'required|date|after_or_equal:start_date',
-            'min_spending' => 'nullable|numeric|min:0',
+        ], [
+            // Tambahkan pesan custom agar lebih ramah
+            'voucher_code.unique' => 'Kode voucher ini sudah digunakan. Harap gunakan kode lain.',
         ]);
 
         $validated['min_spending'] = $validated['min_spending'] ?? 0;
 
         $this->service->createVoucher($validated);
-        return back()->with('success', 'Voucher berhasil ditambahkan.');
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json(['success' => true, 'message' => 'Voucher berhasil ditambahkan.']);
+        }
+        
+        return redirect()->route('admin.voucher.index')->with('success', 'Voucher berhasil ditambahkan.');
     }
 
     public function update(Request $request, $id)
@@ -46,7 +56,10 @@ class VoucherController extends Controller
             'start_date' => 'required|date',
             'expired_date' => 'required|date|after_or_equal:start_date',
             'min_spending' => 'nullable|numeric|min:0',
+        ], [
+            'voucher_code.unique' => 'Kode voucher ini sudah digunakan. Harap gunakan kode lain.',
         ]);
+
         $this->service->updateVoucher($id, $validated);
         return back()->with('success', 'Voucher berhasil diperbarui.');
     }

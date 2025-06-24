@@ -33,13 +33,6 @@
                         </div>
                     @endauth
 
-                    {{-- Isi Testimoni --}}
-                    <div>
-                        <label for="content" class="block text-base font-semibold text-gray-800 mb-1">Testimoni Anda<span class="text-red-600">*</span></label>
-                        <textarea id="content" name="content" rows="5" class="block w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-red-600 focus:ring-0 transition" required></textarea>
-                        @error('content')<p class="text-red-600 text-sm mt-1">{{ $message }}</p>@enderror
-                    </div>
-
                     {{-- Rating Bintang --}}
                     <div>
                         <label class="block text-base font-semibold text-gray-800 mb-2">Rating Anda<span class="text-red-600">*</span></label>
@@ -52,6 +45,13 @@
                         </div>
                         <input type="hidden" name="rating" id="testimonial_rating_value" value="0" required>
                         @error('rating')<p class="text-red-600 text-sm mt-1">Silakan berikan rating.</p>@enderror
+                    </div>
+
+                    {{-- Isi Testimoni --}}
+                    <div>
+                        <label for="content" class="block text-base font-semibold text-gray-800 mb-1">Testimoni Anda<span class="text-red-600">*</span></label>
+                        <textarea id="content" name="content" rows="5" class="block w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-red-600 focus:ring-0 transition" required></textarea>
+                        @error('content')<p class="text-red-600 text-sm mt-1">{{ $message }}</p>@enderror
                     </div>
 
                     {{-- Tombol Submit --}}

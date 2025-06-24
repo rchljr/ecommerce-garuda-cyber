@@ -186,7 +186,7 @@ class AuthController extends BaseController
             session(['register_step' => 4]);
             return redirect()->route('register.form', ['step' => 4]);
         } catch (\Exception $e) {
-            $this->multiStep->clear(); 
+            $this->multiStep->clear();
             return redirect()->route('register.form', ['step' => 0])
                 ->with('error', 'Sesi Anda telah berakhir. Silakan ulangi proses pendaftaran dari awal.');
         }
@@ -223,6 +223,9 @@ class AuthController extends BaseController
                 return $hasPendingOrder
                     ? redirect()->route('register.form', ['step' => 5])
                     : redirect()->route('mitra.dashboard');
+            }
+            if ($user->hasRole('customer')) {
+                return redirect()->route('customer.profile');
             }
 
             return redirect()->route('beranda');

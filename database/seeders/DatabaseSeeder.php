@@ -19,7 +19,8 @@ class DatabaseSeeder extends Seeder
             RolesAndPermissionsSeeder::class,
             TestimonialSeeder::class,
             ProductSeeder::class,
-            CategorySeeder::class,
+            VoucherSeeder::class,
+            PointRewardSeeder::class
         ]);
     }
 }

@@ -13,10 +13,17 @@
                 {{-- Form pencarian bisa diimplementasikan di sini nanti --}}
             </div>
             <div class="flex items-center gap-4 ml-4">
-                <button id="search-btn" class="p-2 rounded-full hover:bg-gray-100" title="Cari">
-                    <svg width="20" height="20" fill="none"><path d="M19 19l-4.35-4.35M9 16a7 7 0 1 0 0-14 7 7 0 0 0 0 14Z" stroke="#232323" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
-                </button>
-                <button id="add-testimonial-btn" class="bg-red-700 text-white font-semibold px-4 py-2 rounded-lg hover:bg-red-800 flex items-center gap-2 transition-colors">
+                <div class="relative">
+                    <form action="{{ route('admin.testimoni.index') }}" method="GET">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3">
+                            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                            </svg>
+                        </span>
+                        <input type="text" name="search" value="{{ $search ?? '' }}" class="block w-64 pl-10 pr-4 py-2 h-12 border-2 border-gray-300 rounded-lg bg-white focus:border-red-600 focus:ring-0 transition" placeholder="Cari nama atau isi...">
+                    </form>
+                </div>
+                <button id="add-testimonial-btn" class="bg-red-700 text-white font-semibold px-4 py-2 rounded-lg hover:bg-red-800 flex items-center gap-2 transition-colors flex-shrink-0">
                     <img src="{{ asset('images/tambah-db.png') }}" alt="Tambah" class="w-5 h-5">
                     <span>Tambah Testimoni</span>
                 </button>
@@ -57,7 +64,6 @@
                                 @endif
                             </td>
                             <td class="px-6 py-8 flex justify-center gap-4">
-                                {{-- PERUBAHAN: Tombol Aksi Status --}}
                                 <form action="{{ route('admin.testimoni.updateStatus', $testimonial->id) }}" method="POST">
                                     @csrf
                                     @method('PUT')
@@ -197,7 +203,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             document.getElementById('name').value = data.name || '';
             document.getElementById('content').value = data.content || '';
-            // PERUBAHAN: baris untuk mengisi status dihapus
             
             currentRating = data.rating || 5;
             ratingValueInput.value = currentRating;
