@@ -85,7 +85,7 @@
                 }
 
                 // Construct URL for AJAX request to fetch the partial view
-                const url = `{{ url('dashboard-mitra/get-section-form-partial') }}/${sectionType}`;
+                const url = `{{ url('mitra/get-section-form-partial') }}/${sectionType}`;
                 
                 // Use Axios to make an AJAX request
                 axios.get(url, { 

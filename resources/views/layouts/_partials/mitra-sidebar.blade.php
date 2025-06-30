@@ -30,18 +30,18 @@
                 </svg>
             </button>
             <div class="sidebar-submenu hidden mt-1 pl-8 space-y-1">
-                <a href="{{ route('mitra.panel') }}"
+                <a href="{{ route('mitra.hero') }}"
+                    class="sidebar-subitem block p-2 rounded-lg hover:bg-red-800 text-sm">Kelola Hero</a>
+                <a href="{{ route('mitra.banner') }}"
                     class="sidebar-subitem block p-2 rounded-lg hover:bg-red-800 text-sm">Kelola Banner</a>
-                <a href="{{ route('mitra.pages.index') }}"
-                    class="sidebar-subitem block p-2 rounded-lg hover:bg-red-800 text-sm">Kelola Section</a>
             </div>
         </div>
-        
-        {{-- <a href="{{ route('mitra.panel') }}"
+
+        <a href="{{ route('mitra.contacts') }}"
             class="sidebar-item flex items-center p-3 rounded-lg hover:bg-red-800 transition-colors">
             <span class="sidebar-icon">@include('dashboard-admin.icons.voucher')</span>
-            <span class="sidebar-text ml-4">Kelola Voucher</span>
-        </a> --}}
+            <span class="sidebar-text ml-4">Kelola Kontak</span>
+        </a>
         <a href="{{ route('admin.kategori.index') }}"
             class="sidebar-item flex items-center p-3 rounded-lg hover:bg-red-800 transition-colors">
             <span class="sidebar-icon">@include('dashboard-admin.icons.kategori')</span>

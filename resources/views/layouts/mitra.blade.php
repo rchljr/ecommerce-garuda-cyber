@@ -39,6 +39,9 @@
     </style>
     @stack('styles')
 </head>
+<!-- Di layouts/mitra.blade.php, sebelum </body> -->
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+@stack('scripts') {{-- Pastikan ini ada untuk memuat script dari @push('scripts') --}}
 <body class="bg-gray-100">
 
     <div class="flex h-screen bg-white">
