@@ -2,95 +2,109 @@
 
 namespace App\Models;
 
-use Illuminate\Support\Str;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Support\Str;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use \Illuminate\Support\Facades\Storage;
 
-use App\Models\ProductOption;
-use App\Models\ActualVarian;
-use App\Models\ProductImage; 
 class Product extends Model
 {
     use HasFactory;
 
     protected $primaryKey = 'id';
-    public $incrementing = false; // Menggunakan UUID
+    public $incrementing = false;
     protected $keyType = 'string';
+    protected $guarded = [];
 
     protected $fillable = [
         'user_id',
         'category_id',
         'name',
+        'slug',
+        'short_description',
         'description',
         'price',
-        'stock',
-        'product_discount',
+        'sku',
+        'main_image',
         'status',
-        'rating_product', 
-        'image', 
-        'slug', 
+        'is_best_seller', // <-- Ditambahkan
+        'is_new_arrival', // <-- Ditambahkan
+        'is_hot_sale',    // <-- Ditambahkan
     ];
 
-    /**
-     * Metode boot() akan dieksekusi saat model pertama kali di-load.
-     * Digunakan untuk otomatis mengisi UUID saat membuat produk baru.
-     */
     protected static function boot()
     {
         parent::boot();
-        static::creating(fn($model) => $model->id = $model->id ?? (string) Str::uuid());
+
+        static::creating(function ($model) {
+            $model->id = $model->id ?? (string) Str::uuid();
+        });
     }
 
     /**
-     * Relasi Many-to-One dengan model User.
+     * Relasi dengan user (pemilik produk)
      */
     public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'user_id', 'id');
+        return $this->belongsTo(User::class);
     }
 
     /**
-     * Relasi Many-to-One dengan model Category.
+     * Relasi dengan kategori produk
      */
     public function category(): BelongsTo
     {
-        return $this->belongsTo(Category::class, 'category_id', 'id');
+        return $this->belongsTo(Category::class);
     }
 
     /**
-     * Relasi One-to-Many dengan model ProductOption.
+     * Relasi dengan varian produk (ProductVariant)
      */
-    public function productOptions(): HasMany
+    public function variants(): HasMany
     {
-        return $this->hasMany(ProductOption::class, 'product_id', 'id');
+        return $this->hasMany(ProductVariant::class);
     }
 
     /**
-     * Relasi One-to-Many dengan model ActualVarian.
+     * Relasi dengan galeri gambar produk
      */
-    public function actualVarians(): HasMany
+    public function gallery(): HasMany
     {
-        return $this->hasMany(ActualVarian::class, 'product_id', 'id');
+        return $this->hasMany(ProductGallery::class);
     }
 
     /**
-     * Relasi One-to-Many dengan model ProductImage (untuk gambar tambahan).
+     * Relasi dengan tag (many-to-many)
      */
-    public function productImages(): HasMany
+    public function tags(): BelongsToMany
     {
-        return $this->hasMany(ProductImage::class, 'product_id', 'id');
+        return $this->belongsToMany(Tag::class, 'product_tag');
     }
 
     /**
-     * Aksesor: Mendapatkan URL lengkap untuk gambar utama produk.
-     * Mengubah dari getThumbnailUrlAttribute ke getImageUrlAttribute.
+     * Aksesor untuk mendapatkan URL gambar utama produk
      */
-    public function getImageUrlAttribute(): ?string
+    public function getImageUrlAttribute(): string // Selalu mengembalikan string
     {
-        return $this->image ? asset('storage/product_primary_images/' . $this->image) : null;
-        // Catatan: Saya mengubah folder penyimpanan dari 'thumbnails' menjadi 'product_primary_images'
-        // untuk membedakannya dari gambar galeri produk. Anda bisa sesuaikan.
+        $path = $this->main_image;
+
+        // Cek jika path ada dan file-nya benar-benar ada di storage
+        if ($path && Storage::disk('public')->exists($path)) {
+            // PERBAIKAN: Menggunakan helper 'asset' dengan path storage.
+            // Ini adalah cara yang lebih umum dan andal.
+            return asset('storage/' . $path);
+        }
+
+        // Jika gagal, coba path lain (untuk kompatibilitas dengan controller lama)
+        $legacyPath = 'product_primary_images/' . $this->main_image;
+        if ($this->main_image && Storage::disk('public')->exists($legacyPath)) {
+             return asset('storage/' . $legacyPath);
+        }
+
+        // Jika semua gagal, kembalikan gambar default
+        return asset('images/default-product.png'); // Pastikan Anda punya gambar default ini di /public/images
     }
 }

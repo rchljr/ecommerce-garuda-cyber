@@ -1,18 +1,18 @@
 <?php
 
-namespace App\Http\Controllers; // Disarankan di dalam folder Admin
+namespace App\Http\Controllers; // Atau App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Product;
 use App\Models\Category;
 use App\Models\Tag;
-use App\Models\ProductVariant;
-use App\Models\ProductGallery;
+// Model baru tidak perlu di-import di sini karena kita akses melalui relasi Product
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Auth;
 
 class ProductController extends Controller
 {
@@ -21,8 +21,9 @@ class ProductController extends Controller
      */
     public function index()
     {
+        // Mengambil produk berdasarkan user yang login jika perlu, atau semua produk jika admin global
         $products = Product::latest()->paginate(10);
-        return view('Dashboard-mitra.products.index', compact('products'));
+        return view('dashboard-mitra.products.index', compact('products'));
     }
 
     /**
@@ -31,7 +32,7 @@ class ProductController extends Controller
     public function create()
     {
         $categories = Category::orderBy('name')->get();
-        return view('Dashboard-mitra.products.create', compact('categories'));
+        return view('dashboard-mitra.products.create', compact('categories'));
     }
 
     /**
@@ -53,6 +54,9 @@ class ProductController extends Controller
             'variants.*.stock' => 'required|integer|min:0',
             'tags' => 'nullable|string',
             'sku' => 'nullable|string|unique:products,sku',
+            'is_best_seller' => 'nullable',
+            'is_new_arrival' => 'nullable',
+            'is_hot_sale' => 'nullable',
         ]);
 
         DB::beginTransaction();
@@ -68,7 +72,10 @@ class ProductController extends Controller
                 'sku' => $validatedData['sku'],
                 'category_id' => $validatedData['category_id'],
                 'main_image' => $mainImagePath,
-                'status' => 'active',
+                'status' => 'active', // Default status
+                'is_best_seller' => $request->has('is_best_seller'),
+                'is_new_arrival' => $request->has('is_new_arrival'),
+                'is_hot_sale' => $request->has('is_hot_sale'),
             ]);
 
             if (!empty($validatedData['tags'])) {
@@ -107,7 +114,7 @@ class ProductController extends Controller
     public function show(Product $product)
     {
         $product->load(['category', 'tags', 'variants', 'gallery']);
-        return view('Dashboard-mitra.products.show', compact('product'));
+        return view('dashboard-mitra.products.show', compact('product'));
     }
 
     /**
@@ -117,7 +124,7 @@ class ProductController extends Controller
     {
         $product->load(['tags', 'variants', 'gallery']);
         $categories = Category::orderBy('name')->get();
-        return view('Dashboard-mitra.products.edit', compact('product', 'categories'));
+        return view('dashboard-mitra.products.edit', compact('product', 'categories'));
     }
 
     /**
@@ -131,7 +138,7 @@ class ProductController extends Controller
             'description' => 'nullable|string',
             'price' => 'required|numeric|min:0',
             'category_id' => 'required|exists:categories,id',
-            'main_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048', // Nullable on update
+            'main_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
             'gallery_images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:2048',
             'variants' => 'required|array',
             'variants.*.color' => 'required|string|max:255',
@@ -139,29 +146,31 @@ class ProductController extends Controller
             'variants.*.stock' => 'required|integer|min:0',
             'tags' => 'nullable|string',
             'sku' => ['nullable', 'string', Rule::unique('products')->ignore($product->id)],
+            'is_best_seller' => 'nullable',
+            'is_new_arrival' => 'nullable',
+            'is_hot_sale' => 'nullable',
         ]);
 
         DB::beginTransaction();
         try {
             $updateData = $validatedData;
             
-            // Hapus 'variants' dan 'tags' dari data update utama karena akan ditangani terpisah
-            unset($updateData['variants'], $updateData['tags']);
+            unset($updateData['variants'], $updateData['tags'], $updateData['gallery_images']);
 
-            // Handle update gambar utama
+            // Tambahkan data dari checkbox
+            $updateData['is_best_seller'] = $request->has('is_best_seller');
+            $updateData['is_new_arrival'] = $request->has('is_new_arrival');
+            $updateData['is_hot_sale'] = $request->has('is_hot_sale');
+
             if ($request->hasFile('main_image')) {
-                // Hapus gambar lama
                 if ($product->main_image) {
                     Storage::disk('public')->delete($product->main_image);
                 }
-                // Simpan gambar baru
                 $updateData['main_image'] = $request->file('main_image')->store('products/main', 'public');
             }
 
-            // Update produk utama
             $product->update($updateData);
 
-            // Update tags
             if (!empty($validatedData['tags'])) {
                 $tagsInput = explode(',', $validatedData['tags']);
                 $tagIds = [];
@@ -171,16 +180,14 @@ class ProductController extends Controller
                 }
                 $product->tags()->sync($tagIds);
             } else {
-                $product->tags()->sync([]); // Hapus semua tag jika input kosong
+                $product->tags()->sync([]);
             }
             
-            // Update varian (hapus yang lama, buat yang baru untuk simplisitas)
             $product->variants()->delete();
             foreach ($validatedData['variants'] as $variantData) {
                 $product->variants()->create($variantData);
             }
 
-            // Tambah gambar galeri baru (penghapusan gambar galeri lama memerlukan UI terpisah)
             if ($request->hasFile('gallery_images')) {
                 foreach ($request->file('gallery_images') as $galleryFile) {
                     $galleryPath = $galleryFile->store('products/gallery', 'public');
@@ -204,17 +211,14 @@ class ProductController extends Controller
     {
         DB::beginTransaction();
         try {
-            // Hapus gambar utama dari storage
             if ($product->main_image) {
                 Storage::disk('public')->delete($product->main_image);
             }
 
-            // Hapus semua gambar galeri dari storage
             foreach ($product->gallery as $galleryImage) {
                 Storage::disk('public')->delete($galleryImage->image_path);
             }
 
-            // Hapus produk dari database (varian, galeri, dan relasi tag akan terhapus otomatis karena onDelete('cascade'))
             $product->delete();
 
             DB::commit();

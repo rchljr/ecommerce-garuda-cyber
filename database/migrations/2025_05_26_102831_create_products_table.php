@@ -28,7 +28,7 @@ return new class extends Migration
             $table->string('sku')->unique()->nullable(); // Stock Keeping Unit
             
             // Kolom Gambar
-            $table->string('main_image');
+            $table->string('main_image')->nullable();
 
             // Kolom Relasi & Status
             $table->foreignUuid('user_id')->constrained('users')->onDelete('cascade');

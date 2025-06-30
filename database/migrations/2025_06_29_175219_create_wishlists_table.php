@@ -8,21 +8,26 @@ return new class extends Migration
 {
     /**
      * Run the migrations.
+     *
+     * @return void
      */
-    public function up(): void
+    public function up()
     {
         Schema::create('wishlists', function (Blueprint $table) {
-        $table->id();
-        $table->unsignedBigInteger('user_id'); 
-        $table->unsignedBigInteger('product_id'); 
-        $table->timestamps();
-    });
+            $table->id();
+            // PERBAIKAN: Gunakan foreignUuid agar cocok dengan tipe data UUID di tabel users
+            $table->foreignUuid('user_id')->constrained('users')->onDelete('cascade');
+            $table->foreignUuid('product_id')->constrained('products')->onDelete('cascade');
+            $table->timestamps();
+        });
     }
 
     /**
      * Reverse the migrations.
+     *
+     * @return void
      */
-    public function down(): void
+    public function down()
     {
         Schema::dropIfExists('wishlists');
     }

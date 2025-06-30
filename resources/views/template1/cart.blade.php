@@ -51,7 +51,8 @@
                                 </thead>
                                 <tbody>
                                     @php $cartTotal = 0; @endphp
-                                    @foreach ($cartItems as $id => $item)
+                                    {{-- PERUBAHAN: Loop sekarang menggunakan $cartItemId sebagai kunci --}}
+                                    @foreach ($cartItems as $cartItemId => $item)
                                         @php
                                             $itemTotal = $item['price'] * $item['quantity'];
                                             $cartTotal += $itemTotal;
@@ -63,13 +64,16 @@
                                                 </div>
                                                 <div class="product__cart__item__text">
                                                     <h6>{{ $item['name'] }}</h6>
+                                                    {{-- PERUBAHAN: Menampilkan Ukuran dan Warna --}}
+                                                    <p class="mb-0">Size: <strong>{{ $item['size'] ?? '-' }}</strong></p>
+                                                    <p>Color: <strong>{{ $item['color'] ?? '-' }}</strong></p>
                                                     <h5>Rp {{ number_format($item['price'], 0, ',', '.') }}</h5>
                                                 </div>
                                             </td>
                                             <td class="quantity__item">
                                                 <div class="quantity">
-                                                    {{-- Form untuk update quantity --}}
-                                                    <form action="{{ route('cart.update', $id) }}" method="POST" id="update-form-{{ $id }}" class="d-flex align-items-center">
+                                                    {{-- PERUBAHAN: Form sekarang menargetkan $cartItemId --}}
+                                                    <form action="{{ route('cart.update', $cartItemId) }}" method="POST" id="update-form-{{ $cartItemId }}" class="d-flex align-items-center">
                                                         @csrf
                                                         @method('PUT')
                                                         <div class="pro-qty-2">
@@ -81,8 +85,8 @@
                                             </td>
                                             <td class="cart__price">Rp {{ number_format($itemTotal, 0, ',', '.') }}</td>
                                             <td class="cart__close">
-                                                {{-- Form untuk hapus item --}}
-                                                <form action="{{ route('cart.remove', $id) }}" method="POST">
+                                                {{-- PERUBAHAN: Form sekarang menargetkan $cartItemId --}}
+                                                <form action="{{ route('cart.remove', $cartItemId) }}" method="POST">
                                                     @csrf
                                                     @method('DELETE')
                                                     <button type="submit" onclick="return confirm('Yakin ingin menghapus item ini?')" style="border:none; background:none; cursor:pointer;">

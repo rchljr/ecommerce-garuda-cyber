@@ -56,7 +56,7 @@
             <div class="col-lg-3 col-md-3">
                 <div class="header__nav__option">
                     <a href="#" class="search-switch"><img src="{{ asset('template1/img/icon/search.png') }}" alt=""></a>
-                    <a href="#"><img src="{{ asset('template1/img/icon/heart.png') }}" alt=""></a>
+                    <a href="{{ route('wishlist.index') }}"><img src="{{ asset('template1/img/icon/heart.png') }}" alt=""></a>
                     {{-- Diperbarui untuk menampilkan hitungan dari session --}}
                     <a href="{{ route('cart.index') }}"><img src="{{ asset('template1/img/icon/cart.png') }}" alt=""> <span id="cart-count">{{ Session::has('cart') ? array_sum(array_column(Session::get('cart'), 'quantity')) : 0 }}</span></a>
                 </div>

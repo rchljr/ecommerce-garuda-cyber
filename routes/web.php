@@ -120,7 +120,7 @@ Route::get('/cart', [CartController::class, 'index'])->name('cart.index'); // Me
 Route::put('/cart/update/{product_id}', [CartController::class, 'update'])->name('cart.update'); // Memperbarui kuantitas
 Route::delete('/cart/remove/{product_id}', [CartController::class, 'remove'])->name('cart.remove'); // Menghapus item
 Route::get('/contact', [ContactController::class, 'showPublic'])->name('contact');
-Route::get('/wishlist', [WishlistController::class, 'index'])->name('wishlist');
+Route::get('/wishlist', [WishlistController::class, 'index'])->name('wishlist.index');
 
     // Route untuk menambah/menghapus item dari wishlist (untuk AJAX)
     Route::post('/wishlist/toggle', [WishlistController::class, 'toggle'])->name('wishlist.toggle');

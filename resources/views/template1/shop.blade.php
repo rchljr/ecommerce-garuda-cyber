@@ -138,7 +138,7 @@
                             @forelse ($products as $product)
                                 <div class="col-lg-4 col-md-6 col-sm-6">
                                     <div class="product__item mb-4">
-                                        <div class="product__item__pic set-bg" data-setbg="{{ $product->image_url ?? asset('template1/img/product/product-1.jpg') }}">
+                                        <div class="product__item__pic set-bg" data-setbg="{{ $product->image_url }}">
                                             @if ($product->is_new ?? false)
                                                 <span class="label new">New</span>
                                             @elseif (($product->discount_percentage ?? 0) > 0)
@@ -150,6 +150,7 @@
                                             </ul>
                                         </div>
                                         <div class="product__item__text">
+                                            <h6>{{ $product->name }}</h6>
                                             <h6><a href="{{ route('shop.details', ['product' => $product->slug]) }}">{{ $product->name }}</a></h6>
                                             <a href="#" class="add-cart" data-product-id="{{ $product->id }}">+ Add To Cart</a>
                                             <div class="rating">
