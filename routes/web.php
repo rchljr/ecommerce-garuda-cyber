@@ -1,8 +1,8 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\CartController;
 use App\Http\Controllers\ShopController;
-use App\Http\Controllers\CartController; 
 use App\Http\Controllers\VarianController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ProductController;
@@ -12,14 +12,15 @@ use App\Http\Controllers\WishlistController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\TestimoniController;
 use App\Http\Controllers\Mitra\HeroController;
-use App\Http\Controllers\Mitra\MitraController;
 use App\Http\Controllers\LandingPageController;
+use App\Http\Controllers\Mitra\MitraController;
 use App\Http\Controllers\Mitra\BannerController;
 use App\Http\Controllers\VerificationController;
 use App\Http\Controllers\Mitra\ContactController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\PendapatanController;
 use App\Http\Controllers\Admin\KelolaMitraController;
+use App\Http\Controllers\Auth\CustomerAuthController;
 use App\Http\Controllers\SubscriptionPackageController;
 use App\Http\Controllers\Customer\CustomerOrderController;
 use App\Http\Controllers\Customer\CustomerPointController;
@@ -45,9 +46,24 @@ Route::get('/', [LandingPageController::class, 'home'])->name('landing');
 Route::post('/testimonials', [TestimoniController::class, 'submitFromLandingPage'])->name('testimonials.store');
 
 // Auth (Proses Registrasi dan Login)
+// Rute untuk menampilkan form login & register admin dan mitra
 Route::get('/login', fn() => view('landing-page.auth.login'))->name('login');
 Route::post('/login', [AuthController::class, 'login'])->name('login.submit');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+
+// Rute untuk menampilkan form login & register customer
+Route::prefix('customer')->name('customer.')->group(function () {
+    // Rute untuk menampilkan form login & register customer
+    Route::get('/login', [CustomerAuthController::class, 'showLoginForm'])->name('login.form');
+    Route::get('/register', [CustomerAuthController::class, 'showRegisterForm'])->name('register.form');
+
+    // Rute untuk memproses data dari form
+    Route::post('/login', [CustomerAuthController::class, 'login'])->name('login.submit');
+    Route::post('/register', [CustomerAuthController::class, 'register'])->name('register.submit');
+
+    // Rute untuk logout customer
+    Route::post('/logout', [CustomerAuthController::class, 'logout'])->name('logout');
+});
 
 // Proses Registrasi Multi-Langkah (Publik)
 Route::prefix('register')->name('register.')->group(function () {
@@ -115,7 +131,7 @@ Route::prefix('register')->name('register.')->group(function () {
 // });
 
 // routes/web.php
-Route::get('/beranda', [App\Http\Controllers\HomeController::class, 'index'])->name('home'); 
+Route::get('/beranda', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
 Route::get('/shop', [App\Http\Controllers\ShopController::class, 'index'])->name('shop');
 Route::get('/shop/{product:slug}', [ShopController::class, 'show'])->name('shop.details');
 Route::post('/cart/add', [CartController::class, 'add'])->name('cart.add');
@@ -125,8 +141,8 @@ Route::delete('/cart/remove/{product_id}', [CartController::class, 'remove'])->n
 Route::get('/contact', [ContactController::class, 'showPublic'])->name('contact');
 Route::get('/wishlist', [WishlistController::class, 'index'])->name('wishlist.index');
 
-    // Route untuk menambah/menghapus item dari wishlist (untuk AJAX)
-    Route::post('/wishlist/toggle', [WishlistController::class, 'toggle'])->name('wishlist.toggle');
+// Route untuk menambah/menghapus item dari wishlist (untuk AJAX)
+Route::post('/wishlist/toggle', [WishlistController::class, 'toggle'])->name('wishlist.toggle');
 // Route::get('/{slug}', [HomeController::class, 'showPage'])->name('page.show');
 
 //== MIDTRANS WEBHOOK (TIDAK MEMERLUKAN AUTH/CSRF) ==//
@@ -141,7 +157,7 @@ Route::middleware(['auth'])->group(function () {
     ///== ADMIN ROUTES ==//
     Route::middleware(['role:admin'])->prefix('admin')->name('admin.')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-        
+
         // Verifikasi Mitra
         Route::prefix('verifikasi-mitra')->name('mitra.')->group(function () {
             Route::get('/', [VerificationController::class, 'index'])->name('verifikasi');
@@ -205,7 +221,7 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware(['role:mitra'])->prefix('mitra')->name('mitra.')->group(function () {
         // Rute dashboard utama
         Route::get('/dashboard', [MitraController::class, 'index'])->name('dashboard');
-        
+
         Route::get('/produk', [ProductController::class, 'index'])->name('produk');
         Route::get('/hero', [HeroController::class, 'index'])->name('hero');
         Route::get('/banner', [BannerController::class, 'index'])->name('banner');
@@ -247,11 +263,11 @@ Route::middleware(['auth'])->group(function () {
         Route::put('varians/{varian}', [VarianController::class, 'update'])->name('varians.update');
         Route::delete('varians/{varian}', [VarianController::class, 'destroy'])->name('varians.destroy');
 
-        
+
     });
 
-     //== CUSTOMER ROUTES ==//
-    Route::middleware(['role:customer'])->prefix('customer')->name('customer.')->group(function () {
+    //== CUSTOMER ROUTES ==//
+    Route::prefix('customer')->name('customer.')->group(function () {
         // default untuk customer, arahkan ke profil
         Route::get('/', function () {
             return redirect()->route('customer.profile');

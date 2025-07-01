@@ -46,36 +46,44 @@
                         </a>
                         <div class="w-px h-6 bg-gray-200"></div>
 
-                        <div x-data="{ dropdownOpen: false }" class="relative">
-                            <button @click="dropdownOpen = !dropdownOpen"
-                                class="flex items-center space-x-2 focus:outline-none">
-                                <img src="{{ Auth::user()->photo ? asset('storage/' . Auth::user()->photo) : 'https://placehold.co/32x32/EBF4FF/76A9FA?text=' . strtoupper(substr(Auth::user()->name, 0, 1)) }}"
-                                    class="w-8 h-8 rounded-full object-cover" alt="Avatar">
-                                <span class="text-sm font-medium">Hi, {{ strtok(Auth::user()->name, ' ') }}</span>
-                                <svg class="w-4 h-4 text-gray-500 transition-transform duration-200"
-                                    :class="{'transform rotate-180': dropdownOpen}" fill="none" stroke="currentColor"
-                                    viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M19 9l-7 7-7-7"></path>
-                                </svg>
-                            </button>
-                            <div x-show="dropdownOpen" @click.away="dropdownOpen = false" x-transition x-cloak
-                                class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 ring-1 ring-black ring-opacity-5">
-                                <a href="{{ route('customer.profile') }}"
-                                    class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Akun Saya</a>
-                                <a href="{{ route('customer.orders') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Pesanan
-                                    Saya</a>
-                                <div class="border-t border-gray-100 my-1"></div>
-                                <form id="logout-form-dropdown" action="{{ route('logout') }}" method="POST"
-                                    style="display: none;">@csrf</form>
-                                <a href="{{ route('logout') }}"
-                                    onclick="event.preventDefault(); document.getElementById('logout-form-dropdown').submit();"
-                                    class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Log
-                                    Out</a>
+                        @auth
+                            <div x-data="{ dropdownOpen: false }" class="relative">
+                                <button @click="dropdownOpen = !dropdownOpen"
+                                    class="flex items-center space-x-2 focus:outline-none">
+                                    <img src="{{ Auth::user()->photo ? asset('storage/' . Auth::user()->photo) : 'https://placehold.co/32x32/EBF4FF/76A9FA?text=' . strtoupper(substr(Auth::user()->name, 0, 1)) }}"
+                                        class="w-8 h-8 rounded-full object-cover" alt="Avatar">
+                                    <span class="text-sm font-medium">Hi, {{ strtok(Auth::user()->name, ' ') }}</span>
+                                    <svg class="w-4 h-4 text-gray-500 transition-transform duration-200"
+                                        :class="{'transform rotate-180': dropdownOpen}" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M19 9l-7 7-7-7"></path>
+                                    </svg>
+                                </button>
+                                <div x-show="dropdownOpen" @click.away="dropdownOpen = false" x-transition x-cloak
+                                    class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 ring-1 ring-black ring-opacity-5">
+                                    <a href="{{ route('customer.profile') }}"
+                                        class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Akun Saya</a>
+                                    <a href="{{ route('customer.orders') }}"
+                                        class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Pesanan Saya</a>
+                                    <div class="border-t border-gray-100 my-1"></div>
+                                    <form id="logout-form-dropdown" action="{{ route('customer.logout') }}" method="POST"
+                                        style="display: none;">@csrf</form>
+                                    <a href="{{ route('customer.logout') }}"
+                                        onclick="event.preventDefault(); document.getElementById('logout-form-dropdown').submit();"
+                                        class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Log
+                                        Out</a>
+                                </div>
                             </div>
-                        </div>
+                        @else
+                            {{-- Tampilkan tombol Login & Daftar jika user belum login --}}
+                            <a href="{{ route('customer.login.form') }}"
+                                class="text-sm font-medium text-gray-600 hover:text-gray-900">Login</a>
+                            <a href="{{ route('customer.register.form') }}"
+                                class="text-sm font-medium text-white bg-gray-700 px-4 py-2 rounded-md hover:bg-gray-900">Daftar</a>
+                        @endauth
                     </div>
-
+                    {{-- Tombol Menu Mobile --}}
                     <div class="lg:hidden">
                         <button @click="mobileMenuOpen = !mobileMenuOpen"
                             class="text-gray-600 hover:text-gray-900 focus:outline-none">
@@ -93,7 +101,7 @@
             </div>
         </header>
 
-        {{-- PERUBAHAN: Panel Menu Mobile Slide-in dari Kanan --}}
+        {{-- Panel Menu Mobile Slide-in dari Kanan --}}
         <div x-show="mobileMenuOpen" x-cloak class="fixed inset-0 flex justify-end z-50 lg:hidden">
             <!-- Overlay -->
             <div x-show="mobileMenuOpen" @click="mobileMenuOpen = false"
@@ -120,6 +128,7 @@
                 </div>
 
                 <div class="p-4 flex-grow overflow-y-auto">
+                    <!-- General Navigation -->
                     <nav class="flex flex-col space-y-2">
                         <a href="#"
                             class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Home</a>
@@ -132,28 +141,39 @@
 
                     <div class="border-t my-4"></div>
 
-                    <div class="flex items-center px-2 mb-4">
-                        <img src="{{ Auth::user()->photo ? asset('storage/' . Auth::user()->photo) : 'https://placehold.co/40x40/EBF4FF/76A9FA?text=' . strtoupper(substr(Auth::user()->name, 0, 1)) }}"
-                            class="w-10 h-10 rounded-full object-cover" alt="Avatar">
-                        <div class="ml-3">
-                            <div class="text-base font-medium text-gray-800">{{ Auth::user()->name }}</div>
-                            <div class="text-sm font-medium text-gray-500">{{ Auth::user()->email }}</div>
+                    @auth
+                        <!-- Menu untuk Pengguna yang Sudah Login -->
+                        <div class="flex items-center px-2 mb-4">
+                            <img src="{{ Auth::user()->photo ? asset('storage/' . Auth::user()->photo) : 'https://placehold.co/40x40/EBF4FF/76A9FA?text=' . strtoupper(substr(Auth::user()->name, 0, 1)) }}"
+                                class="w-10 h-10 rounded-full object-cover" alt="Avatar">
+                            <div class="ml-3">
+                                <div class="text-base font-medium text-gray-800">{{ Auth::user()->name }}</div>
+                                <div class="text-sm font-medium text-gray-500">{{ Auth::user()->email }}</div>
+                            </div>
                         </div>
-                    </div>
-                    <nav class="flex flex-col space-y-2">
-                        <a href="{{ route('customer.profile') }}"
-                            class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Akun
-                            Saya</a>
-                        <a href="#"
-                            class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Pesanan
-                            Saya</a>
-                        <form id="logout-form-mobile" action="{{ route('logout') }}" method="POST"
-                            style="display: none;">@csrf</form>
-                        <a href="{{ route('logout') }}"
-                            onclick="event.preventDefault(); document.getElementById('logout-form-mobile').submit();"
-                            class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Log
-                            Out</a>
-                    </nav>
+                        <nav class="flex flex-col space-y-2">
+                            <a href="{{ route('customer.profile') }}"
+                                class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Akun
+                                Saya</a>
+                            <a href="{{ route('customer.orders') }}"
+                                class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Pesanan
+                                Saya</a>
+                            <form id="logout-form-mobile" action="{{ route('customer.logout') }}" method="POST"
+                                style="display: none;">@csrf</form>
+                            <a href="{{ route('customer.logout') }}"
+                                onclick="event.preventDefault(); document.getElementById('logout-form-mobile').submit();"
+                                class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Log
+                                Out</a>
+                        </nav>
+                    @else
+                        <!-- Menu untuk Pengguna Tamu (Belum Login) -->
+                        <div class="space-y-2">
+                            <a href="{{ route('customer.login.form') }}"
+                                class="block text-center w-full px-4 py-2 text-base font-medium text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50">Login</a>
+                            <a href="{{ route('customer.register.form') }}"
+                                class="block text-center w-full px-4 py-2 text-base font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700">Daftar</a>
+                        </div>
+                    @endauth
                 </div>
             </div>
         </div>

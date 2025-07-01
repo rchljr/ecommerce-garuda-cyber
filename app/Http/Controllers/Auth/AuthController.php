@@ -224,9 +224,6 @@ class AuthController extends BaseController
                     ? redirect()->route('register.form', ['step' => 5])
                     : redirect()->route('mitra.dashboard');
             }
-            if ($user->hasRole('customer')) {
-                return redirect()->route('customer.profile');
-            }
 
             return redirect()->route('landing');
         }
