@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Admin;
+namespace App\Http\Controllers\Mitra;
 
 use App\Models\User;
 use App\Models\Category;
@@ -50,33 +50,5 @@ class MitraController extends Controller
         $categoryMap = Category::pluck('name', 'slug')->all();
 
         return view('dashboard-mitra.dashboard', compact('mitras', 'categoryMap'));
-    }
-
-    /**
-     * Menonaktifkan paket langganan seorang mitra.
-     */
-    public function updateStatus(Request $request, User $user)
-    {
-        $request->validate([
-            'status' => 'required|in:inactive',
-        ]);
-
-        if ($user->hasRole('mitra') && $user->userPackage) {
-            try {
-                // Update status di userPackage.
-                $user->userPackage->update(['status' => 'inactive']);
-
-                // menonaktifkan subdomain
-                if ($user->subdomain) {
-                    $user->subdomain->update(['status' => 'inactive']);
-                }
-
-                return back()->with('success', 'Status mitra berhasil diubah menjadi Tidak Aktif.');
-            } catch (\Exception $e) {
-                return back()->with('error', 'Terjadi kesalahan saat mengubah status mitra.');
-            }
-        }
-
-        return back()->with('error', 'Gagal menemukan data paket untuk mitra ini.');
     }
 }

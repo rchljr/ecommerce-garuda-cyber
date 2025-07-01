@@ -1,34 +1,31 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\ShopController;
+use App\Http\Controllers\CartController; 
+use App\Http\Controllers\VarianController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\VoucherController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\WishlistController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\TestimoniController;
-use App\Http\Controllers\Admin\MitraController;
+use App\Http\Controllers\Mitra\HeroController;
+use App\Http\Controllers\Mitra\MitraController;
 use App\Http\Controllers\LandingPageController;
+use App\Http\Controllers\Mitra\BannerController;
 use App\Http\Controllers\VerificationController;
+use App\Http\Controllers\Mitra\ContactController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\PendapatanController;
+use App\Http\Controllers\Admin\KelolaMitraController;
 use App\Http\Controllers\SubscriptionPackageController;
-use App\Http\Controllers\Admin\HeroSectionController;
-use App\Http\Controllers\HomeController;
-use App\Http\Controllers\Admin\PageController;
-use App\Http\Controllers\Admin\PageSectionController;
 use App\Http\Controllers\Customer\CustomerOrderController;
+use App\Http\Controllers\Customer\CustomerPointController;
 use App\Http\Controllers\Customer\CustomerProfileController;
 use App\Http\Controllers\Customer\CustomerVoucherController;
 use App\Http\Controllers\Customer\CustomerNotificationController;
-use App\Http\Controllers\Customer\CustomerPointController;
-use App\Http\Controllers\VarianController;
-use App\Http\Controllers\Mitra\HeroController;
-use App\Http\Controllers\Mitra\BannerController;
-use App\Http\Controllers\ShopController;
-use App\Http\Controllers\CartController; 
-use App\Http\Controllers\Mitra\ContactController;
-use App\Http\Controllers\WishlistController;
 
 
 /*
@@ -153,8 +150,8 @@ Route::middleware(['auth'])->group(function () {
         });
 
         // Kelola Mitra
-        Route::get('kelola-mitra', [MitraController::class, 'index'])->name('mitra.kelola');
-        Route::patch('kelola-mitra/{user}/status', [MitraController::class, 'updateStatus'])->name('mitra.updateStatus');
+        Route::get('kelola-mitra', [KelolaMitraController::class, 'index'])->name('mitra.kelola');
+        Route::patch('kelola-mitra/{user}/status', [KelolaMitraController::class, 'updateStatus'])->name('mitra.updateStatus');
 
         // Kelola Landing Page
         Route::get('/landing-page', [LandingPageController::class, 'adminLanding'])->name('landing-page.statistics');
