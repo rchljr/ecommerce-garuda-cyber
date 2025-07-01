@@ -4,34 +4,51 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration {
+return new class extends Migration
+{
     /**
      * Run the migrations.
+     *
+     * @return void
      */
-    public function up(): void
+    public function up()
     {
         Schema::create('products', function (Blueprint $table) {
+            // Kolom Dasar
             $table->uuid('id')->primary();
-            $table->uuid('user_id');
-            $table->uuid('category_id');
-            $table->string('name', 100);
-            $table->text('description')->nullable();
-            $table->decimal('price', 15, 2);
-            $table->integer('stock')->default(0);
-            $table->decimal('product_discount', 15, 2)->nullable();
-            $table->string('status', 30)->nullable();
-            $table->string('thumbnail', 255)->nullable();
-            $table->timestamps();
+            $table->string('name');
+            $table->string('slug')->unique();
 
-            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
-            $table->foreign('category_id')->references('id')->on('categories')->onDelete('cascade');
+            // Kolom Deskripsi
+            $table->text('short_description')->nullable();
+            $table->longText('description')->nullable();
+
+            // Kolom Harga & Stok
+            $table->decimal('price', 15, 2); // Mendukung harga dengan desimal
+            $table->string('sku')->unique()->nullable(); // Stock Keeping Unit
+            
+            // Kolom Gambar
+            $table->string('main_image')->nullable();
+
+            // Kolom Relasi & Status
+            $table->foreignUuid('user_id')->constrained('users')->onDelete('cascade');
+            $table->foreignUuid('category_id')->constrained('categories')->onDelete('cascade');
+            $table->enum('status', ['active', 'inactive', 'draft'])->default('draft');
+            
+            // Kolom untuk fitur tambahan (opsional tapi disarankan)
+            $table->unsignedInteger('views')->default(0);
+            $table->boolean('is_featured')->default(false);
+
+            $table->timestamps();
         });
     }
 
     /**
      * Reverse the migrations.
+     *
+     * @return void
      */
-    public function down(): void
+    public function down()
     {
         Schema::dropIfExists('products');
     }

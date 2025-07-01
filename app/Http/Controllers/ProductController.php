@@ -1,192 +1,232 @@
 <?php
 
-namespace App\Http\Controllers; // Ini seharusnya 'namespace App\Http\Controllers\Admin;' jika Anda ingin ini di folder Admin
+namespace App\Http\Controllers; // Atau App\Http\Controllers\Admin;
 
-use App\Models\Product;
-use App\Models\Category; // Tambahkan ini jika belum
-use App\Models\SubCategory; // Tambahkan ini jika belum
+use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth; // Penting: Untuk Auth::id()
+use App\Models\Product;
+use App\Models\Category;
+use App\Models\Tag;
+// Model baru tidak perlu di-import di sini karena kita akses melalui relasi Product
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str; // Tambahkan ini untuk Str::slug()
+use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Auth;
 
-class ProductController extends Controller // Jika ini controller admin, namespace harus App\Http\Controllers\Admin
+class ProductController extends Controller
 {
     /**
-     * Menampilkan semua produk (halaman penuh).
-     * Akan diakses melalui route 'mitra.products.index'.
-     *
-     * @return \Illuminate\View\View
+     * Menampilkan daftar semua produk.
      */
     public function index()
     {
-        $products = Product::with('category', 'user')->latest()->get(); // Pastikan relasi 'category' dan 'user' ada di Model Product
+        // Mengambil produk berdasarkan user yang login jika perlu, atau semua produk jika admin global
+        $products = Product::latest()->paginate(10);
         return view('dashboard-mitra.products.index', compact('products'));
     }
 
     /**
      * Menampilkan form untuk membuat produk baru.
-     * Akan diakses melalui route 'mitra.products.create'.
-     *
-     * @return \Illuminate\View\View
      */
     public function create()
     {
-        $categories = Category::all(); // Pastikan Model Category ada
+        $categories = Category::orderBy('name')->get();
         return view('dashboard-mitra.products.create', compact('categories'));
     }
 
     /**
      * Menyimpan produk baru ke database.
-     * Akan diakses melalui route 'mitra.products.store'.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\RedirectResponse
      */
     public function store(Request $request)
     {
-        $request->validate([
+        $validatedData = $request->validate([
             'name' => 'required|string|max:255',
-            'category_id' => 'required|exists:categories,id', // Pastikan tabel 'categories' ada
+            'short_description' => 'nullable|string',
             'description' => 'nullable|string',
             'price' => 'required|numeric|min:0',
-            'stock' => 'required|integer|min:0',
-            'product_discount' => 'nullable|numeric|min:0|max:100',
-            'status' => 'required|in:active,inactive',
-            'thumbnail' => 'nullable|image|mimes:jpg,jpeg,png|max:2048'
+            'category_id' => 'required|exists:categories,id',
+            'main_image' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+            'gallery_images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+            'variants' => 'required|array',
+            'variants.*.color' => 'required|string|max:255',
+            'variants.*.size' => 'required|string|max:255',
+            'variants.*.stock' => 'required|integer|min:0',
+            'tags' => 'nullable|string',
+            'sku' => 'nullable|string|unique:products,sku',
+            'is_best_seller' => 'nullable',
+            'is_new_arrival' => 'nullable',
+            'is_hot_sale' => 'nullable',
         ]);
 
-        $data = $request->all();
-        $data['slug'] = Str::slug($request->name); // Tambahkan slug secara otomatis
-        $data['is_active'] = $request->boolean('is_active') ?? true; // Pastikan is_active diset, default true
-        
-        // --- PERBAIKAN DI SINI ---
-        // AKTIFKAN BARIS INI
-        $data['user_id'] = Auth::id(); // Mengambil ID pengguna yang sedang login
-        // --- AKHIR PERBAIKAN ---
+        DB::beginTransaction();
+        try {
+            $mainImagePath = $request->file('main_image')->store('products/main', 'public');
 
-        // Upload thumbnail jika ada
-        if ($request->hasFile('thumbnail')) {
-            $file = $request->file('thumbnail');
-            // Gunakan Str::random() atau UUID untuk nama file yang unik untuk menghindari konflik
-            $filename = time() . '_' . Str::random(10) . '.' . $file->getClientOriginalExtension();
-            // Simpan file ke direktori 'storage/app/public/thumbnails'
-            $file->storeAs('public/thumbnails', $filename);
-            $data['thumbnail'] = $filename;
-        } else {
-            $data['thumbnail'] = null; // Pastikan null jika tidak ada thumbnail
+            $product = Product::create([
+                'name' => $validatedData['name'],
+                'slug' => Str::slug($validatedData['name']) . '-' . uniqid(),
+                'short_description' => $validatedData['short_description'],
+                'description' => $validatedData['description'],
+                'price' => $validatedData['price'],
+                'sku' => $validatedData['sku'],
+                'category_id' => $validatedData['category_id'],
+                'main_image' => $mainImagePath,
+                'status' => 'active', // Default status
+                'is_best_seller' => $request->has('is_best_seller'),
+                'is_new_arrival' => $request->has('is_new_arrival'),
+                'is_hot_sale' => $request->has('is_hot_sale'),
+            ]);
+
+            if (!empty($validatedData['tags'])) {
+                $tagsInput = explode(',', $validatedData['tags']);
+                $tagIds = [];
+                foreach ($tagsInput as $tagName) {
+                    $tag = Tag::firstOrCreate(['name' => trim($tagName)], ['slug' => Str::slug(trim($tagName))]);
+                    $tagIds[] = $tag->id;
+                }
+                $product->tags()->sync($tagIds);
+            }
+
+            foreach ($validatedData['variants'] as $variantData) {
+                $product->variants()->create($variantData);
+            }
+
+            if ($request->hasFile('gallery_images')) {
+                foreach ($request->file('gallery_images') as $galleryFile) {
+                    $galleryPath = $galleryFile->store('products/gallery', 'public');
+                    $product->gallery()->create(['image_path' => $galleryPath]);
+                }
+            }
+
+            DB::commit();
+            return redirect()->route('mitra.products.index')->with('success', 'Produk berhasil ditambahkan!');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->withInput()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
         }
-
-        Product::create($data);
-
-        return redirect()->route('mitra.products.index')->with('success', 'Produk berhasil ditambahkan.');
     }
 
     /**
      * Menampilkan detail produk tertentu.
-     * Akan diakses melalui route 'mitra.products.show'.
-     *
-     * @param  int  $id
-     * @return \Illuminate\View\View
      */
-    public function show($id)
+    public function show(Product $product)
     {
-        // Temukan produk berdasarkan ID, beserta kategori dan user terkait
-        $product = Product::with('category', 'user')->findOrFail($id);
+        $product->load(['category', 'tags', 'variants', 'gallery']);
         return view('dashboard-mitra.products.show', compact('product'));
     }
 
     /**
-     * Menampilkan form untuk mengedit produk tertentu.
-     * Akan diakses melalui route 'mitra.products.edit'.
-     *
-     * @param  int  $id
-     * @return \Illuminate\View\View
+     * Menampilkan form untuk mengedit produk.
      */
-    public function edit($id)
+    public function edit(Product $product)
     {
-        // Temukan produk yang akan diedit
-        $product = Product::findOrFail($id);
-        // Ambil semua kategori untuk dropdown
-        $categories = Category::all(); // Harusnya Category::all() jika kategori utama, bukan SubCategory
+        $product->load(['tags', 'variants', 'gallery']);
+        $categories = Category::orderBy('name')->get();
         return view('dashboard-mitra.products.edit', compact('product', 'categories'));
     }
 
     /**
-     * Memperbarui produk tertentu di database.
-     * Akan diakses melalui route 'mitra.products.update'.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\RedirectResponse
+     * Memperbarui produk di database.
      */
-    public function update(Request $request, $id)
+    public function update(Request $request, Product $product)
     {
-        $product = Product::findOrFail($id);
-
-        $request->validate([
+        $validatedData = $request->validate([
             'name' => 'required|string|max:255',
-            'category_id' => 'required|exists:categories,id',
+            'short_description' => 'nullable|string',
             'description' => 'nullable|string',
             'price' => 'required|numeric|min:0',
-            'stock' => 'required|integer|min:0',
-            'product_discount' => 'nullable|numeric|min:0|max:100',
-            'status' => 'required|in:active,inactive',
-            'thumbnail' => 'nullable|image|mimes:jpg,jpeg,png|max:2048'
+            'category_id' => 'required|exists:categories,id',
+            'main_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+            'gallery_images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+            'variants' => 'required|array',
+            'variants.*.color' => 'required|string|max:255',
+            'variants.*.size' => 'required|string|max:255',
+            'variants.*.stock' => 'required|integer|min:0',
+            'tags' => 'nullable|string',
+            'sku' => ['nullable', 'string', Rule::unique('products')->ignore($product->id)],
+            'is_best_seller' => 'nullable',
+            'is_new_arrival' => 'nullable',
+            'is_hot_sale' => 'nullable',
         ]);
 
-        $data = $request->all();
-        $data['slug'] = Str::slug($request->name); // Tambahkan slug secara otomatis
-        $data['is_active'] = $request->boolean('is_active') ?? $product->is_active; // Pertahankan nilai lama jika checkbox tidak ada
+        DB::beginTransaction();
+        try {
+            $updateData = $validatedData;
+            
+            unset($updateData['variants'], $updateData['tags'], $updateData['gallery_images']);
 
-        // Upload thumbnail baru jika ada
-        if ($request->hasFile('thumbnail')) {
-            // Hapus thumbnail lama jika ada
-            if ($product->thumbnail && Storage::exists('public/thumbnails/' . $product->thumbnail)) {
-                Storage::delete('public/thumbnails/' . $product->thumbnail);
-            }
+            // Tambahkan data dari checkbox
+            $updateData['is_best_seller'] = $request->has('is_best_seller');
+            $updateData['is_new_arrival'] = $request->has('is_new_arrival');
+            $updateData['is_hot_sale'] = $request->has('is_hot_sale');
 
-            $file = $request->file('thumbnail');
-            // Gunakan Str::random() atau UUID untuk nama file yang unik untuk menghindari konflik
-            $filename = time() . '_' . Str::random(10) . '.' . $file->getClientOriginalExtension();
-            $file->storeAs('public/thumbnails', $filename);
-            $data['thumbnail'] = $filename;
-        } else {
-            // Jika tidak ada thumbnail baru, pastikan thumbnail lama tidak dihapus dari data
-            // Cek jika ada input yang secara eksplisit ingin menghapus thumbnail
-            if ($request->has('remove_thumbnail')) { // Asumsi ada checkbox di form untuk remove thumbnail
-                if ($product->thumbnail && Storage::exists('public/thumbnails/' . $product->thumbnail)) {
-                    Storage::delete('public/thumbnails/' . $product->thumbnail);
+            if ($request->hasFile('main_image')) {
+                if ($product->main_image) {
+                    Storage::disk('public')->delete($product->main_image);
                 }
-                $data['thumbnail'] = null;
-            } else {
-                $data['thumbnail'] = $product->thumbnail; // Pertahankan thumbnail lama
+                $updateData['main_image'] = $request->file('main_image')->store('products/main', 'public');
             }
-        }
-        
-        $product->update($data);
 
-        return redirect()->route('mitra.products.index')->with('success', 'Produk berhasil diperbarui.');
+            $product->update($updateData);
+
+            if (!empty($validatedData['tags'])) {
+                $tagsInput = explode(',', $validatedData['tags']);
+                $tagIds = [];
+                foreach ($tagsInput as $tagName) {
+                    $tag = Tag::firstOrCreate(['name' => trim($tagName)], ['slug' => Str::slug(trim($tagName))]);
+                    $tagIds[] = $tag->id;
+                }
+                $product->tags()->sync($tagIds);
+            } else {
+                $product->tags()->sync([]);
+            }
+            
+            $product->variants()->delete();
+            foreach ($validatedData['variants'] as $variantData) {
+                $product->variants()->create($variantData);
+            }
+
+            if ($request->hasFile('gallery_images')) {
+                foreach ($request->file('gallery_images') as $galleryFile) {
+                    $galleryPath = $galleryFile->store('products/gallery', 'public');
+                    $product->gallery()->create(['image_path' => $galleryPath]);
+                }
+            }
+
+            DB::commit();
+            return redirect()->route('mitra.products.index')->with('success', 'Produk berhasil diperbarui!');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->withInput()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+        }
     }
 
     /**
-     * Menghapus produk tertentu dari database.
-     * Akan diakses melalui route 'mitra.products.destroy'.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\RedirectResponse
+     * Menghapus produk dari database.
      */
-    public function destroy($id)
+    public function destroy(Product $product)
     {
-        $product = Product::findOrFail($id);
+        DB::beginTransaction();
+        try {
+            if ($product->main_image) {
+                Storage::disk('public')->delete($product->main_image);
+            }
 
-        // Hapus thumbnail dari storage jika ada
-        if ($product->thumbnail && Storage::exists('public/thumbnails/' . $product->thumbnail)) {
-            Storage::delete('public/thumbnails/' . $product->thumbnail);
+            foreach ($product->gallery as $galleryImage) {
+                Storage::disk('public')->delete($galleryImage->image_path);
+            }
+
+            $product->delete();
+
+            DB::commit();
+            return redirect()->route('mitra.products.index')->with('success', 'Produk berhasil dihapus!');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
         }
-
-        $product->delete();
-
-        return redirect()->route('mitra.products.index')->with('success', 'Produk berhasil dihapus.');
     }
 }

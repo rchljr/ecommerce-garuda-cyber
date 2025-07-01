@@ -22,6 +22,14 @@ use App\Http\Controllers\Customer\CustomerProfileController;
 use App\Http\Controllers\Customer\CustomerVoucherController;
 use App\Http\Controllers\Customer\CustomerNotificationController;
 use App\Http\Controllers\Customer\CustomerPointController;
+use App\Http\Controllers\VarianController;
+use App\Http\Controllers\Mitra\HeroController;
+use App\Http\Controllers\Mitra\BannerController;
+use App\Http\Controllers\ShopController;
+use App\Http\Controllers\CartController; 
+use App\Http\Controllers\Mitra\ContactController;
+use App\Http\Controllers\WishlistController;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -53,12 +61,76 @@ Route::prefix('register')->name('register.')->group(function () {
     Route::post('/step3', [AuthController::class, 'registerStep3'])->name('step3');
 });
 
-//Template1 - Contoh rute statis
-Route::get('/toko', fn() => view('template1.home'));
-Route::get('/shop', fn() => view('template1.shop'));
-Route::get('/about', fn() => view('template1.about'));
+//Mitra Sementara
+// Route::prefix('dashboard-mitra')->name('mitra.')->group(function () {
+//     // Rute dashboard utama
+//     Route::get('/', function () {
+//         return view('dashboard-mitra.dashboardmitra');
+//     })->name('dashboard'); // Ini akan menjadi 'mitra.dashboard'
 
-Route::get('/home', [HomeController::class, 'index']);
+//     // Rute /produk (jika ini untuk daftar produk statis/tanpa controller ProductController)
+//     // Jika Anda ingin menggunakan ProductController@index untuk /produk, hapus ini
+//     Route::get('/produk', [ProductController::class, 'index'])->name('produk');
+//     Route::get('/panel', [HeroSectionController::class, 'index'])->name('panel');
+
+
+//     Route::resource('hero_sections', HeroSectionController::class);
+
+//     Route::resource('pages', PageController::class); // Ini akan membuat mitra.pages.* routes
+
+//     // Manajemen Seksi Halaman (PageSectionController) - Nested Resource
+//     Route::resource('pages.sections', PageSectionController::class)->except(['show']); // Tidak butuh show untuk seksi
+
+//     // Rute untuk mendapatkan partial form dinamis via AJAX
+//     Route::get('get-section-form-partial/{sectionType}', function ($sectionType) {
+//         $content = request('content', []); // Untuk edit, menerima konten yang ada
+//         if (view()->exists('dashboard-mitra.page_sections.partials.' . $sectionType . '_form')) {
+//             return view('dashboard-mitra.page_sections.partials.' . $sectionType . '_form', compact('content'));
+//         }
+//         return response('', 404);
+//     })->name('get-section-form-partial');
+
+//     // CRUD route untuk produk menggunakan ProductController
+//     // Penting: URI 'products' saja karena sudah ada prefix 'dashboard-mitra'
+//     Route::resource('products', ProductController::class)->names([
+//         'index' => 'products.index',    // Ini akan menjadi 'mitra.products.index'
+//         'create' => 'products.create',   // Ini akan menjadi 'mitra.products.create'
+//         'store' => 'products.store',    // Ini akan menjadi 'mitra.products.store'
+//         'show' => 'products.show',     // Ini akan menjadi 'mitra.products.show'
+//         'edit' => 'products.edit',     // Ini akan menjadi 'mitra.products.edit'
+//         'update' => 'products.update',   // Ini akan menjadi 'mitra.products.update'
+//         'destroy' => 'products.destroy',  // Ini akan menjadi 'mitra.products.destroy'
+//     ]);
+// });
+
+//Template1
+// Route::get('/toko', function () {
+//     return view('template1.home'); // Mengarahkan ke resources/views/template1/home.blade.php
+// });
+
+// // Contoh rute untuk halaman lain di dalam template1
+// Route::get('/shop', function () {
+//     return view('template1.shop'); // Anda perlu membuat file template1/shop.blade.php
+// });
+
+// Route::get('/about', function () {
+//     return view('template1.about'); // Anda perlu membuat file template1/about.blade.php
+// });
+
+// routes/web.php
+Route::get('/beranda', [App\Http\Controllers\HomeController::class, 'index'])->name('home'); 
+Route::get('/shop', [App\Http\Controllers\ShopController::class, 'index'])->name('shop');
+Route::get('/shop/{product:slug}', [ShopController::class, 'show'])->name('shop.details');
+Route::post('/cart/add', [CartController::class, 'add'])->name('cart.add');
+Route::get('/cart', [CartController::class, 'index'])->name('cart.index'); // Melihat isi keranjang
+Route::put('/cart/update/{product_id}', [CartController::class, 'update'])->name('cart.update'); // Memperbarui kuantitas
+Route::delete('/cart/remove/{product_id}', [CartController::class, 'remove'])->name('cart.remove'); // Menghapus item
+Route::get('/contact', [ContactController::class, 'showPublic'])->name('contact');
+Route::get('/wishlist', [WishlistController::class, 'index'])->name('wishlist.index');
+
+    // Route untuk menambah/menghapus item dari wishlist (untuk AJAX)
+    Route::post('/wishlist/toggle', [WishlistController::class, 'toggle'])->name('wishlist.toggle');
+// Route::get('/{slug}', [HomeController::class, 'showPage'])->name('page.show');
 
 //== MIDTRANS WEBHOOK (TIDAK MEMERLUKAN AUTH/CSRF) ==//
 //Route::post('/midtrans/webhook', [PaymentController::class, 'handleWebhook'])->name('midtrans.webhook');
@@ -134,44 +206,80 @@ Route::middleware(['auth'])->group(function () {
 
     //== MITRA ROUTES ==//
     Route::middleware(['role:mitra'])->prefix('mitra')->name('mitra.')->group(function () {
-        Route::get('/', fn() => view('dashboard-mitra.dashboardmitra'))->name('dashboard');
-
-        // Contoh rute lain untuk mitra
+        // Rute dashboard utama
+        Route::get('/dashboard', [MitraController::class, 'index'])->name('dashboard');
+        
         Route::get('/produk', [ProductController::class, 'index'])->name('produk');
-        Route::get('/panel', [HeroSectionController::class, 'index'])->name('panel');
+        Route::get('/hero', [HeroController::class, 'index'])->name('hero');
+        Route::get('/banner', [BannerController::class, 'index'])->name('banner');
 
-        Route::resource('hero_sections', HeroSectionController::class);
-        Route::resource('pages', PageController::class);
-        Route::resource('pages.sections', PageSectionController::class)->except(['show']);
-        Route::resource('products', ProductController::class);
+        Route::resource('heroes', HeroController::class);
+        Route::resource('banners', BannerController::class);
 
-        Route::get('get-section-form-partial/{sectionType}', function ($sectionType) {
-            $content = request('content', []);
-            if (view()->exists('dashboard-mitra.page_sections.partials.' . $sectionType . '_form')) {
-                return view('dashboard-mitra.page_sections.partials.' . $sectionType . '_form', compact('content'));
-            }
-            abort(404);
-        })->name('get-section-form-partial');
+        Route::get('/contacts', [ContactController::class, 'edit'])->name('contacts');
+        Route::put('/contacts', [ContactController::class, 'update'])->name('contacts.update');
+
+        // Route::resource('pages', PageController::class); // Ini akan membuat mitra.pages.* routes
+
+        // Manajemen Seksi Halaman (PageSectionController) - Nested Resource
+        // Route::resource('pages.sections', PageSectionController::class)->except(['show']); // Tidak butuh show untuk seksi
+
+        // Rute untuk mendapatkan partial form dinamis via AJAX
+        // Route::get('get-section-form-partial/{sectionType}', function ($sectionType) {
+        //     $content = request('content', []); // Untuk edit, menerima konten yang ada
+        //     if (view()->exists('dashboard-mitra.page_sections.partials.' . $sectionType . '_form')) {
+        //         return view('dashboard-mitra.page_sections.partials.' . $sectionType . '_form', compact('content'));
+        //     }
+        //     return response('', 404);
+        // })->name('get-section-form-partial');
+
+        // CRUD route untuk produk menggunakan ProductController
+        // Penting: URI 'products' saja karena sudah ada prefix 'dashboard-mitra'
+        Route::resource('products', ProductController::class)->names([
+            'index' => 'products.index',    // Ini akan menjadi 'mitra.products.index'
+            'create' => 'products.create',   // Ini akan menjadi 'mitra.products.create'
+            'store' => 'products.store',    // Ini akan menjadi 'mitra.products.store'
+            'show' => 'products.show',     // Ini akan menjadi 'mitra.products.show'
+            'edit' => 'products.edit',     // Ini akan menjadi 'mitra.products.edit'
+            'update' => 'products.update',   // Ini akan menjadi 'mitra.products.update'
+            'destroy' => 'products.destroy',  // Ini akan menjadi 'mitra.products.destroy'
+        ]);
+
+        Route::post('products/{product}/varians', [VarianController::class, 'store'])->name('varians.store');
+        Route::get('varians/{varian}/edit', [VarianController::class, 'edit'])->name('varians.edit');
+        Route::put('varians/{varian}', [VarianController::class, 'update'])->name('varians.update');
+        Route::delete('varians/{varian}', [VarianController::class, 'destroy'])->name('varians.destroy');
+
+        
     });
 
-    //== CUSTOMER ROUTES ==//
+     //== CUSTOMER ROUTES ==//
     Route::middleware(['role:customer'])->prefix('customer')->name('customer.')->group(function () {
-        Route::get('/', fn() => redirect()->route('customer.profile'))->name('dashboard');
+        // default untuk customer, arahkan ke profil
+        Route::get('/', function () {
+            return redirect()->route('customer.profile');
+        })->name('dashboard');
 
+        // untuk menampilkan dan mengupdate profil
         Route::get('/profile', [CustomerProfileController::class, 'show'])->name('profile');
         Route::post('/profile', [CustomerProfileController::class, 'update'])->name('profile.update');
+
+        //  Pesanan Saya
         Route::get('/orders', [CustomerOrderController::class, 'index'])->name('orders');
+
+        // Notifikasi Saya
         Route::get('/notifications', [CustomerNotificationController::class, 'index'])->name('notifications');
+
+        // Voucher Saya
         Route::get('/vouchers', [CustomerVoucherController::class, 'index'])->name('vouchers');
         Route::post('/vouchers-claim', [CustomerVoucherController::class, 'claimVoucher'])->name('vouchers.claim');
+
+        // Poin Saya
         Route::get('/points', [CustomerPointController::class, 'index'])->name('points');
         Route::post('/points-redeem', [CustomerPointController::class, 'redeem'])->name('points.redeem');
     });
+
+    // Route::get('/home', [HomeController::class, 'index']); // Mengarahkan ke metode index di HomeController
+    // Route::get('/{slug}', [HomeController::class, 'showPage'])->name('page.show');
+
 });
-
-
-//== RUTE CATCH-ALL (HARUS DITEMPATKAN PALING AKHIR) ==//
-// Rute ini menangani slug halaman dinamis dari database.
-// Ditempatkan di akhir agar tidak menimpa rute-rute spesifik seperti /login, /admin, /mitra, dll.
-Route::get('/{slug}', [HomeController::class, 'showPage'])->name('page.show');
-

@@ -49,7 +49,7 @@ class MitraController extends Controller
 
         $categoryMap = Category::pluck('name', 'slug')->all();
 
-        return view('dashboard-admin.kelola-mitra', compact('mitras', 'categoryMap'));
+        return view('dashboard-mitra.dashboard', compact('mitras', 'categoryMap'));
     }
 
     /**

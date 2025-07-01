@@ -10,6 +10,8 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Spatie\Permission\Traits\HasRoles;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Models\Product; 
 
 class User extends Authenticatable
 {
@@ -65,6 +67,10 @@ class User extends Authenticatable
     public function userPackage()
     {
         return $this->hasOne(UserPackage::class);
+    }
+    public function products(): HasMany
+    {
+        return $this->hasMany(Product::class, 'user_id', 'id');
     }
 
 }
