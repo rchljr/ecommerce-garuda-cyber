@@ -42,7 +42,7 @@
             <span class="sidebar-icon">@include('dashboard-admin.icons.voucher')</span>
             <span class="sidebar-text ml-4">Kelola Kontak</span>
         </a>
-        <a href="{{ route('admin.kategori.index') }}"
+        {{-- <a href="{{ route('admin.kategori.index') }}"
             class="sidebar-item flex items-center p-3 rounded-lg hover:bg-red-800 transition-colors">
             <span class="sidebar-icon">@include('dashboard-admin.icons.kategori')</span>
             <span class="sidebar-text ml-4">Kelola Kategori</span>
@@ -56,12 +56,12 @@
             class="sidebar-item flex items-center p-3 rounded-lg hover:bg-red-800 transition-colors">
             <span class="sidebar-icon">@include('dashboard-admin.icons.pendapatan')</span>
             <span class="sidebar-text ml-4">Kelola Pendapatan</span>
-        </a>
-        <a href="{{ route('admin.landing-page.statistics') }}"
+        </a> --}}
+        {{-- <a href="{{ route('admin.landing-page.statistics') }}"
             class="sidebar-item flex items-center p-3 rounded-lg hover:bg-red-800 transition-colors">
             <span class="sidebar-icon">@include('dashboard-admin.icons.landing')</span>
             <span class="sidebar-text ml-4">Landing Page</span>
-        </a>
+        </a> --}}
     </nav>
 
     <div class="p-4 border-t border-red-800">
