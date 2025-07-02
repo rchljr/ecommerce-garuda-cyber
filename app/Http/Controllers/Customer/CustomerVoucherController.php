@@ -19,6 +19,7 @@ class CustomerVoucherController extends Controller
     public function index(Request $request)
     {
         $vouchers = Voucher::where('expired_date', '>=', now())
+            ->whereNotNull('subdomain_id')
             ->with('subdomain.user.shop')
             ->paginate(9);
 

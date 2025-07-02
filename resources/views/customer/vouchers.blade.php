@@ -26,9 +26,7 @@
                         @forelse ($vouchers as $voucher)
                             <div class="bg-white border border-gray-200 rounded-lg shadow-sm flex flex-col p-4">
                                 <div class="flex-grow">
-                                    <p class="text-sm text-gray-500">Dari: <span
-                                            class="font-semibold">{{ optional($voucher->subdomain->user->shop)->shop_name ?? 'Toko Dihapus' }}</span>
-                                    </p>
+                                    <p class="text-sm text-gray-500">Dari: <span class="font-semibold">{{ data_get($voucher, 'subdomain.user.shop.shop_name', 'Informasi Toko Tidak Tersedia') }}</span></p>
                                     <h3 class="font-bold text-gray-800 text-lg my-2">Diskon
                                         {{ format_rupiah($voucher->discount) }}</h3>
                                     <p class="text-sm text-gray-600 mt-1">Minimal Transaksi
