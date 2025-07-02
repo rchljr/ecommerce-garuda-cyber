@@ -45,11 +45,11 @@ class Product extends Model
     }
 
     /**
-     * Relasi dengan user (pemilik produk)
+     * Relasi dengan user (pemilik produk/toko)
      */
-    public function user(): BelongsTo
+    public function shopOwner()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     /**
@@ -101,7 +101,7 @@ class Product extends Model
         // Jika gagal, coba path lain (untuk kompatibilitas dengan controller lama)
         $legacyPath = 'product_primary_images/' . $this->main_image;
         if ($this->main_image && Storage::disk('public')->exists($legacyPath)) {
-             return asset('storage/' . $legacyPath);
+            return asset('storage/' . $legacyPath);
         }
 
         // Jika semua gagal, kembalikan gambar default

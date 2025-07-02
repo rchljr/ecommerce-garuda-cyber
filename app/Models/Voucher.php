@@ -6,12 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Testing\Fluent\Concerns\Has;
 
 class Voucher extends Model
 {
-    use HasFactory;
-
-    // UUID setup
+    use HasFactory, HasUuids;
     public $incrementing = false;
     protected $keyType = 'string';
     protected static function boot()
@@ -30,9 +29,10 @@ class Voucher extends Model
      */
     protected $fillable = [
         'user_id',
+        'subdomain_id', // Relasi ke subdomain
         'voucher_code',
         'description',
-        'discount', 
+        'discount',
         'min_spending',
         'start_date',
         'expired_date',
@@ -55,10 +55,14 @@ class Voucher extends Model
     {
         return Attribute::make(
             // Accessor: Otomatis mengubah ke uppercase saat data diambil
-            get: fn ($value) => strtoupper($value),
+            get: fn($value) => strtoupper($value),
             // Mutator: Otomatis mengubah ke lowercase sebelum data disimpan ke database
-            set: fn ($value) => strtolower($value),
+            set: fn($value) => strtolower($value),
         );
+    }
+    public function subdomain()
+    {
+        return $this->belongsTo(Subdomain::class);
     }
 }
 

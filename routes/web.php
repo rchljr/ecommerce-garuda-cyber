@@ -2,12 +2,13 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CartController;
+use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ShopController;
-use App\Http\Controllers\VarianController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\VoucherController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\WishlistController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\TestimoniController;
@@ -15,6 +16,7 @@ use App\Http\Controllers\Mitra\HeroController;
 use App\Http\Controllers\LandingPageController;
 use App\Http\Controllers\Mitra\MitraController;
 use App\Http\Controllers\Mitra\BannerController;
+use App\Http\Controllers\Mitra\VarianController;
 use App\Http\Controllers\VerificationController;
 use App\Http\Controllers\Mitra\ContactController;
 use App\Http\Controllers\Admin\DashboardController;
@@ -74,6 +76,14 @@ Route::prefix('register')->name('register.')->group(function () {
     Route::post('/step3', [AuthController::class, 'registerStep3'])->name('step3');
 });
 
+//Keranjang Belanja
+Route::prefix('cart')->name('cart.')->group(function () {
+    Route::get('/', [CartController::class, 'index'])->name('index')->middleware('auth');
+    Route::post('/add', [CartController::class, 'add'])->name('add');
+    Route::patch('/update/{productCartId}', [CartController::class, 'update'])->name('update');
+    Route::delete('/remove/{productCartId}', [CartController::class, 'remove'])->name('remove');
+});
+
 //Mitra Sementara
 // Route::prefix('dashboard-mitra')->name('mitra.')->group(function () {
 //     // Rute dashboard utama
@@ -131,8 +141,8 @@ Route::prefix('register')->name('register.')->group(function () {
 // });
 
 // routes/web.php
-Route::get('/beranda', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
-Route::get('/shop', [App\Http\Controllers\ShopController::class, 'index'])->name('shop');
+Route::get('/beranda', [HomeController::class, 'index'])->name('home');
+Route::get('/shop', [ShopController::class, 'index'])->name('shop');
 Route::get('/shop/{product:slug}', [ShopController::class, 'show'])->name('shop.details');
 Route::post('/cart/add', [CartController::class, 'add'])->name('cart.add');
 Route::get('/cart', [CartController::class, 'index'])->name('cart.index'); // Melihat isi keranjang
@@ -153,7 +163,12 @@ Route::middleware(['auth'])->group(function () {
     /// Rute yang bisa diakses oleh semua user yang login
     Route::post('/voucher/apply', [VoucherController::class, 'apply'])->name('voucher.apply');
     Route::get('/payment/token', [PaymentController::class, 'generateSnapToken'])->name('payment.token');
-
+    //Checkout Customer
+    Route::prefix('checkout')->name('checkout.')->group(function () {
+        Route::get('/', [CheckoutController::class, 'index'])->name('index');
+        Route::post('/', [CheckoutController::class, 'process'])->name('process');
+        Route::post('/shipping-cost', [CheckoutController::class, 'getShippingCost'])->name('shipping');
+    });
     ///== ADMIN ROUTES ==//
     Route::middleware(['role:admin'])->prefix('admin')->name('admin.')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');

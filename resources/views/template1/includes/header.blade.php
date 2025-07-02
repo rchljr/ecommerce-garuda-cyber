@@ -9,7 +9,7 @@
                 <div class="col-lg-6 col-md-5">
                     <div class="header__top__right">
                         <div class="header__top__links">
-                            <a href="login">Sign in</a>
+                            <a href="{{ route('customer.login.form') }}">Sign in</a>
                             <a href="#">FAQs</a>
                         </div>
                     </div>

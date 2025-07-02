@@ -4,9 +4,9 @@ namespace App\Http\Controllers\Customer;
 
 use App\Models\User;
 use App\Models\Voucher;
-use App\Models\Subdomain; 
+use App\Models\Subdomain;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule; 
+use Illuminate\Validation\Rule;
 use App\Http\Controllers\Controller;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
@@ -14,28 +14,13 @@ use Illuminate\Support\Facades\Auth;
 class CustomerVoucherController extends Controller
 {
     /**
-     * Menampilkan halaman voucher saya, spesifik untuk toko yang dikunjungi.
+     * Menampilkan halaman voucher yang tersedia dari SEMUA toko.
      */
     public function index(Request $request)
     {
-        // 3. Dapatkan ID mitra pemilik toko berdasarkan subdomain yang diakses
-        // Di aplikasi nyata, logika ini bisa berada di middleware.
-        $subdomainName = explode('.', $request->getHost())[0];
-        $subdomain = Subdomain::where('subdomain_name', $subdomainName)->first();
-
-        // Jika subdomain tidak ditemukan, jangan tampilkan voucher apa pun.
-        if (!$subdomain) {
-            $vouchers = new LengthAwarePaginator([], 0, 8);
-            return view('customer.vouchers', compact('vouchers'));
-        }
-
-        $mitraId = $subdomain->user_id;
-
-        // 4. Ambil hanya voucher yang aktif DAN milik toko (mitra) saat ini.
-        $vouchers = Voucher::where('user_id', $mitraId)
-            ->where('start_date', '<=', now())
-            ->where('expired_date', '>=', now())
-            ->paginate(8);
+        $vouchers = Voucher::where('expired_date', '>=', now())
+            ->with('subdomain.user.shop')
+            ->paginate(9);
 
         return view('customer.vouchers', compact('vouchers'));
     }

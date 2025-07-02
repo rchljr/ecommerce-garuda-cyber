@@ -14,4 +14,17 @@ class Subdomain extends Model
     public $incrementing = false;
     protected $keyType = 'string';
     protected $fillable = ['user_id', 'subdomain_name', 'status'];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    } // Relasi ke User (Mitra)
+    public function orders()
+    {
+        return $this->hasMany(Order::class);
+    } // Subdomain memiliki banyak order
+    public function vouchers()
+    {
+        return $this->hasMany(Voucher::class);
+    } // Subdomain memiliki banyak voucher
 }

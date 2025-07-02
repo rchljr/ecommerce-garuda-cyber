@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Models\User;
 use Illuminate\Http\Request;
+use App\Services\CartService;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -21,7 +22,7 @@ class CustomerAuthController extends Controller
     /**
      * Menangani proses login untuk customer.
      */
-    public function login(Request $request)
+    public function login(Request $request, CartService $cartService)
     {
         $credentials = $request->validate([
             'email' => ['required', 'email'],
@@ -34,6 +35,10 @@ class CustomerAuthController extends Controller
             // Cek role menggunakan metode Spatie setelah login berhasil
             if ($user && $user->hasRole('customer')) {
                 $request->session()->regenerate();
+
+                // Panggil service untuk menggabungkan keranjang
+                $cartService->mergeSessionCart();
+
                 return redirect()->route('customer.profile'); // Arahkan ke profil customer
             }
 

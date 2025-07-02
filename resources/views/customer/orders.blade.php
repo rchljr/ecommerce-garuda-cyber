@@ -18,83 +18,65 @@
                     <div class="flex justify-between items-center mb-6">
                         <div>
                             <h1 class="text-2xl md:text-3xl font-bold">Pesanan Saya</h1>
-                            <p class="text-gray-500 mt-1">Daftar Pesanan Saya</p>
-                        </div>
-                        <div class="relative w-full max-w-sm">
-                            <form action="{{ route('customer.orders') }}" method="GET">
-                                <span class="absolute inset-y-0 left-0 flex items-center pl-3">
-                                    <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor"
-                                        viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                                    </svg>
-                                </span>
-                                <input type="text" name="search" value="{{ $search ?? '' }}"
-                                    class="block w-full pl-10 pr-4 py-2 h-12 border border-gray-300 rounded-lg bg-white focus:border-blue-500 focus:ring-blue-500 transition"
-                                    placeholder="Cari pesanan...">
-                            </form>
+                            <p class="text-gray-500 mt-1">Riwayat semua pesanan Anda dari berbagai toko.</p>
                         </div>
                     </div>
 
-                    <!-- Tabel Pesanan -->
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-sm text-left">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th scope="col" class="px-6 py-3 font-medium text-gray-600">Nama Produk</th>
-                                    <th scope="col" class="px-6 py-3 font-medium text-gray-600">Detail Pesanan</th>
-                                    <th scope="col" class="px-6 py-3 font-medium text-gray-600">Harga</th>
-                                    <th scope="col" class="px-6 py-3 font-medium text-gray-600">Total Pesanan</th>
-                                    <th scope="col" class="px-6 py-3 font-medium text-gray-600">Status</th>
-                                    <th scope="col" class="px-6 py-3 font-medium text-gray-600 text-center">Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-gray-200">
-                                {{-- Data Dummy - Ganti dengan data asli dari $orders --}}
-                                @for ($i = 0; $i < 5; $i++)
-                                    <tr>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <div class="font-semibold">Baju Dress Korea</div>
-                                            <div class="text-xs text-gray-500">x1</div>
-                                        </td>
-                                        <td class="px-6 py-4">Ukuran M</td>
-                                        <td class="px-6 py-4">{{ format_rupiah(100000) }}</td>
-                                        <td class="px-6 py-4 font-semibold">{{ format_rupiah(100000) }}</td>
-                                        <td class="px-6 py-4">
-                                            <span
-                                                class="px-3 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Selesai</span>
-                                        </td>
-                                        <td class="px-6 py-4 text-center">
-                                            <button
-                                                class="text-red-600 font-semibold border border-red-600 rounded-lg px-4 py-1 text-sm hover:bg-red-600 hover:text-white transition">Nilai</button>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <div class="font-semibold">Celana Oro Pants</div>
-                                            <div class="text-xs text-gray-500">x2</div>
-                                        </td>
-                                        <td class="px-6 py-4">Ukuran S</td>
-                                        <td class="px-6 py-4">{{ format_rupiah(120000) }}</td>
-                                        <td class="px-6 py-4 font-semibold">{{ format_rupiah(240000) }}</td>
-                                        <td class="px-6 py-4">
-                                            <span
-                                                class="px-3 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">Dibatalkan</span>
-                                        </td>
-                                        <td class="px-6 py-4 text-center">
-                                            <button
-                                                class="text-white font-semibold bg-red-600 rounded-lg px-4 py-1 text-sm hover:bg-red-700 transition">Beli
-                                                Lagi</button>
-                                        </td>
-                                    </tr>
-                                @endfor
-                            </tbody>
-                        </table>
+                    <!-- Daftar Pesanan -->
+                    <div class="space-y-6">
+                        @forelse($orders as $order)
+                            <div class="border border-gray-200 rounded-lg">
+                                {{-- Header Order --}}
+                                <div class="bg-gray-50 p-4 flex justify-between items-center rounded-t-lg">
+                                    <div>
+                                        <p class="text-sm text-gray-500">Toko: <span class="font-semibold text-gray-800">{{ optional($order->subdomain->user->shop)->shop_name ?? 'Toko Dihapus' }}</span></p>
+                                        <p class="text-xs text-gray-400 mt-1">{{ format_tanggal($order->order_date) }}</p>
+                                    </div>
+                                    <div>
+                                        <span class="px-3 py-1 text-xs font-semibold rounded-full 
+                                            @if($order->status == 'completed') bg-green-100 text-green-800 @elseif($order->status == 'canceled') bg-red-100 text-red-800 @else bg-yellow-100 text-yellow-800 @endif">
+                                            {{ ucfirst($order->status) }}
+                                        </span>
+                                    </div>
+                                </div>
+                                {{-- Body Order (Item) --}}
+                                <div class="p-4 space-y-3">
+                                    @foreach($order->items as $item)
+                                    <div class="flex justify-between items-start">
+                                        <div class="flex items-start gap-4">
+                                            {{-- Ganti dengan gambar produk jika ada --}}
+                                            <div class="w-16 h-16 bg-gray-200 rounded-md"></div> 
+                                            <div>
+                                                <p class="font-semibold">{{ optional($item->product)->name ?? 'Produk Dihapus' }}</p>
+                                                <p class="text-sm text-gray-500">{{ $item->quantity }} x {{ format_rupiah($item->price) }}</p>
+                                            </div>
+                                        </div>
+                                        <p class="font-semibold">{{ format_rupiah($item->quantity * $item->price) }}</p>
+                                    </div>
+                                    @endforeach
+                                </div>
+                                {{-- Footer Order --}}
+                                <div class="bg-gray-50 p-4 flex justify-between items-center rounded-b-lg">
+                                    <p class="font-semibold">Total Pesanan: <span class="text-red-600">{{ format_rupiah($order->total_price) }}</span></p>
+                                    <div>
+                                        @if($order->status == 'completed')
+                                            <button class="text-red-600 font-semibold border border-red-600 rounded-lg px-4 py-1 text-sm hover:bg-red-600 hover:text-white transition">Beri Ulasan</button>
+                                        @else
+                                            <button class="text-white font-semibold bg-red-600 rounded-lg px-4 py-1 text-sm hover:bg-red-700 transition">Lihat Detail</button>
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+                        @empty
+                            <div class="text-center py-12 text-gray-500">
+                                <p>Anda belum memiliki riwayat pesanan.</p>
+                            </div>
+                        @endforelse
                     </div>
 
                     <!-- Paginasi -->
-                    <div class="mt-6">
-                        {{-- {{ $orders->links() }} --}}
+                    <div class="mt-8">
+                        {{ $orders->links() }}
                     </div>
                 </div>
             </main>

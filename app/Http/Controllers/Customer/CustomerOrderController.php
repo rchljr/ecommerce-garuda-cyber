@@ -17,16 +17,19 @@ class CustomerOrderController extends Controller
         $search = $request->input('search');
         $user = Auth::user();
 
-        // Ambil semua pesanan dari pengguna ini, dengan relasi ke produk
-        // Kita akan menggunakan data dummy untuk sekarang, ini bisa dihubungkan ke model produk asli nanti
+        // Ambil semua pesanan dari pengguna i ni, dengan relasi ke produk
         $orders = Order::where('user_id', $user->id)
-                    ->when($search, function ($query, $search) {
-                        // Logika pencarian bisa ditambahkan di sini, misalnya berdasarkan ID order atau nama produk
-                        // Untuk saat ini, kita lewati dulu
-                    })
-                    ->latest()
-                    ->paginate(10);
-                    
+            ->with(['subdomain.user.shop', 'items.product'])
+            ->when($search, function ($query, $search) {
+                return $query->whereHas('subdomain', function ($q) use ($search) {
+                    $q->where('subdomain_name', 'like', '%' . $search . '%');
+                })->orWhereHas('items.product', function ($q) use ($search) {
+                    $q->where('name', 'like', '%' . $search . '%');
+                });
+            })
+            ->latest()
+            ->paginate(10);
+
         return view('customer.orders', compact('orders', 'search'));
     }
 }

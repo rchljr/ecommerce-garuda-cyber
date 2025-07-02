@@ -14,7 +14,7 @@ class Order extends Model
     use HasFactory, HasUuids;
     public $incrementing = false;
     protected $keyType = 'string';
-    protected $fillable = ['user_id', 'voucher_id', 'status', 'order_date', 'total_price'];
+    protected $fillable = ['user_id', 'subdomain_id', 'voucher_id', 'status', 'order_date', 'total_price'];
     protected $casts = ['order_date' => 'datetime'];
 
     public function user()
@@ -28,5 +28,13 @@ class Order extends Model
     public function payment()
     {
         return $this->hasOne(Payment::class);
+    }
+    public function subdomain()
+    {
+        return $this->belongsTo(Subdomain::class);
+    } // Toko tempat order dibuat
+    public function items()
+    {
+        return $this->hasMany(ProductOrder::class);
     }
 }

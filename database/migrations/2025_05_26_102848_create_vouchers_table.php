@@ -13,6 +13,7 @@ return new class extends Migration {
         Schema::create('vouchers', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->uuid('user_id');
+            $table->uuid('subdomain_id')->nullable();
             $table->string('voucher_code', 100)->unique();
             $table->text('description')->nullable();
             $table->decimal('discount', 15, 2);
@@ -22,7 +23,8 @@ return new class extends Migration {
             $table->timestamps();
 
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
-        });
+            $table->foreign('subdomain_id')->references('id')->on('subdomains')->onDelete('cascade');
+        }); 
     }
 
     /**

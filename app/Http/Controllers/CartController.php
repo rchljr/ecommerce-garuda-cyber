@@ -2,18 +2,27 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Models\Cart;
 use App\Models\Product;
+use App\Models\Subdomain;
+use Illuminate\Http\Request;
+use App\Services\CartService;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
 
 class CartController extends Controller
 {
+    protected $cartService;
+
+    public function __construct(CartService $cartService) 
+    {
+        $this->cartService = $cartService;
+    }
     /**
      * Menambahkan produk beserta variannya ke keranjang.
      */
     public function add(Request $request)
     {
-        // 1. Validasi input, sekarang termasuk ukuran dan warna
         $request->validate([
             'product_id' => 'required|exists:products,id',
             'quantity' => 'required|integer|min:1',
@@ -21,80 +30,51 @@ class CartController extends Controller
             'color' => 'required|string', // Varian warna wajib diisi
         ]);
 
-        $product = Product::findOrFail($request->product_id);
+        // Gunakan service untuk menambahkan item ke keranjang
+        $this->cartService->add($request);
 
-        // 2. Buat ID unik untuk item di keranjang berdasarkan varian
-        // Contoh: 'uuid-L-Merah'
-        $cartItemId = $product->id . '-' . $request->size . '-' . $request->color;
-
-        $cart = Session::get('cart', []);
-
-        // 3. Cek apakah item dengan varian yang sama sudah ada di keranjang
-        if (isset($cart[$cartItemId])) {
-            // Jika sudah ada, cukup tambahkan kuantitasnya
-            $cart[$cartItemId]['quantity'] += $request->quantity;
-        } else {
-            // Jika belum ada, tambahkan sebagai item baru
-            $cart[$cartItemId] = [
-                "id" => $product->id, // Simpan ID produk asli
-                "name" => $product->name,
-                "quantity" => $request->quantity,
-                "price" => $product->price,
-                "image" => $product->image_url,
-                "size" => $request->size,   // Simpan ukuran
-                "color" => $request->color, // Simpan warna
-            ];
-        }
-        
-        Session::put('cart', $cart);
-
-        return response()->json([
-            'success' => true, 
-            'message' => 'Produk berhasil ditambahkan!',
-            'cart_count' => count($cart)
-        ]);
+        return back()->with('success', 'Produk berhasil ditambahkan ke keranjang.');
     }
 
     /**
      * Menampilkan halaman isi keranjang belanja.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $cartItems = Session::get('cart', []);
-        return view('template1.cart', compact('cartItems'));
+        $user = Auth::user();
+        $cart = Cart::firstOrCreate(['user_id' => $user->id]);
+
+        // Ambil subdomain toko saat ini
+        $subdomainName = explode('.', $request->getHost())[0];
+        $subdomain = Subdomain::where('subdomain_name', $subdomainName)->first();
+
+        // Ambil item di keranjang HANYA dari toko yang sedang dikunjungi
+        $cartItems = $cart->items()
+            ->with('product.shopOwner.shop')
+            ->whereHas('product.shopOwner.subdomain', function ($query) use ($subdomainName) {
+                $query->where('subdomain_name', $subdomainName);
+            })
+            ->get();
+
+        return view('customer.cart', compact('cartItems'));
     }
 
     /**
      * Memperbarui kuantitas item di keranjang.
      */
-    public function update(Request $request, string $cartItemId) // Sekarang menggunakan cartItemId
+    public function update(Request $request, $productCartId)
     {
-        $request->validate(['quantity' => 'required|integer|min:1']);
-
-        $cart = Session::get('cart', []);
-
-        if (isset($cart[$cartItemId])) {
-            $cart[$cartItemId]['quantity'] = $request->quantity;
-            Session::put('cart', $cart);
-            return redirect()->route('cart.index')->with('success', 'Kuantitas berhasil diperbarui.');
-        }
-
-        return redirect()->route('cart.index')->with('error', 'Produk tidak ditemukan di keranjang.');
+        $validated = $request->validate(['quantity' => 'required|integer|min:1']);
+        $this->cartService->update($productCartId, $validated['quantity']);
+        return back()->with('success', 'Kuantitas berhasil diperbarui.');
     }
 
     /**
      * Menghapus item dari keranjang.
      */
-    public function remove(string $cartItemId) // Sekarang menggunakan cartItemId
+    public function remove($productCartId)
     {
-        $cart = Session::get('cart', []);
-
-        if (isset($cart[$cartItemId])) {
-            unset($cart[$cartItemId]);
-            Session::put('cart', $cart);
-            return redirect()->route('cart.index')->with('success', 'Produk berhasil dihapus.');
-        }
-
-        return redirect()->route('cart.index')->with('error', 'Produk tidak ditemukan di keranjang.');
+        $this->cartService->remove($productCartId);
+        return back()->with('success', 'Produk berhasil dihapus dari keranjang.');
     }
 }

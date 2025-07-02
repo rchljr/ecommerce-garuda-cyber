@@ -6,20 +6,16 @@ use App\Models\Order;
 use App\Models\Product;
 use Illuminate\Support\Str;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class ProductOrder extends Model
 {
-    protected $primaryKey = 'id';
+    use HasFactory, HasUuids;
     public $incrementing = false;
     protected $keyType = 'string';
     protected $fillable = ['product_id', 'order_id', 'unit_price'];
-
-    protected static function boot()
-    {
-        parent::boot();
-        static::creating(fn($model) => $model->id = $model->id ?? (string) Str::uuid());
-    }
-
+    
     public function product()
     {
         return $this->belongsTo(Product::class, 'product_id', 'id');
