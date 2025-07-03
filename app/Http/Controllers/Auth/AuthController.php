@@ -207,25 +207,28 @@ class AuthController extends BaseController
         $credentialsWithStatus = array_merge($credentials, ['status' => 'active']);
 
         // 3. Coba login dengan kredensial lengkap (email, password, DAN status active)
-        if (Auth::attempt($credentialsWithStatus)) {
+        if (Auth::guard('web')->attempt($credentials)) {
             $request->session()->regenerate();
-            $user = Auth::user();
+            $user = Auth::guard('web')->user();
 
             if ($user->hasRole('admin')) {
                 return redirect()->route('admin.dashboard')->with('success', 'Anda berhasil masuk sebagai admin.');
             }
             if ($user->hasRole('mitra')) {
-                return redirect()->route('mitra.dashboard');
+                return redirect()->route('mitra.dashboard')->with('success', 'Anda berhasil masuk ke Dashboard Mitra.');
             }
-            if ($user->hasRole('calon-mitra')) {
-                // Kasus ini menangani 'calon-mitra' yang sudah disetujui (status: active) tapi belum bayar.
+            if ($user->hasRole('calon-mitra') && $user->status === 'active') {
                 $hasPendingOrder = Order::where('user_id', $user->id)->where('status', 'pending')->exists();
                 return $hasPendingOrder
                     ? redirect()->route('register.form', ['step' => 5])
                     : redirect()->route('mitra.dashboard');
             }
+            if ($user->hasRole('calon-mitra') && $user->status === 'pending') {
+                return redirect()->route('register.form', ['step' => 4]);
+            }
 
-            return redirect()->route('landing');
+            Auth::guard('web')->logout();
+            return back()->withErrors(['email' => 'Akun ini tidak memiliki akses yang sesuai.'])->withInput();
         }
 
         // 4. Jika login gagal, cari tahu penyebabnya untuk memberikan pesan error yang lebih baik.

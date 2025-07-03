@@ -30,7 +30,7 @@
                                     <div class="flex-grow">
                                         <p class="font-semibold">{{ $item->product->name }}</p>
                                         <p class="text-sm text-gray-500">Toko:
-                                            {{ optional($item->product->shopOwner->shop)->shop_name }}</p>
+                                            {{ data_get($item, 'product.shopOwner.shop.shop_name', 'Toko Tidak Tersedia') }}</p>
                                         <p class="text-lg font-bold text-gray-800 mt-1">
                                             {{ format_rupiah($item->product->price) }}</p>
                                     </div>
@@ -107,11 +107,12 @@
                 checkoutBtn.disabled = selectedCount === 0;
             }
 
-            // Event listener untuk checkbox dan input kuantitas (KODE ANDA SUDAH BENAR)
-            selectAllCheckbox.addEventListener('change', (e) => {
-                itemCheckboxes.forEach(checkbox => checkbox.checked = e.target.checked);
-                updateSummary();
-            });
+            if (selectAllCheckbox) {
+                selectAllCheckbox.addEventListener('change', (e) => {
+                    itemCheckboxes.forEach(checkbox => checkbox.checked = e.target.checked);
+                    updateSummary();
+                });
+            }
 
             itemCheckboxes.forEach(checkbox => {
                 checkbox.addEventListener('change', updateSummary);
