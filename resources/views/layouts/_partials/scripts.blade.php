@@ -158,4 +158,5 @@
 {!! showAlert() !!}
 {!! deleteConfirmScript() !!}
 {!! deactivateConfirmScript() !!} 
+{!! logoutConfirmScript() !!}
 @stack('scripts')

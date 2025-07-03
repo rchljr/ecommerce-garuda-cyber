@@ -106,6 +106,47 @@ class CartService
         }
     }
     /**
+     * Mengambil semua item dari keranjang untuk toko saat ini.
+     */
+    public function getItems(Request $request)
+    {
+        $subdomainName = explode('.', $request->getHost())[0];
+
+        if (Auth::check()) {
+            $cart = Cart::where('user_id', Auth::id())->first();
+            if (!$cart)
+                return collect();
+
+            return $cart->items()
+                ->with(['product.shopOwner.shop'])
+                ->whereHas('product.shopOwner.subdomain', function ($query) use ($subdomainName) {
+                    $query->where('subdomain_name', $subdomainName);
+                })
+                ->get();
+        } else {
+            $sessionCart = Session::get('cart', []);
+            $productIds = array_column($sessionCart, 'product_id');
+
+            // Ambil produk dan filter berdasarkan subdomain
+            $products = Product::with(['shopOwner.shop', 'shopOwner.subdomain'])
+                ->whereIn('id', $productIds)
+                ->whereHas('shopOwner.subdomain', function ($query) use ($subdomainName) {
+                    $query->where('subdomain_name', $subdomainName);
+                })
+                ->get()->keyBy('id');
+
+            return collect($sessionCart)->map(function ($item, $cartItemId) use ($products) {
+                $product = $products->get($item['product_id']);
+                if ($product) {
+                    $item['id'] = $cartItemId; // Gunakan composite key sebagai ID untuk session
+                    $item['product'] = $product;
+                    return (object) $item;
+                }
+                return null;
+            })->filter();
+        }
+    }
+    /**
      * Memperbarui kuantitas item.
      */
     public function update(string $productCartId, int $quantity)

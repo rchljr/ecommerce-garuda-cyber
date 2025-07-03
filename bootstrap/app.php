@@ -27,8 +27,9 @@ $app = $app->withRouting(
     commands: __DIR__ . '/../routes/console.php',
     health: '/up',
 )->withMiddleware(function (Middleware $middleware) {
-    // Tambahkan global middleware jika perlu, contoh:
-    // $middleware->append(\App\Http\Middleware\TrustProxies::class);
+    $middleware->web(append: [
+        \App\Http\Middleware\SetMitraTheme::class,
+    ]);
 })->withExceptions(function (Exceptions $exceptions) {
     // Konfigurasi exception handler jika perlu
 })->create();

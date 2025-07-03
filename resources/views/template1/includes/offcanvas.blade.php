@@ -2,16 +2,33 @@
 <div class="offcanvas-menu-wrapper">
     <div class="offcanvas__option">
         <div class="offcanvas__links">
-            <a href="#">Sign in</a>
+        {{-- Link ini akan selalu tampil --}}
             <a href="#">FAQs</a>
-        </div>
-        <div class="offcanvas__top__hover">
-            <span>Usd <i class="arrow_carrot-down"></i></span>
-            <ul>
-                <li>USD</li>
-                <li>EUR</li>
-                <li>USD</li>
-            </ul>
+            {{-- Tampilkan link ini jika pengguna adalah tamu (belum login) --}}
+            @guest
+                <a href="{{ route('customer.login.form') }}">Login</a>
+                <a href="{{ route('customer.register.form') }}">Daftar</a>
+            @endguest
+
+            {{-- Tampilkan menu ini jika pengguna sudah login --}}
+            @auth
+                <div class="header__top__dropdown">
+                    <a href="#"><i class="fa fa-user"></i> Hi, {{ strtok(Auth::user()->name, ' ') }}</a>
+                    <span class="arrow_carrot-down"></span>
+                    <ul>
+                        <li>
+                            <a href="{{ route('customer.logout') }}"
+                                onclick="event.preventDefault(); document.getElementById('logout-form-offcanvas').submit();">
+                                Log Out
+                            </a>
+                            <form id="logout-form-offcanvas" action="{{ route('customer.logout') }}" method="POST"
+                                style="display: none;">
+                                @csrf
+                            </form>
+                        </li>
+                    </ul>
+                </div>
+            @endauth
         </div>
     </div>
     <div class="offcanvas__nav__option">

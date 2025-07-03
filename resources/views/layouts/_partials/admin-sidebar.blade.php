@@ -68,8 +68,8 @@
             @csrf
         </form>
         <a href="#"
-            class="sidebar-logout sidebar-item flex items-center p-3 rounded-lg hover:bg-red-800 transition-colors"
-            onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
+            class="logout-confirm sidebar-item flex items-center p-3 rounded-lg hover:bg-red-800 transition-colors"
+            data-form-id="logout-form">
             <span class="sidebar-icon">@include('dashboard-admin.icons.logout')</span>
             <span class="sidebar-text ml-4">Logout</span>
         </a>

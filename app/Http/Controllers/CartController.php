@@ -41,21 +41,7 @@ class CartController extends Controller
      */
     public function index(Request $request)
     {
-        $user = Auth::user();
-        $cart = Cart::firstOrCreate(['user_id' => $user->id]);
-
-        // Ambil subdomain toko saat ini
-        $subdomainName = explode('.', $request->getHost())[0];
-        $subdomain = Subdomain::where('subdomain_name', $subdomainName)->first();
-
-        // Ambil item di keranjang HANYA dari toko yang sedang dikunjungi
-        $cartItems = $cart->items()
-            ->with('product.shopOwner.shop')
-            ->whereHas('product.shopOwner.subdomain', function ($query) use ($subdomainName) {
-                $query->where('subdomain_name', $subdomainName);
-            })
-            ->get();
-
+        $cartItems = $this->cartService->getItems($request);
         return view('customer.cart', compact('cartItems'));
     }
 

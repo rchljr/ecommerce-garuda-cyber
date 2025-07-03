@@ -111,3 +111,44 @@ document.addEventListener('DOMContentLoaded', function() {
 HTML;
     }
 }
+
+if (!function_exists('logoutConfirmScript')) {
+    /**
+     * Render script global untuk konfirmasi LOGOUT.
+     * Target: Tombol/link dengan class .logout-confirm
+     */
+    function logoutConfirmScript(): string
+    {
+        return <<<HTML
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.body.addEventListener('click', function(e) {
+        const logoutButton = e.target.closest('.logout-confirm');
+        if (logoutButton) {
+            e.preventDefault();
+            const formId = logoutButton.dataset.formId || 'logout-form'; // Dapatkan ID form dari data-attribute
+            const form = document.getElementById(formId);
+
+            if (form) {
+                Swal.fire({
+                    title: 'Anda Yakin?',
+                    text: "Anda akan keluar dari sesi ini.",
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#6e7881',
+                    confirmButtonText: 'Ya, Logout',
+                    cancelButtonText: 'Batal'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        form.submit();
+                    }
+                });
+            }
+        }
+    });
+});
+</script>
+HTML;
+    }
+}

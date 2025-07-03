@@ -45,7 +45,7 @@ class CustomerAuthController extends Controller
             // Jika role bukan customer, logout dan beri pesan error
             Auth::logout();
             return back()->withErrors([
-                'email' => 'Akun ini tidak memiliki akses sebagai customer.',
+                'email' => 'Akun Anda belum terdaftar sebagai customer.',
             ])->withInput();
         }
 

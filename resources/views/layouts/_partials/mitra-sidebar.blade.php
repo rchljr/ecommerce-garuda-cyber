@@ -1,8 +1,23 @@
 <aside id="sidebar" class="sidebar w-64 bg-red-700 text-white flex flex-col" style="background-color: #B20000;">
-    <div class="p-6 flex items-center gap-4">
-        <img src="{{ asset('images/GCI.png') }}" alt="Logo" class="w-10 h-10 sidebar-logo">
-        <span class="font-bold text-xl sidebar-text">E-COMMERCE GCI</span>
-    </div>
+    @auth
+        @php
+            // Mengambil data toko dari user yang sedang login.
+            // Menggunakan optional() untuk mencegah error jika relasi 'shop' tidak ada.
+            $shop = optional(Auth::user()->shop);
+            $shopLogo = $shop->shop_logo ?? null;
+            $shopName = $shop->shop_name ?? 'Mitra Dashboard';
+        @endphp
+        <div class="p-6 flex items-center gap-4">
+            <img src="{{ $shopLogo ? asset('storage/' . $shopLogo) : asset('images/GCI.png') }}" alt="Logo" class="w-10 h-10 rounded-md object-cover sidebar-logo">
+            <span class="font-bold text-xl sidebar-text">{{ $shopName }}</span>
+        </div>
+    @else
+        {{-- Tampilan default jika tidak ada user yang login --}}
+        <div class="p-6 flex items-center gap-4">
+            <img src="{{ asset('images/GCI.png') }}" alt="Logo" class="w-10 h-10 sidebar-logo">
+            <span class="font-bold text-xl sidebar-text">E-COMMERCE GCI</span>
+        </div>
+    @endauth
 
     <nav class="flex-1 px-4 space-y-2">
         <a href="{{ route('mitra.dashboard') }}"
@@ -11,7 +26,7 @@
             <span class="sidebar-text ml-4">Dashboard</span>
         </a>
 
-         <a href="{{ route('mitra.produk') }}"
+        <a href="{{ route('mitra.produk') }}"
             class="sidebar-item flex items-center p-3 rounded-lg hover:bg-red-800 transition-colors">
             <span class="sidebar-icon">@include('dashboard-admin.icons.paket')</span>
             <span class="sidebar-text ml-4">Kelola Produk</span>
@@ -69,8 +84,8 @@
             @csrf
         </form>
         <a href="#"
-            class="sidebar-logout sidebar-item flex items-center p-3 rounded-lg hover:bg-red-800 transition-colors"
-            onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
+            class="logout-confirm sidebar-item flex items-center p-3 rounded-lg hover:bg-red-800 transition-colors"
+            data-form-id="logout-form">
             <span class="sidebar-icon">@include('dashboard-admin.icons.logout')</span>
             <span class="sidebar-text ml-4">Logout</span>
         </a>

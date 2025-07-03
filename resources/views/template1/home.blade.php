@@ -1,6 +1,6 @@
 @extends('template1.layouts.template1')
 
-@section('title', 'Beranda - Male-Fashion')
+{{-- @section('title', 'Beranda - Male-Fashion') --}}
 
 @section('content')
     <!-- Hero Section Begin -->

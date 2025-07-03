@@ -7,7 +7,10 @@
         </button>
     </div>
     <div class="flex items-center space-x-4">
-        <span class="font-semibold text-gray-700">Hi, Admin!</span>
-        <img src="{{ asset('images/user.svg') }}" alt="Profile" class="w-10 h-10 rounded-full border-2 border-grey-800">
+        <span class="font-semibold text-gray-700">Hi,
+            {{ optional(Auth::user()->shop)->shop_name ?? Auth::user()->name }}</span>
+        {{-- Menggunakan inisial dari nama user sebagai fallback jika foto tidak ada --}}
+        <img src="{{ Auth::user()->photo ? asset('storage/' . Auth::user()->photo) : 'https://placehold.co/40x40/EBF4FF/76A9FA?text=' . strtoupper(substr(Auth::user()->shop->shop_name, 0, 1)) }}"
+            alt="Profile" class="w-10 h-10 rounded-full border-2 border-gray-300 object-cover">
     </div>
 </header>

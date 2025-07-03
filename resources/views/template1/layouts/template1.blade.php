@@ -1,8 +1,7 @@
 <!DOCTYPE html>
-<html lang="zxx">
+<html lang="id">
 
 <head>
-
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <meta charset="UTF-8">
@@ -10,11 +9,22 @@
     <meta name="keywords" content="Male_Fashion, unica, creative, html">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>@yield('title', 'Male-Fashion | Template')</title>
+    @php
+        // Variabel $currentShop ini tersedia secara global di semua view yang menggunakan grup middleware 'web'
+        $shopName = optional($currentShop)->shop_name ?? 'Toko Online';
+        $shopLogo = optional($currentShop)->shop_logo ?? null;
+    @endphp
+    <title>@yield('title', 'Selamat Datang') - {{ $shopName }}</title>
+
+    @if($shopLogo)
+        <link rel="icon" href="{{ asset('storage/' . $shopLogo) }}" type="image/png">
+    @else
+        <link rel="icon" href="{{ asset('images/gci.png') }}" type="image/png">
+    @endif
 
     <!-- Google Font -->
     <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;600;700;800;900&display=swap"
-    rel="stylesheet">
+        rel="stylesheet">
 
     <!-- Css Styles -->
     <link rel="stylesheet" href="{{ asset('template1/css/bootstrap.min.css') }}" type="text/css">
@@ -30,17 +40,25 @@
     <style>
         /* CSS untuk transisi halaman yang mulus */
         body {
-            opacity: 0; /* Sembunyikan body secara default */
-            transition: opacity 0.5s ease-in-out; /* Animasi fade */
+            opacity: 0;
+            /* Sembunyikan body secara default */
+            transition: opacity 0.5s ease-in-out;
+            /* Animasi fade */
         }
+
         body.page-loaded {
-            opacity: 1; /* Tampilkan body setelah dimuat */
+            opacity: 1;
+            /* Tampilkan body setelah dimuat */
         }
+
         body.page-leaving {
-            opacity: 0; /* Sembunyikan body saat meninggalkan halaman */
+            opacity: 0;
+            /* Sembunyikan body saat meninggalkan halaman */
         }
+
         #preloder {
-            z-index: 99999; /* Pastikan preloader di atas semua */
+            z-index: 99999;
+            /* Pastikan preloader di atas semua */
         }
     </style>
 </head>
@@ -73,19 +91,19 @@
     @stack('scripts') {{-- Untuk JS tambahan dari child views --}}
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             // Hilangkan preloader saat DOM selesai dimuat
             if (document.getElementById('preloder')) {
                 document.getElementById('preloder').style.display = 'none';
             }
-            
+
             // Tambahkan kelas untuk menampilkan halaman dengan fade-in
             document.body.classList.add('page-loaded');
 
             // Ambil semua link internal yang mengarah ke halaman yang sama (tanpa hash atau dengan hash)
             // Atau semua link yang tidak diawali dengan '#' atau 'javascript:' dan tidak punya target='_blank'
             document.querySelectorAll('a[href^="{{ url('/') }}"]:not([href^="#"]):not([target="_blank"]), a[href^="./"]:not([href^="#"]):not([target="_blank"]), a[href^="/"]:not([href^="#"]):not([target="_blank"])').forEach(link => {
-                link.addEventListener('click', function(e) {
+                link.addEventListener('click', function (e) {
                     // Cek apakah link adalah download atau action yang tidak perlu transisi
                     if (this.hasAttribute('download') || this.getAttribute('href').startsWith('javascript:')) {
                         return;
