@@ -61,6 +61,30 @@
             /* Pastikan preloader di atas semua */
         }
     </style>
+    <script>
+        ! function(f, b, e, v, n, t, s) {
+            if (f.fbq) return;
+            n = f.fbq = function() {
+                n.callMethod ?
+                    n.callMethod.apply(n, arguments) : n.queue.push(arguments)
+            };
+            if (!f._fbq) f._fbq = n;
+            n.push = n;
+            n.loaded = !0;
+            n.version = '2.0';
+            n.queue = [];
+            t = b.createElement(e);
+            t.async = !0;
+            t.src = v;
+            s = b.getElementsByTagName(e)[0];
+            s.parentNode.insertBefore(t, s)
+        }(window, document, 'script',
+            'https://connect.facebook.net/en_US/fbevents.js');
+        fbq('init', 'YOUR_PIXEL_ID'); // <-- Ganti dengan ID Pixel Anda
+        fbq('track', 'PageView');
+    </script>
+    <noscript><img height="1" width="1" style="display:none"
+            src="https://www.facebook.com/tr?id=YOUR_PIXEL_ID&ev=PageView&noscript=1" /></noscript>
 </head>
 
 <body>
@@ -102,10 +126,13 @@
 
             // Ambil semua link internal yang mengarah ke halaman yang sama (tanpa hash atau dengan hash)
             // Atau semua link yang tidak diawali dengan '#' atau 'javascript:' dan tidak punya target='_blank'
-            document.querySelectorAll('a[href^="{{ url('/') }}"]:not([href^="#"]):not([target="_blank"]), a[href^="./"]:not([href^="#"]):not([target="_blank"]), a[href^="/"]:not([href^="#"]):not([target="_blank"])').forEach(link => {
-                link.addEventListener('click', function (e) {
+            document.querySelectorAll(
+                'a[href^="{{ url('/') }}"]:not([href^="#"]):not([target="_blank"]), a[href^="./"]:not([href^="#"]):not([target="_blank"]), a[href^="/"]:not([href^="#"]):not([target="_blank"])'
+                ).forEach(link => {
+                link.addEventListener('click', function(e) {
                     // Cek apakah link adalah download atau action yang tidak perlu transisi
-                    if (this.hasAttribute('download') || this.getAttribute('href').startsWith('javascript:')) {
+                    if (this.hasAttribute('download') || this.getAttribute('href').startsWith(
+                            'javascript:')) {
                         return;
                     }
 

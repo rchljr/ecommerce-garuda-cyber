@@ -24,6 +24,7 @@ use App\Http\Controllers\Admin\PendapatanController;
 use App\Http\Controllers\Admin\KelolaMitraController;
 use App\Http\Controllers\Auth\CustomerAuthController;
 use App\Http\Controllers\SubscriptionPackageController;
+use App\Http\Controllers\Mitra\DashboardMitraController;
 use App\Http\Controllers\Customer\CustomerOrderController;
 use App\Http\Controllers\Customer\CustomerPointController;
 use App\Http\Controllers\Customer\CustomerProfileController;
@@ -235,7 +236,8 @@ Route::middleware(['auth'])->group(function () {
     //== MITRA ROUTES ==//
     Route::middleware(['role:mitra'])->prefix('mitra')->name('mitra.')->group(function () {
         // Rute dashboard utama
-        Route::get('/dashboard', [MitraController::class, 'index'])->name('dashboard');
+        // Route::get('/dashboard', [MitraController::class, 'index'])->name('dashboard');
+        Route::get('/dashboard', [DashboardMitraController::class, 'index'])->name('dashboard');
 
         Route::get('/produk', [ProductController::class, 'index'])->name('produk');
         Route::get('/hero', [HeroController::class, 'index'])->name('hero');
