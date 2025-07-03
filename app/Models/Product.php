@@ -8,7 +8,8 @@ use Illuminate\Support\Str;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use \Illuminate\Support\Facades\Storage;
+use Illuminate\Database\Eloquent\Builder; // <-- DITAMBAHKAN untuk Scopes
+use Illuminate\Support\Facades\Storage;
 
 class Product extends Model
 {
@@ -17,7 +18,7 @@ class Product extends Model
     protected $primaryKey = 'id';
     public $incrementing = false;
     protected $keyType = 'string';
-    protected $guarded = [];
+    // protected $guarded = []; // <-- DIHAPUS karena sudah ada $fillable
 
     protected $fillable = [
         'user_id',
@@ -30,9 +31,21 @@ class Product extends Model
         'sku',
         'main_image',
         'status',
-        'is_best_seller', // <-- Ditambahkan
-        'is_new_arrival', // <-- Ditambahkan
-        'is_hot_sale',    // <-- Ditambahkan
+        'is_best_seller',
+        'is_new_arrival',
+        'is_hot_sale',
+    ];
+
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array
+     */
+    protected $casts = [ // <-- DITAMBAHKAN untuk konsistensi tipe data
+        'price' => 'float',
+        'is_best_seller' => 'boolean',
+        'is_new_arrival' => 'boolean',
+        'is_hot_sale' => 'boolean',
     ];
 
     protected static function boot()
@@ -40,71 +53,80 @@ class Product extends Model
         parent::boot();
 
         static::creating(function ($model) {
-            $model->id = $model->id ?? (string) Str::uuid();
+            if (empty($model->{$model->getKeyName()})) {
+                $model->{$model->getKeyName()} = (string) Str::uuid();
+            }
         });
     }
 
-    /**
-     * Relasi dengan user (pemilik produk/toko)
-     */
-    public function shopOwner()
+    // --- QUERY SCOPES (DITAMBAHKAN untuk query yang lebih bersih) ---
+
+    public function scopeActive(Builder $query): void
+    {
+        $query->where('status', 'active');
+    }
+
+    public function scopeBestSellers(Builder $query): void
+    {
+        $query->where('is_best_seller', true);
+    }
+
+    public function scopeNewArrivals(Builder $query): void
+    {
+        $query->where('is_new_arrival', true);
+    }
+
+    public function scopeHotSales(Builder $query): void
+    {
+        $query->where('is_hot_sale', true);
+    }
+
+    // --- RELATIONS (Sudah bagus) ---
+
+    public function shopOwner(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
     }
 
-    /**
-     * Relasi dengan kategori produk
-     */
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
     }
 
-    /**
-     * Relasi dengan varian produk (ProductVariant)
-     */
     public function variants(): HasMany
     {
         return $this->hasMany(ProductVariant::class);
     }
 
-    /**
-     * Relasi dengan galeri gambar produk
-     */
     public function gallery(): HasMany
     {
         return $this->hasMany(ProductGallery::class);
     }
 
-    /**
-     * Relasi dengan tag (many-to-many)
-     */
     public function tags(): BelongsToMany
     {
         return $this->belongsToMany(Tag::class, 'product_tag');
     }
 
-    /**
-     * Aksesor untuk mendapatkan URL gambar utama produk
-     */
-    public function getImageUrlAttribute(): string // Selalu mengembalikan string
+    public function orderItems(): HasMany
+    {
+        return $this->hasMany(OrderItem::class);
+    }
+
+    // --- ACCESSORS (Sudah bagus) ---
+
+    public function getImageUrlAttribute(): string
     {
         $path = $this->main_image;
-
-        // Cek jika path ada dan file-nya benar-benar ada di storage
         if ($path && Storage::disk('public')->exists($path)) {
-            // PERBAIKAN: Menggunakan helper 'asset' dengan path storage.
-            // Ini adalah cara yang lebih umum dan andal.
             return asset('storage/' . $path);
         }
 
-        // Jika gagal, coba path lain (untuk kompatibilitas dengan controller lama)
         $legacyPath = 'product_primary_images/' . $this->main_image;
         if ($this->main_image && Storage::disk('public')->exists($legacyPath)) {
             return asset('storage/' . $legacyPath);
         }
 
-        // Jika semua gagal, kembalikan gambar default
-        return asset('images/default-product.png'); // Pastikan Anda punya gambar default ini di /public/images
+        return asset('images/default-product.png');
     }
 }
