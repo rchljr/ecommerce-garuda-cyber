@@ -16,7 +16,6 @@ return new class extends Migration {
             $table->string('subdomain_name', 100);
             $table->enum('status', ['active', 'pending'])->default('pending');
             $table->timestamps();
-
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
         });
     }

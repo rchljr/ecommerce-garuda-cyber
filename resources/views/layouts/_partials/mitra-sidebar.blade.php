@@ -8,7 +8,8 @@
             $shopName = $shop->shop_name ?? 'Mitra Dashboard';
         @endphp
         <div class="p-6 flex items-center gap-4">
-            <img src="{{ $shopLogo ? asset('storage/' . $shopLogo) : asset('images/GCI.png') }}" alt="Logo" class="w-10 h-10 rounded-md object-cover sidebar-logo">
+            <img src="{{ $shopLogo ? asset('storage/' . $shopLogo) : asset('images/GCI.png') }}" alt="Logo"
+                class="w-10 h-10 rounded-md object-cover sidebar-logo">
             <span class="font-bold text-xl sidebar-text">{{ $shopName }}</span>
         </div>
     @else
@@ -49,6 +50,8 @@
                     class="sidebar-subitem block p-2 rounded-lg hover:bg-red-800 text-sm">Kelola Hero</a>
                 <a href="{{ route('mitra.banner') }}"
                     class="sidebar-subitem block p-2 rounded-lg hover:bg-red-800 text-sm">Kelola Banner</a>
+                <a href="{{ route('mitra.tema') }}"
+                    class="sidebar-subitem block p-2 rounded-lg hover:bg-red-800 text-sm">Kelola Tema</a>
             </div>
         </div>
 
