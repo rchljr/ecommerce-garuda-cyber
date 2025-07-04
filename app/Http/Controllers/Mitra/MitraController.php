@@ -49,6 +49,6 @@ class MitraController extends Controller
 
         $categoryMap = Category::pluck('name', 'slug')->all();
 
-        return view('dashboard-mitra.dashboard', compact('mitras', 'categoryMap'));
+        return view(' ', compact('mitras', 'categoryMap'));
     }
 }
