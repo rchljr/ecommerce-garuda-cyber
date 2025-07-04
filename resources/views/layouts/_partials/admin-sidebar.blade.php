@@ -1,6 +1,6 @@
 <aside id="sidebar" class="sidebar w-64 bg-red-700 text-white flex flex-col" style="background-color: #B20000;">
     <div class="p-6 flex items-center gap-4">
-        <img src="{{ asset('images/GCI.png') }}" alt="Logo" class="w-10 h-10 sidebar-logo">
+        <img src="{{ asset('images/gci.png') }}" alt="Logo" class="w-10 h-10 sidebar-logo">
         <span class="font-bold text-xl sidebar-text">E-COMMERCE GCI</span>
     </div>
 

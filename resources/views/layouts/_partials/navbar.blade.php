@@ -6,7 +6,7 @@
             <!-- Logo -->
             <div class="flex items-center space-x-2">
                 <a href="#">
-                    <img src="images/logoGCI.png" alt="Logo" />
+                    <img src="images/LogoGCI.png" alt="Logo" />
                 </a>
             </div>
 
