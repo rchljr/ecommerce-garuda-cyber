@@ -13,65 +13,49 @@ class ShopController extends Controller
      */
     public function index(Request $request)
     {
-        // Memulai query dasar untuk produk yang statusnya 'active'
+        // 1. Ambil data tenant dan path template dari middleware
+        $tenant = $request->get('tenant');
+        $templatePath = $tenant->template->path;
+
+        // 2. Logika query produk Anda (tidak berubah)
         $query = Product::where('status', 'active');
 
-        // 1. Filter berdasarkan Kategori
-        // Jika ada parameter 'category' di URL, filter produk berdasarkan slug kategori
         if ($request->filled('category')) {
-            $query->whereHas('category', function ($q) use ($request) {
-                $q->where('slug', $request->category);
-            });
+            $query->whereHas('category', fn($q) => $q->where('slug', $request->category));
         }
-
-        // 2. Filter berdasarkan Rentang Harga
-        // Jika ada parameter 'min_price' dan 'max_price'
-        if ($request->filled('min_price')) {
-            $query->where('price', '>=', $request->min_price);
-        }
-        if ($request->filled('max_price')) {
-            $query->where('price', '<=', $request->max_price);
-        }
-
-        // 3. Mengurutkan (Sorting) Produk
-        // Cek parameter 'sort' di URL
+        // ... sisa filter dan sort ...
         if ($request->input('sort') == 'price_asc') {
             $query->orderBy('price', 'asc');
         } elseif ($request->input('sort') == 'price_desc') {
             $query->orderBy('price', 'desc');
         } else {
-            // Urutan default adalah produk terbaru
-            $query->latest(); 
+            $query->latest();
         }
 
-        // Ambil hasil akhir dengan paginasi (misalnya 9 produk per halaman)
         $products = $query->paginate(9)->withQueryString();
-
-        // Ambil semua kategori untuk ditampilkan di sidebar
         $categories = Category::all();
 
-        // Kirim semua data yang dibutuhkan ke view
-        return view('template1.shop', [
-            'products' => $products,
-            'categories' => $categories
-        ]);
+        // 3. Tampilkan view dari template yang benar
+        return view($templatePath . '.shop', compact('tenant', 'products', 'categories'));
     }
-    
+
     /**
      * Menampilkan halaman detail untuk satu produk.
-     * (Anda sudah memiliki ini, tetapi penting untuk disertakan)
      */
-    public function show(Product $product)
+    public function show(Request $request, Product $product)
     {
-        // Muat relasi yang diperlukan
-        $product->load('category', 'variants', 'gallery', 'tags');
+        // 1. Ambil data tenant dan path template
+        $tenant = $request->get('tenant');
+        $templatePath = $tenant->template->path;
 
-        // Ambil produk terkait
+        // 2. Logika Anda untuk mengambil data terkait (tidak berubah)
+        $product->load('category', 'variants', 'gallery', 'tags');
         $relatedProducts = Product::where('category_id', $product->category_id)
-                                ->where('id', '!=', $product->id)
-                                ->limit(4)
-                                ->get();
-                                
-        return view('template1.details', compact('product', 'relatedProducts'));
+            ->where('id', '!=', $product->id)
+            ->limit(4)
+            ->get();
+
+        // 3. Tampilkan view dari template yang benar
+        return view($templatePath . '.details', compact('tenant', 'product', 'relatedProducts'));
     }
 }

@@ -9,9 +9,9 @@ return new class extends Migration {
     {
         Schema::create('tenants', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->foreignUuid('subdomain_id')->constrained('subdomains');
+            $table->foreignUuid('subdomain_id')->constrained('subdomains')->onDelete('cascade');
             $table->foreignId('template_id')->nullable()->constrained('templates')->onDelete('set null');
-            $table->foreignUuid('user_id')->nullable()->constrained('users')->onDelete('set null');
+            $table->foreignUuid('user_id')->nullable()->constrained('users')->onDelete('cascade');
             $table->timestamps();
         });
     }

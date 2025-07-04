@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use Throwable;
 use App\Models\User;
 use App\Models\Order;
+use App\Models\Template;
 use App\Models\Subdomain;
 use App\Traits\UploadFile;
 use Illuminate\Http\Request;
@@ -36,13 +37,54 @@ class AuthController extends BaseController
     }
 
     /**
-     * Menampilkan form registrasi dan menangani pengalihan ke pembayaran.
+     * Menampilkan form registrasi dengan alur baru.
      */
     public function showRegisterForm(Request $request)
     {
+        // Jika pengguna kembali ke step 0, bersihkan session untuk memulai dari awal.
+        if ($request->query('step') == '0' || !$request->has('step')) {
+            $this->multiStep->clear();
+            session()->forget('newly_registered_user_id');
+        }
         $step = $request->query('step', session('register_step', 0));
         session(['register_step' => $step]);
-        $data = ['step' => $step];
+
+        // Cek apakah paket Business yang dipilih
+        $isBusinessPlan = false;
+        $planData = session('register.step_0');
+        if ($planData) {
+            $package = SubscriptionPackage::find($planData['plan_id']);
+            if ($package && $package->package_name !== 'Starter Plan') {
+                $isBusinessPlan = true;
+            }
+        }
+
+        // Definisikan progress bar secara dinamis
+        $steps = [
+            0 => 'Pilih Paket',
+            1 => 'Subdomain',
+            2 => 'Data Diri',
+            3 => 'Data Toko',
+        ];
+        if ($isBusinessPlan) {
+            $steps[4] = 'Pilih Template';
+            $steps[5] = 'Verifikasi';
+        } else {
+            $steps[4] = 'Verifikasi';
+        }
+
+        // Logika Tombol Kembali
+        $previousStepUrl = null;
+        if ($step >= 1 && $step <= ($isBusinessPlan ? 4 : 3)) {
+            $previousStepUrl = route('register.form', ['step' => $step - 1]);
+        }
+
+        $data = [
+            'step' => $step,
+            'steps' => $steps,
+            'isBusinessPlan' => $isBusinessPlan,
+            'previousStepUrl' => $previousStepUrl,
+        ];
 
         if ($step == 0) {
             $packages = $this->subscriptionPackageService->getAllPackages();
@@ -58,15 +100,23 @@ class AuthController extends BaseController
         if ($step == 3) {
             $data['categories'] = $this->categoryService->getAllCategories();
         }
-        if ($step == 4) {
+        if ($step == 4 && $isBusinessPlan) {
+            $data['templates'] = Template::all(); 
+            // Ambil data toko dari session
+            $shopData = session('register.step_3');
+            // Ambil slug kategori yang dipilih dan kirim ke view
+            $selectedCategorySlug = $shopData['product_categories'] ?? null;
+            $data['recommendedCategorySlug'] = $selectedCategorySlug;
+        }
+        $verificationStepForBusiness = 5;
+        $verificationStepForStarter = 4;
+        if ($step == $verificationStepForBusiness || ($step == $verificationStepForStarter && !$isBusinessPlan)) {
             $userId = session('newly_registered_user_id');
-            // Pastikan ada user id di session, lalu ambil data user
             if ($userId) {
-                // Kirim objek user ke view dengan nama variabel 'statusUser'
                 $data['statusUser'] = User::find($userId);
             }
         }
-        if ($step == 5) {
+        if ($step == 6) {
             if (!Auth::check()) {
                 return redirect()->route('login')->with('error', 'Silakan login untuk melanjutkan.');
             }
@@ -81,7 +131,7 @@ class AuthController extends BaseController
 
 
     // Step 0: Pilih Paket
-    public function registerStep0(Request $request)
+    public function submitPackage(Request $request)
     {
         $request->validate([
             'plan' => 'required',
@@ -96,9 +146,8 @@ class AuthController extends BaseController
         session(['register_step' => 1]);
         return redirect()->route('register.form', ['step' => 1]);
     }
-
     // Step 1: Pilih Subdomain
-    public function registerStep1(Request $request)
+    public function submitSubdomain(Request $request)
     {
         if ($request->has('choose_subdomain')) {
             $subdomain = session('register.subdomain_normalized');
@@ -125,7 +174,7 @@ class AuthController extends BaseController
     }
 
     // Step 2: Data Diri
-    public function registerStep2(Request $request)
+    public function submitUser(Request $request)
     {
         $phone = $request->input('phone');
         if ($phone) {
@@ -151,8 +200,8 @@ class AuthController extends BaseController
         return redirect()->route('register.form', ['step' => 3]);
     }
 
-    // Step 3: Data Toko & Simpan Semua Data ke Database
-    public function registerStep3(Request $request)
+    // Step 3: Data Toko 
+    public function submitShop(Request $request)
     {
         $validatedShop = $request->validate([
             'shop_name' => 'required|string|max:255',
@@ -175,6 +224,19 @@ class AuthController extends BaseController
 
         $this->multiStep->setStepData(3, $validatedShop);
 
+        $planData = session('register.step_0');
+        $package = SubscriptionPackage::find($planData['plan_id']);
+
+        // JIKA BUSINESS PLAN, lanjut ke pemilihan template
+        if ($package->package_name !== 'Starter Plan') {
+            session(['register_step' => 4]);
+            return redirect()->route('register.form', ['step' => 4]);
+        }
+
+        // JIKA STARTER PLAN, set template default dan langsung proses
+        $defaultTemplate = Template::where('path', 'template1')->first();
+        $this->multiStep->setStepData(4, ['template_id' => $defaultTemplate->id]);
+
         try {
             $user = $this->registrationService->processRegistration();
 
@@ -189,6 +251,32 @@ class AuthController extends BaseController
             $this->multiStep->clear();
             return redirect()->route('register.form', ['step' => 0])
                 ->with('error', 'Sesi Anda telah berakhir. Silakan ulangi proses pendaftaran dari awal.');
+        }
+    }
+    // Step 4: Pilih Template (Hanya untuk Business Plan)
+    public function submitTemplate(Request $request)
+    {
+        $request->validate(['template_id' => 'required|exists:templates,id']);
+
+        $this->multiStep->setStepData(4, $request->only('template_id'));
+
+        try {
+            $user = $this->registrationService->processRegistration();
+
+            session(['newly_registered_user_id' => $user->id]);
+            Notification::send(User::role('admin')->get(), new NewPartnerRegistration($user));
+            
+            // step verifikasi (step 5 untuk Business Plan)
+            session(['register_step' => 5]); 
+            
+            // Arahkan ke halaman verifikasi
+            return redirect()->route('register.form', ['step' => 5]);
+
+        } catch (\Exception $e) {
+            // Jika ada error apapun selama proses registrasi, bersihkan session dan kembali ke awal
+            // dd($e);
+            $this->multiStep->clear();
+            return redirect()->route('register.form', ['step' => 0])->with('error', 'Sesi Anda berakhir atau data tidak lengkap. Silakan coba lagi. Error: ' . $e->getMessage())->withInput();
         }
     }
 

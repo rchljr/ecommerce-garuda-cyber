@@ -74,7 +74,7 @@
 
                         {{-- Tombol Aksi --}}
                         @if(!is_null($package->monthly_price))
-                            <form action="{{ route('register.step0') }}" method="POST">
+                            <form action="{{ route('register.package.submit') }}" method="POST">
                                 @csrf
                                 <input type="hidden" name="plan" value="{{ $package->id }}">
                                 <input type="hidden" class="billing_period_input" name="billing_period" value="monthly">

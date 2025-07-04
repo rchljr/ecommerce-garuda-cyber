@@ -1,4 +1,4 @@
-@extends('template1.layouts.template1')
+@extends('template1.layouts.template')
 
 {{-- Gunakan nama produk sebagai judul halaman jika tersedia --}}
 @section('title', isset($product) ? $product->name : 'Detail Produk')

@@ -1,15 +1,10 @@
 <div class="w-full mx-auto flex flex-col h-full">
     <div class="flex-shrink-0">
-        <a href="{{ route('register.form', ['step' => 2]) }}"
-            class="inline-flex items-center text-gray-600 hover:text-gray-900 mb-6">
-            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-            </svg>
-        </a>
+        @include('landing-page.auth.partials._back_button')
         <h2 class="text-3xl font-bold text-gray-900 mb-4">Lengkapi Data Toko Anda</h2>
     </div>
 
-    <form action="{{ route('register.step3') }}" method="POST" enctype="multipart/form-data"
+    <form action="{{ route('register.shop.submit') }}" method="POST" enctype="multipart/form-data"
         class="flex-grow flex flex-col">
         @csrf
         <div class="flex-grow space-y-3">
@@ -62,7 +57,13 @@
         </div>
         <div class="flex-shrink-0 pt-4">
             <button type="submit"
-                class="w-full bg-red-700 text-white font-semibold py-3 rounded-lg hover:bg-red-800 transition-colors text-lg">Daftar</button>
+                class="w-full bg-red-700 text-white font-semibold py-3 rounded-lg hover:bg-red-800 transition-colors text-lg">
+                @if(isset($isBusinessPlan) && $isBusinessPlan)
+                    Lanjut
+                @else
+                    Daftar
+                @endif
+            </button>
         </div>
     </form>
 </div>

@@ -146,9 +146,9 @@ class InitialDataSeeder extends Seeder
 
         // 8. Data Kategori dan Sub-kategori
         $categoriesData = [
-            'Kuliner' => ['Makanan', 'Minuman', 'Snack', 'Kue & Roti'],
-            'Pakaian & Aksesoris' => ['Baju Wanita', 'Baju Pria', 'Sepatu', 'Tas', 'Jam Tangan', 'Perhiasan'],
-            'Jasa' => ['Desain Grafis', 'Fotografi', 'Perbaikan Elektronik', 'Konsultasi'],
+            'Kuliner' => ['Makanan', 'Minuman', 'Snack', 'Kue & Roti','Lainnya'],
+            'Pakaian & Aksesoris' => ['Baju Wanita', 'Baju Pria', 'Sepatu', 'Tas', 'Jam Tangan', 'Perhiasan', 'Aksesoris Lainnya'],
+            'Elektronik' => ['Rumah Tangga', 'Hiburan & Audio', 'Komputer & Aksesoris', 'Elektronik Lainnya'],
         ];
 
         // 9. Looping untuk membuat setiap kategori dan sub-kategorinya

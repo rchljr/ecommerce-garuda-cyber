@@ -1,13 +1,18 @@
+@php
+    // Ambil subdomain saat ini sekali saja dari parameter rute agar lebih efisien.
+    // Ini tersedia karena middleware 'tenant.exists' sudah memprosesnya.
+    $currentSubdomain = request()->route('subdomain');
+@endphp
 <div class="offcanvas-menu-overlay"></div>
 <div class="offcanvas-menu-wrapper">
     <div class="offcanvas__option">
         <div class="offcanvas__links">
-        {{-- Link ini akan selalu tampil --}}
+            {{-- Link ini akan selalu tampil --}}
             <a href="#">FAQs</a>
             {{-- Tampilkan link ini jika pengguna adalah tamu (belum login) --}}
             @guest
-                <a href="{{ route('customer.login.form') }}">Login</a>
-                <a href="{{ route('customer.register.form') }}">Daftar</a>
+                <a href="{{ route('tenant.customer.login.form', ['subdomain' => $currentSubdomain]) }}">Login</a>
+                <a href="{{ route('tenant.customer.register.form', ['subdomain' => $currentSubdomain]) }}">Daftar</a>
             @endguest
 
             {{-- Tampilkan menu ini jika pengguna sudah login --}}
@@ -17,12 +22,13 @@
                     <span class="arrow_carrot-down"></span>
                     <ul>
                         <li>
-                            <a href="{{ route('customer.logout') }}"
-                                onclick="event.preventDefault(); document.getElementById('logout-form-offcanvas').submit();">
+                            <a href="{{ route('tenant.customer.logout', ['subdomain' => $currentSubdomain]) }}"
+                                onclick="event.preventDefault(); document.getElementById('logout-form-header').submit();">
                                 Log Out
                             </a>
-                            <form id="logout-form-offcanvas" action="{{ route('customer.logout') }}" method="POST"
-                                style="display: none;">
+                            <form id="logout-form-header"
+                                action="{{ route('tenant.customer.logout', ['subdomain' => $currentSubdomain]) }}"
+                                method="POST" style="display: none;">
                                 @csrf
                             </form>
                         </li>

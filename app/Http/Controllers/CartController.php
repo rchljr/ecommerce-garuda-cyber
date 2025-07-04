@@ -41,8 +41,12 @@ class CartController extends Controller
      */
     public function index(Request $request)
     {
+        // Ambil data tenant dari request (sudah disiapkan oleh middleware)
+        $tenant = $request->get('tenant');
+        
         $cartItems = $this->cartService->getItems($request);
-        return view('customer.cart', compact('cartItems'));
+        
+        return view('customer.cart', compact('tenant', 'cartItems'));
     }
 
     /**

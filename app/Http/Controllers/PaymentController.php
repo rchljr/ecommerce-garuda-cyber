@@ -7,13 +7,49 @@ use Midtrans\Snap;
 use Midtrans\Config;
 use App\Models\Order;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use App\Services\MidtransWebhookService;
-use Illuminate\Support\Facades\DB;
+use App\Services\MultiStepRegistrationService;
 
 class PaymentController extends Controller
 {
+    protected $multiStep;
+
+    // 2. Inject service melalui constructor
+    public function __construct(MultiStepRegistrationService $multiStep)
+    {
+        $this->multiStep = $multiStep;
+    }
+
+    /**
+     * Menampilkan halaman pembayaran untuk pengguna yang sudah login.
+     */
+    public function show()
+    {
+        // ===================================================================
+        // PERBAIKAN: Hapus session registrasi di sini
+        // ===================================================================
+        $this->multiStep->clear();
+        session()->forget('newly_registered_user_id');
+        // ===================================================================
+
+        $user = Auth::user();
+        $order = Order::where('user_id', $user->id)
+            ->where('status', 'pending')
+            ->latest()
+            ->first();
+
+        if (!$order) {
+            return redirect()->route('mitra.dashboard')->with('info', 'Anda tidak memiliki tagihan yang perlu dibayar.');
+        }
+
+        return view('landing-page.partials._step5', [
+            'order' => $order,
+            // 'snapToken' => $snapToken, // Anda akan men-generate ini nanti
+        ]);
+    }
     public function generateSnapToken()
     {
         try {

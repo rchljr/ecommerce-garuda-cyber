@@ -1,4 +1,4 @@
-@extends('template1.layouts.template1')
+@extends('template1.layouts.template')
 
 @section('title', 'Wishlist Saya')
 

@@ -1,12 +1,13 @@
-{{-- File ini akan menampilkan konten yang berbeda berdasarkan status pengguna --}}
+{{-- resources/views/landing-page/auth/partials/_step4.blade.php --}}
+
 <div class="w-full mt-10 max-w-2xl mx-auto text-center">
 
-    {{-- Cek jika pengguna sudah login dan statusnya 'active' (disetujui) --}}
-    @if (Auth::check() && Auth::user()->status == 'active')
+    {{-- PERBAIKAN: Menggunakan variabel $statusUser yang dikirim dari controller --}}
+    @if (isset($statusUser) && $statusUser->status == 'active')
 
         {{-- TAMPILAN KETIKA SUDAH DISETUJUI --}}
-        <div class="border-2 border-red-300 rounded-lg p-8 md:p-12"
-            style="box-shadow: 8px 6px 10px 4px rgba(178, 0, 0, 0.15); border-radius: 16px;">
+        <div class="border-2 border-red-300 rounded-lg p-8 md:p-12 bg-white"
+            style="box-shadow: 8px 6px 10px 4px rgba(101, 174, 56, 0.15); border-radius: 16px;">
             <div class="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center mx-auto mb-6">
                 {{-- Ikon Centang --}}
                 <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -32,7 +33,7 @@
     @else
 
         {{-- TAMPILAN DEFAULT (MENUNGGU VERIFIKASI) --}}
-        <div class="border-2 border-red-300 rounded-lg p-8 md:p-12"
+        <div class="border-2 border-red-300 rounded-lg p-8 md:p-12 bg-white"
             style="box-shadow: 8px 6px 10px 4px rgba(178, 0, 0, 0.15); border-radius: 16px;">
             <div class="w-16 h-16 bg-yellow-400 rounded-full flex items-center justify-center mx-auto mb-6">
                 {{-- Ikon Jam --}}
