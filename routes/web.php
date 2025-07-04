@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ShopController;
+use App\Http\Controllers\TenantController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\VoucherController;
@@ -12,6 +13,7 @@ use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\WishlistController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\TestimoniController;
+use App\Http\Controllers\Mitra\TemaController;
 use App\Http\Controllers\Mitra\HeroController;
 use App\Http\Controllers\LandingPageController;
 use App\Http\Controllers\Mitra\MitraController;
@@ -73,9 +75,14 @@ Route::prefix('register')->name('register.')->group(function () {
     Route::get('/', [AuthController::class, 'showRegisterForm'])->name('form');
     Route::post('/step0', [AuthController::class, 'registerStep0'])->name('step0');
     Route::post('/step1', [AuthController::class, 'registerStep1'])->name('step1');
+    Route::post('/step1a', [TenantController::class, 'store'])->name('step1a');
     Route::post('/step2', [AuthController::class, 'registerStep2'])->name('step2');
     Route::post('/step3', [AuthController::class, 'registerStep3'])->name('step3');
 });
+
+Route::get('/tenant/create', [TenantController::class, 'create'])->name('tenant.create');
+
+
 
 //Keranjang Belanja
 Route::prefix('cart')->name('cart.')->group(function () {
@@ -140,7 +147,12 @@ Route::prefix('cart')->name('cart.')->group(function () {
 // Route::get('/about', function () {
 //     return view('template1.about'); // Anda perlu membuat file template1/about.blade.php
 // });
+Route::get('/preview/{slug}', function ($slug) {
+    $template = \App\Models\Template::where('slug', $slug)->firstOrFail();
 
+    // Render tampilan berdasarkan folder template (contoh: resources/views/template1/index.blade.php)
+    return view($template->path . '.beranda');
+});
 // routes/web.php
 Route::get('/beranda', [HomeController::class, 'index'])->name('home');
 Route::get('/shop', [ShopController::class, 'index'])->name('shop');
@@ -249,6 +261,9 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/contacts', [ContactController::class, 'edit'])->name('contacts');
         Route::put('/contacts', [ContactController::class, 'update'])->name('contacts.update');
 
+        Route::get('/tema', [TemaController::class, 'create'])->name('tema');
+        Route::post('/tema', [TemaController::class, 'store'])->name('tema.store');
+
         // Route::resource('pages', PageController::class); // Ini akan membuat mitra.pages.* routes
 
         // Manajemen Seksi Halaman (PageSectionController) - Nested Resource
@@ -279,8 +294,6 @@ Route::middleware(['auth'])->group(function () {
         Route::get('varians/{varian}/edit', [VarianController::class, 'edit'])->name('varians.edit');
         Route::put('varians/{varian}', [VarianController::class, 'update'])->name('varians.update');
         Route::delete('varians/{varian}', [VarianController::class, 'destroy'])->name('varians.destroy');
-
-
     });
 
     //== CUSTOMER ROUTES ==//
