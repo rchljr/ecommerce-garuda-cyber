@@ -1,0 +1,71 @@
+# Nama workflow yang akan tampil di tab Actions GitHub
+name: Deploy ECommerce Garuda to Niagahoster via FTP
+
+# Pemicu: Workflow ini akan berjalan setiap kali ada 'push' ke branch 'main'
+on:
+  push:
+    branches:
+      - main  # Ganti ke 'master' jika itu nama branch utama Anda
+
+jobs:
+  deploy:
+    # Menggunakan server virtual Ubuntu terbaru untuk menjalankan proses
+    runs-on: ubuntu-latest
+
+    steps:
+    # Langkah 1: Mengunduh kode dari repository Anda ke server virtual
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    # Langkah 2: Menyiapkan lingkungan PHP
+    # Ini penting karena Laravel adalah framework PHP
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.1' # Sesuaikan versi PHP dengan yang Anda gunakan di Niagahoster
+
+    # Langkah 3: Install dependensi PHP dengan Composer
+    - name: Install Composer Dependencies
+      run: composer install --prefer-dist --no-progress --no-dev
+
+    # Langkah 4: Menyiapkan file environment Laravel
+    # Menyalin .env.example menjadi .env dan membuat kunci aplikasi
+    - name: Prepare Laravel Environment
+      run: |
+        cp .env.example .env
+        php artisan key:generate
+
+    # Langkah 5: Menyiapkan Node.js
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18' # Sesuaikan dengan versi Node.js yang Anda gunakan
+
+    # Langkah 6: Install dependensi JavaScript/CSS dengan NPM
+    - name: Install NPM Dependencies
+      run: npm install
+
+    # Langkah 7: Build/compile aset frontend (CSS, JS)
+    - name: Build Frontend Assets
+      run: npm run build
+
+    # Langkah 8: Mengunggah semua file ke hosting via FTP
+    - name: FTP Deploy
+      uses: SamKirkland/FTP-Deploy-Action@4.3.3
+      with:
+        # Kredensial FTP diambil dari GitHub Secrets (lebih aman)
+        server: ${{ secrets.FTP_SERVER }}
+        username: ${{ secrets.FTP_USERNAME }}
+        password: ${{ secrets.FTP_PASSWORD }}
+        
+        # Path tujuan di hosting Anda. Sesuaikan jika perlu.
+        # Untuk Niagahoster hPanel, biasanya path ini sudah benar.
+        remote_path: './domains/gci.com/public_html/'
+        
+        # Mengecualikan file/folder yang tidak perlu di-upload
+        # Ini sangat penting untuk menghemat waktu dan ruang
+        exclude: |
+          **/.git*
+          **/.git*/**
+          **/node_modules/**
+          **.env
