@@ -19,7 +19,7 @@
                 <div>
                     <div class="flex items-center gap-3 mb-12">
                         <a href="{{ route('landing') }}" title="Kembali ke Beranda">
-                            <img src="{{ asset('images/GCI.png') }}" alt="Garuda Cyber" class="w-12 h-12" />
+                            <img src="{{ asset('images/gci.png') }}" alt="Garuda Cyber" class="w-12 h-12" />
                         </a>
                         <h1 class="font-bold text-2xl">E-COMMERCE GCI</h1>
                     </div>
