@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 @extends('layouts.admin')
 @section('title', 'Kelola Landing Page')
 
