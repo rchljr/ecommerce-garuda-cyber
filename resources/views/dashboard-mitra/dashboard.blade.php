@@ -32,7 +32,7 @@
                         // Mengambil data subdomain dari user yang sedang login
                         $subdomain = Auth::user()->subdomain->subdomain_name ?? null;
                         // Mengganti 'ecommercegaruda.my.id' dengan domain utama Anda jika berbeda
-                        $storeUrl = $subdomain ? 'http://' . $subdomain . '.ecommercegaruda.my.id' : '#';
+                        $storeUrl = $subdomain ? 'http://ecommercegaruda.my.id/tenant/' . $subdomain : '#';
                     @endphp
 
                     @if($subdomain)

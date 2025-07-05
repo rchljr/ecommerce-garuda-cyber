@@ -71,7 +71,7 @@ Route::prefix('tenant/{subdomain}')
             Route::post('/login', [CustomerAuthController::class, 'login'])->name('login.submit');
             Route::get('/register', [CustomerAuthController::class, 'showRegisterForm'])->name('register.form');
             Route::post('/register', [CustomerAuthController::class, 'register'])->name('register.submit');
-            Route::post('/logout', [CustomerAuthController::class, 'logout'])->name('logout')->middleware('auth');
+            Route::post('/logout', [CustomerAuthController::class, 'logout'])->name('logout')->middleware('auth:customers');
         });
 
         // Rute Keranjang Belanja
@@ -82,8 +82,14 @@ Route::prefix('tenant/{subdomain}')
             Route::delete('/remove/{productCartId}', [CartController::class, 'remove'])->name('remove');
         });
 
+        // Rute Checkout
+        Route::prefix('checkout')->name('checkout.')->middleware('auth:customers')->group(function () {
+            Route::get('/', [CheckoutController::class, 'index'])->name('index');
+            Route::post('/process', [CheckoutController::class, 'process'])->name('process');
+        });
+
         // Rute Dasbor Pelanggan (Memerlukan Login)
-        Route::prefix('account')->middleware(['auth'])->name('account.')->group(function () {
+        Route::prefix('account')->middleware(['auth:customers'])->name('account.')->group(function () {
             Route::get('/profile', [CustomerProfileController::class, 'show'])->name('profile');
             Route::post('/profile/update', [CustomerProfileController::class, 'update'])->name('profile.update');
             Route::get('/orders', [CustomerOrderController::class, 'index'])->name('orders');
