@@ -170,7 +170,9 @@ Route::post('/wishlist/toggle', [WishlistController::class, 'toggle'])->name('wi
 
 //== MIDTRANS WEBHOOK (TIDAK MEMERLUKAN AUTH/CSRF) ==//
 //Route::post('/midtrans/webhook', [PaymentController::class, 'handleWebhook'])->name('midtrans.webhook');
-
+Route::get('/fruit', function () {
+    return view('template2.home');
+});
 // == GRUP RUTE UNTUK PENGGUNA YANG SUDAH LOGIN ==
 Route::middleware(['auth'])->group(function () {
     /// Rute yang bisa diakses oleh semua user yang login
