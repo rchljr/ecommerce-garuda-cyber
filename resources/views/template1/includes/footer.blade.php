@@ -1,10 +1,16 @@
+@php
+    // Ambil subdomain saat ini sekali saja dari parameter rute agar lebih efisien.
+    $currentSubdomain = request()->route('subdomain');
+@endphp
+
 <footer class="footer">
     <div class="container">
         <div class="row">
             <div class="col-lg-3 col-md-6 col-sm-6">
                 <div class="footer__about">
                     <div class="footer__logo">
-                        <a href="#"><img src="{{ asset('img/footer-logo.png') }}" alt=""></a>
+                        {{-- PERBAIKAN: Link logo sekarang menunjuk ke halaman utama tenant --}}
+                        <a href="{{ route('tenant.home', ['subdomain' => $currentSubdomain]) }}"><img src="{{ asset('img/footer-logo.png') }}" alt=""></a>
                     </div>
                     <p>Pelanggan adalah inti dari model bisnis unik kami, yang mencakup proses desain.</p>
                     <a href="#"><img src="{{ asset('img/payment.png') }}" alt=""></a>
@@ -17,7 +23,8 @@
                         <li><a href="#">Produk Baru</a></li>
                         <li><a href="#">Kualitas Terbaik</a></li>
                         <li><a href="#">Support UMKM</a></li>
-                        <li><a href="#">Belanja</a></li>
+                        {{-- PERBAIKAN: Link "Belanja" sekarang menunjuk ke halaman toko tenant --}}
+                        <li><a href="{{ route('tenant.shop', ['subdomain' => $currentSubdomain]) }}">Belanja</a></li>
                     </ul>
                 </div>
             </div>
@@ -25,8 +32,9 @@
                 <div class="footer__widget">
                     <h6>Belanja</h6>
                     <ul>
-                        <li><a href="contact">Kontak Kami</a></li>
-                        <li><a href="shop">Produk</a></li>
+                        {{-- PERBAIKAN: Semua link sekarang menggunakan rute tenant yang benar --}}
+                        <li><a href="{{ route('tenant.contact', ['subdomain' => $currentSubdomain]) }}">Kontak Kami</a></li>
+                        <li><a href="{{ route('tenant.shop', ['subdomain' => $currentSubdomain]) }}">Produk</a></li>
                     </ul>
                 </div>
             </div>
@@ -52,7 +60,7 @@
                             document.write(new Date().getFullYear());
                         </script>
                         All rights reserved | This template is made with <i class="fa fa-heart-o"
-                        aria-hidden="true"></i> by <a href="https://colorlib.com" target="_blank">Sabi</a>
+                        aria-hidden="true"></i> by <a href="https://colorlib.com" target="_blank">PT. Garuda Cyber Indonesia.</a>
                     </p>
                     <!-- Link back to Colorlib can't be removed. Template is licensed under CC BY 3.0. -->
                 </div>

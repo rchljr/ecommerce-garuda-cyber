@@ -5,8 +5,10 @@ namespace Database\Seeders;
 use App\Models\Shop;
 use App\Models\User;
 use App\Models\Order;
+use App\Models\Tenant;
 use App\Models\Payment;
 use App\Models\Category;
+use App\Models\Template;
 use App\Models\Subdomain;
 use App\Models\UserPackage;
 use Illuminate\Support\Str;
@@ -48,6 +50,16 @@ class InitialDataSeeder extends Seeder
                 'yearly_discount' => 17,
                 'is_trial' => false,
                 'trial_days' => 0,
+            ]
+        );
+
+        // Buat Template (sesuai dengan TemplateSeeder Anda)
+        $template = Template::firstOrCreate(
+            ['path' => 'template1'],
+            [
+                'name' => 'Sleek',
+                'slug' => 'pakaian-dan-aksesoris', // Sesuaikan slug agar konsisten
+                'description' => 'Desain yang bersih dan modern, memberikan pengalaman pengguna yang intuitif dan elegan.'
             ]
         );
 
@@ -100,7 +112,7 @@ class InitialDataSeeder extends Seeder
         );
 
         // 4. Buat Subdomain
-        Subdomain::firstOrCreate(
+        $subdomain = Subdomain::firstOrCreate(
             ['user_id' => $mitra->id],
             [
                 'subdomain_name' => 'sejahtera-makmur',
@@ -117,7 +129,16 @@ class InitialDataSeeder extends Seeder
                 'price_paid' => $businessPackage->yearly_price,
                 'active_date' => now(),
                 'expired_date' => now()->addYear(),
-                'status' => 'active', 
+                'status' => 'active',
+            ]
+        );
+
+        // 6. Buat Tenant untuk mitra
+        Tenant::firstOrCreate(
+            ['user_id' => $mitra->id],
+            [
+                'subdomain_id' => $subdomain->id,
+                'template_id' => $template->id,
             ]
         );
 
@@ -146,9 +167,9 @@ class InitialDataSeeder extends Seeder
 
         // 8. Data Kategori dan Sub-kategori
         $categoriesData = [
-            'Kuliner' => ['Makanan', 'Minuman', 'Snack', 'Kue & Roti'],
-            'Pakaian & Aksesoris' => ['Baju Wanita', 'Baju Pria', 'Sepatu', 'Tas', 'Jam Tangan', 'Perhiasan'],
-            'Jasa' => ['Desain Grafis', 'Fotografi', 'Perbaikan Elektronik', 'Konsultasi'],
+            'Kuliner' => ['Makanan', 'Minuman', 'Snack', 'Kue & Roti', 'Lainnya'],
+            'Pakaian & Aksesoris' => ['Baju Wanita', 'Baju Pria', 'Sepatu', 'Tas', 'Jam Tangan', 'Perhiasan', 'Aksesoris Lainnya'],
+            'Elektronik' => ['Rumah Tangga', 'Hiburan & Audio', 'Komputer & Aksesoris', 'Elektronik Lainnya'],
         ];
 
         // 9. Looping untuk membuat setiap kategori dan sub-kategorinya

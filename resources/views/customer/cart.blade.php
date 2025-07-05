@@ -2,10 +2,14 @@
 @section('title', 'Keranjang Belanja')
 
 @section('content')
+    @php
+        $currentSubdomain = request()->route('subdomain');
+    @endphp
+
     <div class="bg-gray-100 py-12">
         <div class="container mx-auto px-4">
             <h1 class="text-3xl font-bold text-gray-800 mb-8">Keranjang Belanja Anda</h1>
-            <form id="cart-form" action="{{ route('checkout.index') }}" method="GET">
+            <form id="cart-form" action="{{ route('tenant.checkout.index', ['subdomain' => $currentSubdomain]) }}" method="GET">
                 <div class="flex flex-col lg:flex-row gap-8">
                     <!-- Daftar Item Keranjang -->
                     <div class="w-full lg:w-2/3">

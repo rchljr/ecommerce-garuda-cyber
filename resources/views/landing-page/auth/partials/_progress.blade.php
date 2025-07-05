@@ -1,38 +1,32 @@
-<div class="w-full mx-auto mb-4 px-4">
-    <div class="flex items-start">
-        @php
-            $steps = [
-                0 => 'Pilih Paket',
-                1 => 'Subdomain',
-                2 => 'Data Diri',
-                3 => 'Data Toko',
-                4 => 'Verifikasi',
-                5 => 'Pembayaran'
-            ];
-            $totalSteps = count($steps);
-        @endphp
+<div class="w-full mx-auto mb-4 px-2 sm:px-4 py-4">
+    <div class="flex items-start justify-center">
 
         @foreach ($steps as $index => $label)
-            <div class="flex items-center {{ $index > 0 ? 'flex-1' : '' }}">
+            <div class="flex items-center {{ $loop->first ? 'flex-initial' : 'flex-1' }}">
+
                 {{-- Garis Konektor --}}
-                @if ($index > 0)
-                    <div class="flex-1 h-1 {{ $currentStep >= $index ? 'bg-red-600' : 'bg-gray-300' }}"></div>
+                @if (!$loop->first)
+                    <div
+                        class="flex-1 h-1 {{ $currentStep >= $index ? 'bg-red-600' : 'bg-gray-300' }} transition-colors duration-500 mx-1 sm:mx-2">
+                    </div>
                 @endif
 
-                {{-- Lingkaran Step --}}
-                <div class="flex flex-col items-center">
+                {{-- Lingkaran Step & Label --}}
+                <div class="flex flex-col items-center flex-shrink-0">
                     <div
-                        class="w-10 h-10 rounded-full flex items-center justify-center text-white
-                            {{ $currentStep > $index ? 'bg-red-600' : ($currentStep == $index ? 'bg-red-600' : 'bg-gray-300') }}">
+                        class="w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center text-white font-medium transition-all duration-500
+                                {{ $currentStep > $index ? 'bg-red-600' : ($currentStep == $index ? 'bg-red-600 scale-110' : 'bg-gray-300') }}">
                         @if ($currentStep > $index)
-                            <span class="font-bold">&#10003;</span> {{-- Tanda centang --}}
+                            <span class="text-lg md:text-xl font-bold">&#10003;</span> {{-- Tanda centang --}}
                         @else
-                            {{ $index + 1 }}
+                            <span class="text-sm md:text-base">{{ $loop->iteration }}</span>
                         @endif
                     </div>
-                    <p
-                        class="mt-2 text-xs text-center hidden md:block {{ $currentStep >= $index ? 'text-gray-800 font-semibold' : 'text-gray-500' }}">
-                        {{ $label }}</p>
+                    <p class="mt-2 text-xs text-center font-semibold transition-colors duration-500
+                            {{ $currentStep == $index ? 'block text-red-600' : 'hidden md:block' }}
+                            {{ $currentStep > $index ? 'text-gray-800' : 'text-gray-500' }}">
+                        {{ $label }}
+                    </p>
                 </div>
             </div>
         @endforeach

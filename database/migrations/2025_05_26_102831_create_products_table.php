@@ -32,7 +32,7 @@ return new class extends Migration
 
             // Kolom Relasi & Status
             $table->foreignUuid('user_id')->constrained('users')->onDelete('cascade');
-            $table->foreignUuid('category_id')->constrained('categories')->onDelete('cascade');
+            $table->foreignUuid('sub_category_id')->constrained('sub_categories')->onDelete('cascade');
             $table->enum('status', ['active', 'inactive', 'draft'])->default('draft');
             
             // Kolom untuk fitur tambahan (opsional tapi disarankan)

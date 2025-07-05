@@ -60,6 +60,10 @@ class User extends Authenticatable
     {
         return $this->hasOne(Shop::class);
     }
+    public function tenant()
+{
+    return $this->hasOne(Tenant::class);
+}
     public function subdomain()
     {
         return $this->hasOne(Subdomain::class);

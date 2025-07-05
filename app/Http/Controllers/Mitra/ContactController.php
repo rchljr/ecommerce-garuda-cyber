@@ -53,13 +53,19 @@ class ContactController extends Controller
     }
 
     /**
-     * Menampilkan halaman kontak publik.
-     * @return \Illuminate->View->View
+     * Menampilkan halaman kontak publik untuk tenant.
      */
-    public function showPublic()
+    public function showPublic(Request $request)
     {
-        // Ambil entry kontak pertama untuk ditampilkan di halaman publik
-        $contact = Contact::first(); // Jika tidak ada, mungkin tampilkan pesan default
-        return view('template1.contact', compact('contact'));
+        // 1. Ambil data tenant dan path template dari middleware
+        $tenant = $request->get('tenant');
+        $templatePath = $tenant->template->path;
+
+        // 2. Ambil data kontak. Anda bisa sesuaikan logika ini jika setiap
+        //    tenant punya data kontak sendiri.
+        $contact = Contact::first(); 
+
+        // 3. Tampilkan view dari template yang benar
+        return view($templatePath . '.contact', compact('tenant', 'contact'));
     }
 }

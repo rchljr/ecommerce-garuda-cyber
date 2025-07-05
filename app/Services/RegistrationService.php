@@ -6,14 +6,15 @@ use Exception;
 use App\Models\Shop;
 use App\Models\User;
 use App\Models\Order;
+use App\Models\Tenant;
 use App\Models\Subdomain;
 use App\Traits\UploadFile;
 use App\Models\UserPackage;
-use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use App\Models\SubscriptionPackage;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Notification;
 use App\Notifications\PartnerActivatedNotification;
 
 class RegistrationService
@@ -21,7 +22,7 @@ class RegistrationService
     use UploadFile;
 
     protected $multiStep;
-    
+
 
     public function __construct(MultiStepRegistrationService $multiStep)
     {
@@ -32,9 +33,10 @@ class RegistrationService
     {
         return DB::transaction(function () {
             $allData = $this->multiStep->getAllData();
+            //dd($allData);
 
-            if (empty($allData['user']) || empty($allData['plan']) || empty($allData['subdomain']) || empty($allData['shop'])) {
-                // Lemparkan exception jika data tidak lengkap
+            // Validasi data penting
+            if (empty($allData['user']) || empty($allData['plan']) || empty($allData['template']) || empty($allData['subdomain']) || empty($allData['shop'])) {
                 throw new Exception('Data registrasi tidak lengkap. Sesi mungkin telah berakhir.');
             }
 
@@ -54,17 +56,25 @@ class RegistrationService
             Shop::create(array_merge($allData['shop'], ['user_id' => $user->id]));
 
             // 4. Simpan Subdomain
-            Subdomain::create([
+            $subdomain = Subdomain::create([
                 'user_id' => $user->id,
                 'subdomain_name' => $allData['subdomain']['subdomain'],
                 'status' => 'pending',
             ]);
 
-            // 5. Ambil detail paket dan harga
+            // 5. BUAT TENANT BARU
+            Tenant::create([
+                'id' => Str::uuid(),
+                'user_id' => $user->id,
+                'subdomain_id' => $subdomain->id, 
+                'template_id' => $allData['template']['template_id'], // Ambil dari session
+            ]);
+
+            // 6. Ambil detail paket dan harga
             $package = SubscriptionPackage::findOrFail($allData['plan']['plan_id']);
             $price = $allData['plan']['plan_type'] === 'yearly' ? $package->yearly_price : $package->monthly_price;
 
-            // 6. Buat Order
+            // 7. Buat Order
             $order = Order::create([
                 'user_id' => $user->id,
                 'voucher_id' => null, // Voucher diterapkan nanti di halaman pembayaran
@@ -73,17 +83,14 @@ class RegistrationService
                 'total_price' => $price,
             ]);
 
-            // 7. Simpan Paket Langganan User
+            // 8. Simpan Paket Langganan User
             UserPackage::create([
                 'user_id' => $user->id,
                 'subs_package_id' => $package->id,
                 'plan_type' => $allData['plan']['plan_type'],
                 'price_paid' => $price, // Harga asli sebelum diskon
                 'status' => 'pending',
-            ]);
-
-            // Bersihkan session
-            $this->multiStep->clear();
+            ]); 
 
             return $user;
         });
@@ -104,7 +111,7 @@ class RegistrationService
             if (!$userPackage) {
                 throw new Exception("UserPackage tidak ditemukan untuk user ID: {$user->id}");
             }
-            
+
             // 2. Update UserPackage untuk trial
             $userPackage->update([
                 'status' => 'active',
@@ -118,7 +125,7 @@ class RegistrationService
             $user->removeRole('calon-mitra');
             $user->assignRole('mitra');
             $user->save();
-            
+
             // 4. Update Subdomain menjadi aktif
             if ($user->subdomain) {
                 $user->subdomain->update(['status' => 'active']);

@@ -16,7 +16,7 @@ $app->withMiddleware(function (Middleware $middleware) {
         'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
         'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
         'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
-
+        'tenant.exists' => \App\Http\Middleware\EnsureTenantExists::class,
     ]);
 });
 
@@ -28,7 +28,9 @@ $app = $app->withRouting(
     health: '/up',
 )->withMiddleware(function (Middleware $middleware) {
     $middleware->web(append: [
-        \App\Http\Middleware\SetMitraTheme::class,
+        // \App\Http\Middleware\Authenticate::class, // Middleware untuk autentikasi
+    ])->api(append: [
+        // Tambahkan middleware API jika diperlukan
     ]);
 })->withExceptions(function (Exceptions $exceptions) {
     // Konfigurasi exception handler jika perlu

@@ -6,140 +6,230 @@ use Exception;
 use Midtrans\Snap;
 use Midtrans\Config;
 use App\Models\Order;
+use Midtrans\CoreApi;
+use App\Models\Voucher;
+use Midtrans\Notification;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use App\Services\MidtransWebhookService;
-use Illuminate\Support\Facades\DB;
+use App\Services\MultiStepRegistrationService;
 
 class PaymentController extends Controller
 {
-    public function generateSnapToken()
+    protected $multiStep;
+
+    // 2. Inject service melalui constructor
+    public function __construct(MultiStepRegistrationService $multiStep)
     {
-        try {
-            $user = Auth::user();
-            $newOrder = null;
-
-            if (!$user) {
-                throw new Exception('User not authenticated.');
-            }
-
-            // Gunakan transaction untuk memastikan integritas data
-            DB::transaction(function () use ($user, &$newOrder) {
-                // 1. Cari order yang masih pending
-                $pendingOrder = Order::where('user_id', $user->id)
-                    ->where('status', 'pending')
-                    ->latest()
-                    ->first();
-
-                // 2. Jika ada, batalkan order tersebut
-                if ($pendingOrder) {
-                    $pendingOrder->update(['status' => 'cancelled']);
-                }
-
-                // 3. Ambil detail harga dari paket langganan user
-                $userPackage = $user->userPackage;
-                if (!$userPackage) {
-                    // Ini adalah kemungkinan sumber error. Lemparkan exception jika paket tidak ada.
-                    throw new Exception('User package not found for user ID: ' . $user->id);
-                }
-
-                // KALKULASI HARGA DENGAN DISKON TAHUNAN 
-                $subscriptionPackage = $userPackage->subscriptionPackage;
-                $price = 0;
-
-                if ($userPackage->plan_type === 'yearly') {
-                    $basePrice = $subscriptionPackage->yearly_price;
-                    $discountPercentage = $subscriptionPackage->yearly_discount ?? 0;
-                    $discountAmount = ($basePrice * $discountPercentage) / 100;
-                    $price = $basePrice - $discountAmount;
-                } else { // Jika 'monthly' atau tipe lainnya
-                    $price = $subscriptionPackage->monthly_price;
-                }
-
-                // 4. Buat Order BARU dengan ID yang BARU dan UNIK
-                $newOrder = Order::create([
-                    'user_id' => $user->id,
-                    'status' => 'pending',
-                    'order_date' => now(),
-                    'total_price' => $price,
-                ]);
-            });
-
-            if (!$newOrder) {
-                throw new Exception('Failed to create a new order.');
-            }
-
-            // Setup Midtrans...
-            Config::$serverKey = config('services.midtrans.server_key');
-            Config::$isProduction = config('services.midtrans.is_production');
-            Config::$isSanitized = true;
-            Config::$is3ds = true;
-
-            $params = [
-                'transaction_details' => [
-                    'order_id' => $newOrder->id,
-                    'gross_amount' => $newOrder->total_price,
-                ],
-                'customer_details' => [
-                    'first_name' => $user->name,
-                    'email' => $user->email,
-                    'phone' => $user->phone,
-                ],
-            ];
-
-            $snapToken = Snap::getSnapToken($params);
-            return response()->json(['snap_token' => $snapToken]);
-
-        } catch (Exception $e) {
-            // Jika ada error apa pun di dalam blok try, catat dan kirim respons JSON
-            Log::error("Failed to generate Snap Token: " . $e->getMessage(), [
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            // Kirim respons JSON yang valid agar tidak merusak front-end
-            return response()->json(['error' => 'Terjadi kesalahan di server. Silakan coba lagi nanti.'], 500);
-        }
+        $this->multiStep = $multiStep;
+        // Setup Midtrans Config di constructor agar lebih rapi
+        Config::$serverKey = config('services.midtrans.server_key');
+        Config::$isProduction = config('services.midtrans.is_production');
     }
-    public function applyVoucher(Request $request)
-    { /* ... kode Anda yang sudah ada ... */
-    }
-
 
     /**
-     * handleWebhook yang dimodifikasi HANYA untuk tes dengan Postman.
-     * Metode ini melewati validasi signature key.
-     * * PENTING: Kembalikan ke kode semula setelah selesai melakukan tes!
+     * Menampilkan halaman pembayaran untuk pengguna yang sudah login.
+     */
+    public function show()
+    {
+        $this->multiStep->clear();
+        session()->forget('newly_registered_user_id');
+
+        $user = Auth::user();
+        $order = Order::with('userPackage.subscriptionPackage', 'voucher')
+            ->where('user_id', $user->id)
+            ->where('status', 'pending')
+            ->latest()
+            ->first();
+
+        if (!$order) {
+            return redirect()->route('mitra.dashboard')->with('info', 'Anda tidak memiliki tagihan yang perlu dibayar.');
+        }
+
+        return view('landing-page.auth.partials._step5', ['order' => $order]);
+    }
+    /**
+     * Method  yang paling penting untuk menangani pembayaran via Core API.
+     */
+    public function chargeCoreApi(Request $request)
+    {
+        $request->validate([
+            'payment_method' => 'required|string|in:bca_va,bni_va,bri_va,gopay,qris',
+        ]);
+
+        $user = Auth::user();
+        $order = Order::with('voucher', 'user.userPackage')->where('user_id', $user->id)->where('status', 'pending')->latest()->first();
+
+        if (!$order) {
+            return response()->json(['error' => 'Order aktif tidak ditemukan.'], 404);
+        }
+
+        $finalPrice = $order->user->userPackage->price_paid;
+
+        if ($order->voucher) {
+            $percentage = $order->voucher->discount;
+            $discountAmount = ($finalPrice * $percentage) / 100;
+            $finalPrice -= $discountAmount;
+        }
+
+        // PERBAIKAN: Pastikan harga adalah integer (pembulatan) untuk Midtrans.
+        $finalPrice = round($finalPrice);
+        if ($finalPrice < 0)
+            $finalPrice = 0;
+
+        $order->total_price = $finalPrice;
+        $order->save();
+
+        // PERBAIKAN: Buat ID transaksi unik untuk setiap percobaan pembayaran.
+        $transactionId = $order->id . '-' . time();
+
+        $params = [
+            'transaction_details' => [
+                'order_id' => $transactionId, // Gunakan ID unik
+                'gross_amount' => $order->total_price,
+            ],
+            'customer_details' => [
+                'first_name' => $user->name,
+                'email' => $user->email,
+                'phone' => $user->phone,
+            ],
+        ];
+
+        switch ($request->payment_method) {
+            case 'bca_va':
+                $params['payment_type'] = 'bank_transfer';
+                $params['bank_transfer'] = ['bank' => 'bca'];
+                break;
+            case 'bni_va':
+                $params['payment_type'] = 'bank_transfer';
+                $params['bank_transfer'] = ['bank' => 'bni'];
+                break;
+            case 'bri_va':
+                $params['payment_type'] = 'bank_transfer';
+                $params['bank_transfer'] = ['bank' => 'bri'];
+                break;
+            case 'gopay':
+                $params['payment_type'] = 'gopay';
+                break;
+            case 'qris':
+                $params['payment_type'] = 'qris';
+                break;
+        }
+
+        try {
+            $response = CoreApi::charge($params);
+            return response()->json($response);
+        } catch (Exception $e) {
+            // PERBAIKAN: Logging dan pesan error yang lebih detail.
+            $errorBody = $e->getMessage();
+            $decodedError = json_decode($errorBody);
+            $errorMessage = $errorBody;
+
+            if (json_last_error() === JSON_ERROR_NONE && isset($decodedError->error_messages)) {
+                $errorMessage = implode(', ', $decodedError->error_messages);
+            }
+
+            Log::error("Midtrans Core API Error: " . $errorMessage, [
+                'order_id' => $order->id,
+                'transaction_id' => $transactionId
+            ]);
+            return response()->json(['error' => 'Gagal membuat sesi pembayaran: ' . $errorMessage], 500);
+        }
+    }
+
+    public function applyVoucher(Request $request)
+    {
+        $request->validate(['voucher_code' => 'required|string']);
+
+        $user = Auth::user();
+        $order = Order::where('user_id', $user->id)->where('status', 'pending')->latest()->first();
+
+        if (!$order) {
+            return response()->json(['error' => 'Order tidak ditemukan.'], 404);
+        }
+
+        $voucher = Voucher::where('voucher_code', $request->voucher_code)
+            ->where('start_date', '<=', now())
+            ->where('expired_date', '>=', now())
+            ->first();
+
+        if (!$voucher) {
+            return response()->json(['error' => 'Kode voucher tidak valid atau sudah kedaluwarsa.'], 404);
+        }
+
+        $originalPrice = $order->user->userPackage->price_paid;
+        if ($originalPrice < $voucher->min_spending) {
+            return response()->json(['error' => 'Total belanja tidak memenuhi syarat minimum untuk voucher ini.'], 422);
+        }
+
+        // Cek minimum pembelanjaan
+        $percentage = $voucher->discount;
+        $discountAmount = ($originalPrice * $percentage) / 100;
+        $finalPrice = $originalPrice - $discountAmount;
+        if ($finalPrice < 0)
+            $finalPrice = 0;
+
+        $order->voucher_id = $voucher->id;
+        $order->total_price = $finalPrice;
+        $order->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Voucher berhasil diterapkan!',
+            'final_price' => $finalPrice,
+            'discount_amount' => $discountAmount,
+            'original_price' => $originalPrice
+        ]);
+    }
+
+    /**
+     * Method  untuk menghapus voucher dari order.
+     */
+    public function removeVoucher(Request $request)
+    {
+        $user = Auth::user();
+        $order = Order::with('user.userPackage')->where('user_id', $user->id)->where('status', 'pending')->latest()->first();
+
+        if (!$order) {
+            return response()->json(['error' => 'Order tidak ditemukan.'], 404);
+        }
+
+        if (!$order->voucher_id) {
+            return response()->json(['error' => 'Tidak ada voucher yang diterapkan.'], 400);
+        }
+
+        $originalPrice = $order->user->userPackage->price_paid;
+
+        // Hapus voucher dan kembalikan harga ke semula
+        $order->voucher_id = null;
+        $order->total_price = $originalPrice;
+        $order->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Voucher berhasil dihapus.',
+            'final_price' => $originalPrice
+        ]);
+    }
+
+    /**
+     * Menggunakan handleWebhook yang sesungguhnya untuk Midtrans.
      */
     public function handleWebhook(Request $request, MidtransWebhookService $webhookService)
     {
-        Log::info('Midtrans Webhook (POSTMAN TEST): Request diterima.', $request->all());
-
         try {
-            // 1. Ambil semua data dari request Postman
-            $notificationPayload = (object) $request->all();
+            // Buat instance notifikasi dari Midtrans, ini akan membaca input dari request secara otomatis
+            $notification = new Notification();
+            
+            // Panggil service dengan object notifikasi yang sudah divalidasi
+            $webhookService->handle($notification);
 
-            // 2. Periksa apakah data penting ada
-            if (empty($notificationPayload->order_id) || empty($notificationPayload->transaction_status)) {
-                throw new Exception('Payload notifikasi tidak valid dari Postman.');
-            }
-
-            // 3. Tambahkan method getResponse() agar kompatibel dengan service Anda
-            // Ini adalah trik agar kita tidak perlu mengubah MidtransWebhookService
-            $notificationPayload->getResponse = function () use ($notificationPayload) {
-                return json_encode($notificationPayload);
-            };
-
-            // 4. Panggil service dengan data "palsu" yang kita buat
-            $webhookService->handle($notificationPayload);
-
-            // 5. Beri respons OK
-            return response()->json(['status' => 'ok', 'message' => 'Webhook processed successfully from Postman.']);
-
+            return response()->json(['status' => 'ok', 'message' => 'Webhook processed successfully.']);
+            
         } catch (Exception $e) {
-            Log::error('Midtrans Webhook Error (POSTMAN TEST): ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString()
-            ]);
+            Log::error('Midtrans Webhook Error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
             return response()->json(['status' => 'error', 'message' => 'Webhook Error: ' . $e->getMessage()], 400);
         }
     }

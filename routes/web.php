@@ -10,11 +10,12 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\VoucherController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CheckoutController;
+use App\Http\Controllers\TemplateController;
 use App\Http\Controllers\WishlistController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\TestimoniController;
-use App\Http\Controllers\Mitra\TemaController;
 use App\Http\Controllers\Mitra\HeroController;
+use App\Http\Controllers\Mitra\TemaController;
 use App\Http\Controllers\LandingPageController;
 use App\Http\Controllers\Mitra\MitraController;
 use App\Http\Controllers\Mitra\BannerController;
@@ -46,6 +47,64 @@ use App\Http\Controllers\Customer\CustomerNotificationController;
 |
 */
 
+// ===================================================================
+// RUTE SUBDOMAIN (HARUS DI ATAS RUTE UMUM)
+// ===================================================================
+Route::prefix('tenant/{subdomain}')
+    ->middleware('tenant.exists') // Terapkan middleware di sini
+    ->name('tenant.') // Memberi nama prefix untuk semua rute di dalam grup
+    ->group(function () {
+
+        // Rute Halaman Publik Toko
+        Route::get('/', [HomeController::class, 'index'])->name('home');
+        Route::get('/shop', [ShopController::class, 'index'])->name('shop');
+        Route::get('/shop/{product:slug}', [ShopController::class, 'show'])->name('product.details');
+        Route::get('/contact', [ContactController::class, 'showPublic'])->name('contact');
+
+        // Rute Wishlist
+        Route::get('/wishlist', [WishlistController::class, 'index'])->name('wishlist');
+        Route::post('/wishlist/toggle', [WishlistController::class, 'toggle'])->name('wishlist.toggle');
+
+        // Rute Otentikasi Pelanggan
+        Route::prefix('customer')->name('customer.')->group(function () {
+            Route::get('/login', [CustomerAuthController::class, 'showLoginForm'])->name('login.form');
+            Route::post('/login', [CustomerAuthController::class, 'login'])->name('login.submit');
+            Route::get('/register', [CustomerAuthController::class, 'showRegisterForm'])->name('register.form');
+            Route::post('/register', [CustomerAuthController::class, 'register'])->name('register.submit');
+            Route::post('/logout', [CustomerAuthController::class, 'logout'])->name('logout')->middleware('auth:customers');
+        });
+
+        // Rute Keranjang Belanja
+        Route::prefix('cart')->name('cart.')->group(function () {
+            Route::get('/', [CartController::class, 'index'])->name('index');
+            Route::post('/add', [CartController::class, 'add'])->name('add');
+            Route::patch('/update/{productCartId}', [CartController::class, 'update'])->name('update');
+            Route::delete('/remove/{productCartId}', [CartController::class, 'remove'])->name('remove');
+        });
+
+        // Rute Checkout
+        Route::prefix('checkout')->name('checkout.')->middleware('auth:customers')->group(function () {
+            Route::get('/', [CheckoutController::class, 'index'])->name('index');
+            Route::post('/process', [CheckoutController::class, 'process'])->name('process');
+        });
+
+        // Rute Dasbor Pelanggan (Memerlukan Login)
+        Route::prefix('account')->middleware(['auth:customers'])->name('account.')->group(function () {
+            Route::get('/profile', [CustomerProfileController::class, 'show'])->name('profile');
+            Route::post('/profile/update', [CustomerProfileController::class, 'update'])->name('profile.update');
+            Route::get('/orders', [CustomerOrderController::class, 'index'])->name('orders');
+            Route::get('/notifications', [CustomerNotificationController::class, 'index'])->name('notifications');
+            Route::get('/points', [CustomerPointController::class, 'index'])->name('points');
+            Route::post('/points/redeem/{rewardId}', [CustomerPointController::class, 'redeem'])->name('points.redeem');
+            Route::get('/vouchers', [CustomerVoucherController::class, 'index'])->name('vouchers');
+            Route::post('/vouchers/claim', [CustomerVoucherController::class, 'claimVoucher'])->name('vouchers.claim');
+        });
+    });
+
+// ===================================================================
+// RUTE UMUM (TANPA SUBDOMAIN)
+// ===================================================================
+
 //== RUTE PUBLIK & AUTENTIKASI ==//
 Route::get('/', [LandingPageController::class, 'home'])->name('landing');
 Route::post('/testimonials', [TestimoniController::class, 'submitFromLandingPage'])->name('testimonials.store');
@@ -56,41 +115,18 @@ Route::get('/login', fn() => view('landing-page.auth.login'))->name('login');
 Route::post('/login', [AuthController::class, 'login'])->name('login.submit');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-// Rute untuk menampilkan form login & register customer
-Route::prefix('customer')->name('customer.')->group(function () {
-    // Rute untuk menampilkan form login & register customer
-    Route::get('/login', [CustomerAuthController::class, 'showLoginForm'])->name('login.form');
-    Route::get('/register', [CustomerAuthController::class, 'showRegisterForm'])->name('register.form');
-
-    // Rute untuk memproses data dari form
-    Route::post('/login', [CustomerAuthController::class, 'login'])->name('login.submit');
-    Route::post('/register', [CustomerAuthController::class, 'register'])->name('register.submit');
-
-    // Rute untuk logout customer
-    Route::post('/logout', [CustomerAuthController::class, 'logout'])->name('logout');
-});
-
 // Proses Registrasi Multi-Langkah (Publik)
 Route::prefix('register')->name('register.')->group(function () {
     Route::get('/', [AuthController::class, 'showRegisterForm'])->name('form');
-    Route::post('/step0', [AuthController::class, 'registerStep0'])->name('step0');
-    Route::post('/step1', [AuthController::class, 'registerStep1'])->name('step1');
-    Route::post('/step1a', [TenantController::class, 'store'])->name('step1a');
-    Route::post('/step2', [AuthController::class, 'registerStep2'])->name('step2');
-    Route::post('/step3', [AuthController::class, 'registerStep3'])->name('step3');
+    Route::post('/package', [AuthController::class, 'submitPackage'])->name('package.submit');
+    Route::post('/subdomain', [AuthController::class, 'submitSubdomain'])->name('subdomain.submit');
+    Route::post('/user', [AuthController::class, 'submitUser'])->name('user.submit');
+    Route::post('/shop', [AuthController::class, 'submitShop'])->name('shop.submit');
+    Route::post('/template', [AuthController::class, 'submitTemplate'])->name('template.submit');
+    Route::get('/clear', [AuthController::class, 'clearRegistration'])->name('clear');
 });
-
-Route::get('/tenant/create', [TenantController::class, 'create'])->name('tenant.create');
-
-
-
-//Keranjang Belanja
-Route::prefix('cart')->name('cart.')->group(function () {
-    Route::get('/', [CartController::class, 'index'])->name('index')->middleware('auth');
-    Route::post('/add', [CartController::class, 'add'])->name('add');
-    Route::patch('/update/{productCartId}', [CartController::class, 'update'])->name('update');
-    Route::delete('/remove/{productCartId}', [CartController::class, 'remove'])->name('remove');
-});
+//preview template
+Route::get('/{template:slug}/beranda', [TemplateController::class, 'preview'])->name('template.preview');
 
 //Mitra Sementara
 // Route::prefix('dashboard-mitra')->name('mitra.')->group(function () {
@@ -147,26 +183,10 @@ Route::prefix('cart')->name('cart.')->group(function () {
 // Route::get('/about', function () {
 //     return view('template1.about'); // Anda perlu membuat file template1/about.blade.php
 // });
-Route::get('/preview/{slug}', function ($slug) {
-    $template = \App\Models\Template::where('slug', $slug)->firstOrFail();
 
-    // Render tampilan berdasarkan folder template (contoh: resources/views/template1/index.blade.php)
-    return view($template->path . '.beranda');
-});
 // routes/web.php
-Route::get('/beranda', [HomeController::class, 'index'])->name('home');
-Route::get('/shop', [ShopController::class, 'index'])->name('shop');
-Route::get('/shop/{product:slug}', [ShopController::class, 'show'])->name('shop.details');
-Route::post('/cart/add', [CartController::class, 'add'])->name('cart.add');
-Route::get('/cart', [CartController::class, 'index'])->name('cart.index'); // Melihat isi keranjang
-Route::put('/cart/update/{product_id}', [CartController::class, 'update'])->name('cart.update'); // Memperbarui kuantitas
-Route::delete('/cart/remove/{product_id}', [CartController::class, 'remove'])->name('cart.remove'); // Menghapus item
-Route::get('/contact', [ContactController::class, 'showPublic'])->name('contact');
-Route::get('/wishlist', [WishlistController::class, 'index'])->name('wishlist.index');
+Route::get('/template1/beranda', [HomeController::class, 'index'])->name('home');
 
-// Route untuk menambah/menghapus item dari wishlist (untuk AJAX)
-Route::post('/wishlist/toggle', [WishlistController::class, 'toggle'])->name('wishlist.toggle');
-// Route::get('/{slug}', [HomeController::class, 'showPage'])->name('page.show');
 
 //== MIDTRANS WEBHOOK (TIDAK MEMERLUKAN AUTH/CSRF) ==//
 //Route::post('/midtrans/webhook', [PaymentController::class, 'handleWebhook'])->name('midtrans.webhook');
@@ -176,8 +196,12 @@ Route::get('/fruit', function () {
 // == GRUP RUTE UNTUK PENGGUNA YANG SUDAH LOGIN ==
 Route::middleware(['auth'])->group(function () {
     /// Rute yang bisa diakses oleh semua user yang login
-    Route::post('/voucher/apply', [VoucherController::class, 'apply'])->name('voucher.apply');
-    Route::get('/payment/token', [PaymentController::class, 'generateSnapToken'])->name('payment.token');
+    Route::get('/payment', [PaymentController::class, 'show'])->name('payment.show');
+    Route::post('/payment/charge', [PaymentController::class, 'chargeCoreApi'])->name('payment.charge');
+    Route::post('/payment/apply-voucher', [PaymentController::class, 'applyVoucher'])->name('payment.applyVoucher');
+    Route::post('/payment/remove-voucher', [PaymentController::class, 'removeVoucher'])->name('payment.removeVoucher');
+    Route::post('/payment/generate-token', [PaymentController::class, 'generateSnapToken'])->name('payment.generateSnapToken');
+
     //Checkout Customer
     Route::prefix('checkout')->name('checkout.')->group(function () {
         Route::get('/', [CheckoutController::class, 'index'])->name('index');
@@ -304,27 +328,5 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/', function () {
             return redirect()->route('customer.profile');
         })->name('dashboard');
-
-        // untuk menampilkan dan mengupdate profil
-        Route::get('/profile', [CustomerProfileController::class, 'show'])->name('profile');
-        Route::post('/profile', [CustomerProfileController::class, 'update'])->name('profile.update');
-
-        //  Pesanan Saya
-        Route::get('/orders', [CustomerOrderController::class, 'index'])->name('orders');
-
-        // Notifikasi Saya
-        Route::get('/notifications', [CustomerNotificationController::class, 'index'])->name('notifications');
-
-        // Voucher Saya
-        Route::get('/vouchers', [CustomerVoucherController::class, 'index'])->name('vouchers');
-        Route::post('/vouchers-claim', [CustomerVoucherController::class, 'claimVoucher'])->name('vouchers.claim');
-
-        // Poin Saya
-        Route::get('/points', [CustomerPointController::class, 'index'])->name('points');
-        Route::post('/points-redeem', [CustomerPointController::class, 'redeem'])->name('points.redeem');
     });
-
-    // Route::get('/home', [HomeController::class, 'index']); // Mengarahkan ke metode index di HomeController
-    // Route::get('/{slug}', [HomeController::class, 'showPage'])->name('page.show');
-
 });

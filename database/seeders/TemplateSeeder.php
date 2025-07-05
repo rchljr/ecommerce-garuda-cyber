@@ -14,17 +14,25 @@ class TemplateSeeder extends Seeder
     {
 
         // Tambah beberapa template awal
-        $templates = [
-            [
-                'name' => 'Fashion Store',
-                'slug' => 'template1',
-                'path' => 'template1',
-                'description' => 'Template bergaya fashion minimalis dan modern.',
-            ],
-        ];
+        Template::create([
+            'name' => 'Sleek',
+            'slug' => 'pakaian-aksesoris',
+            'path' => 'template1',
+            'description' => 'Desain yang bersih dan modern, memberikan pengalaman pengguna yang intuitif dan elegan.'
+        ]);
 
-        foreach ($templates as $template) {
-            Template::create($template);
-        }
+        Template::create([
+            'name' => 'Vibrant',
+            'slug' => 'kuliner',
+            'path' => 'template2',
+            'description' => 'Tampilan penuh warna dan dinamis yang mampu menarik perhatian dan meningkatkan interaksi pengguna.'
+        ]);
+
+        Template::create([
+            'name' => 'Refined',
+            'slug' => 'elektronik',
+            'path' => 'template3',
+            'description' => 'Desain profesional dengan sentuhan elegan yang menonjolkan kualitas dan kepercayaan.'
+        ]);
     }
 }

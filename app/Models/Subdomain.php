@@ -27,4 +27,8 @@ class Subdomain extends Model
     {
         return $this->hasMany(Voucher::class);
     } // Subdomain memiliki banyak voucher
+    public function tenant()
+    {
+        return $this->hasOne(Tenant::class);
+    }
 }

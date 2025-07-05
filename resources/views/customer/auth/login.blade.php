@@ -6,13 +6,12 @@
     <div class="min-h-screen flex items-center justify-center bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
         <div class="max-w-md w-full space-y-8 bg-white p-10 rounded-xl shadow-lg">
             <div>
-                {{-- Anda bisa menaruh logo toko di sini --}}
                 {{-- <img class="mx-auto h-12 w-auto" src="{{ asset('images/logo.png') }}" alt="Logo Toko"> --}}
                 <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
                     Login ke Akun Anda
                 </h2>
                 <p class="mt-2 text-center text-sm text-gray-600">
-                    Atau <a href="{{ route('customer.register.form') }}"
+                    Atau <a href="{{ route('tenant.customer.register.form', ['subdomain' => request()->route('subdomain')]) }}"
                         class="font-medium text-gray-800 hover:text-black">Daftar akun baru</a>
                 </p>
             </div>
@@ -24,7 +23,7 @@
                 </div>
             @endif
 
-            <form class="mt-8 space-y-6" action="{{ route('customer.login.submit') }}" method="POST">
+            <form class="mt-8 space-y-6" action="{{ route('tenant.customer.login.submit', ['subdomain' => request()->route('subdomain')]) }}" method="POST">
                 @csrf
                 <div class="rounded-md shadow-sm -space-y-px">
                     <div>
