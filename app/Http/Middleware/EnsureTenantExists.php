@@ -27,12 +27,19 @@ class EnsureTenantExists
 
         // 2. Cari tenant di database berdasarkan nama subdomain
         $tenant = Tenant::whereHas('subdomain', function ($query) use ($subdomainName) {
-            $query->where('subdomain_name', $subdomainName);
-        })->first();
+            // Kondisi 1: Nama subdomain harus cocok DAN statusnya harus 'active'
+            $query->where('subdomain_name', $subdomainName)
+                ->where('status', 'active');
+        })
+            ->whereHas('user.userPackage', function ($query) {
+                // Kondisi 2: Tenant harus memiliki user dengan userPackage yang statusnya 'active'
+                $query->where('status', 'active');
+            })
+            ->first();
 
         // 3. Jika tenant tidak ditemukan, tampilkan halaman 404
         if (!$tenant) {
-            return abort(404, 'Toko tidak ditemukan.');
+            return abort(404, 'Toko tidak ditemukan atau tidak aktif.');
         }
 
         // 4. Jika ditemukan, simpan objek tenant ke dalam request

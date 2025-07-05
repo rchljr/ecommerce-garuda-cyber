@@ -50,7 +50,7 @@ use App\Http\Controllers\Customer\CustomerNotificationController;
 // ===================================================================
 // RUTE SUBDOMAIN (HARUS DI ATAS RUTE UMUM)
 // ===================================================================
-Route::domain('{subdomain}.ecommercegaruda.my.id')
+Route::prefix('tenant/{subdomain}')
     ->middleware('tenant.exists') // Terapkan middleware di sini
     ->name('tenant.') // Memberi nama prefix untuk semua rute di dalam grup
     ->group(function () {
@@ -117,6 +117,7 @@ Route::prefix('register')->name('register.')->group(function () {
     Route::post('/user', [AuthController::class, 'submitUser'])->name('user.submit');
     Route::post('/shop', [AuthController::class, 'submitShop'])->name('shop.submit');
     Route::post('/template', [AuthController::class, 'submitTemplate'])->name('template.submit');
+    Route::get('/clear', [AuthController::class, 'clearRegistration'])->name('clear');
 });
 //preview template
 Route::get('/{template:slug}/beranda', [TemplateController::class, 'preview'])->name('template.preview');
@@ -182,14 +183,17 @@ Route::get('/template1/beranda', [HomeController::class, 'index'])->name('home')
 
 
 //== MIDTRANS WEBHOOK (TIDAK MEMERLUKAN AUTH/CSRF) ==//
-//Route::post('/midtrans/webhook', [PaymentController::class, 'handleWebhook'])->name('midtrans.webhook');
+Route::post('/payment/webhook', [PaymentController::class, 'handleWebhook'])->name('payment.webhook');
 
 // == GRUP RUTE UNTUK PENGGUNA YANG SUDAH LOGIN ==
 Route::middleware(['auth'])->group(function () {
     /// Rute yang bisa diakses oleh semua user yang login
-    Route::post('/voucher/apply', [VoucherController::class, 'apply'])->name('voucher.apply');
-    Route::get('/payment/token', [PaymentController::class, 'generateSnapToken'])->name('payment.token');
     Route::get('/payment', [PaymentController::class, 'show'])->name('payment.show');
+    Route::post('/payment/charge', [PaymentController::class, 'chargeCoreApi'])->name('payment.charge');
+    Route::post('/payment/apply-voucher', [PaymentController::class, 'applyVoucher'])->name('payment.applyVoucher');
+    Route::post('/payment/remove-voucher', [PaymentController::class, 'removeVoucher'])->name('payment.removeVoucher');
+    Route::post('/payment/generate-token', [PaymentController::class, 'generateSnapToken'])->name('payment.generateSnapToken');
+
     //Checkout Customer
     Route::prefix('checkout')->name('checkout.')->group(function () {
         Route::get('/', [CheckoutController::class, 'index'])->name('index');

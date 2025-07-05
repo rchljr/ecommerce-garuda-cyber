@@ -62,6 +62,7 @@ class VerificationService
     public function rejectPartner(User $user)
     {
         DB::transaction(function () use ($user) {
+            $user->update(['status' => 'inactive']);
             // 1. Kirim notifikasi email penolakan terlebih dahulu
             Notification::send($user, new PartnerRejectedNotification($user));
 
