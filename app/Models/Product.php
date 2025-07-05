@@ -8,7 +8,7 @@ use Illuminate\Support\Str;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Database\Eloquent\Builder; // <-- DITAMBAHKAN untuk Scopes
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Storage;
 
 class Product extends Model
@@ -18,11 +18,10 @@ class Product extends Model
     protected $primaryKey = 'id';
     public $incrementing = false;
     protected $keyType = 'string';
-    // protected $guarded = []; // <-- DIHAPUS karena sudah ada $fillable
 
     protected $fillable = [
         'user_id',
-        'category_id',
+        'sub_category_id', // Changed from category_id to sub_category_id
         'name',
         'slug',
         'short_description',
@@ -41,7 +40,7 @@ class Product extends Model
      *
      * @var array
      */
-    protected $casts = [ // <-- DITAMBAHKAN untuk konsistensi tipe data
+    protected $casts = [
         'price' => 'float',
         'is_best_seller' => 'boolean',
         'is_new_arrival' => 'boolean',
@@ -59,7 +58,7 @@ class Product extends Model
         });
     }
 
-    // --- QUERY SCOPES (DITAMBAHKAN untuk query yang lebih bersih) ---
+    // --- QUERY SCOPES ---
 
     public function scopeActive(Builder $query): void
     {
@@ -81,16 +80,16 @@ class Product extends Model
         $query->where('is_hot_sale', true);
     }
 
-    // --- RELATIONS (Sudah bagus) ---
+    // --- RELATIONS ---
 
     public function shopOwner(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
     }
 
-    public function category(): BelongsTo
+    public function subCategory(): BelongsTo // Changed relation name to subCategory
     {
-        return $this->belongsTo(Category::class);
+        return $this->belongsTo(SubCategory::class, 'sub_category_id'); // Changed to SubCategory and sub_category_id
     }
 
     public function variants(): HasMany
@@ -113,7 +112,7 @@ class Product extends Model
         return $this->hasMany(OrderItem::class);
     }
 
-    // --- ACCESSORS (Sudah bagus) ---
+    // --- ACCESSORS ---
 
     public function getImageUrlAttribute(): string
     {

@@ -1,13 +1,13 @@
 <?php
 
-namespace App\Http\Controllers; // Atau App\Http\Controllers\Admin;
+namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Models\SubCategory; // Make sure to import SubCategory model
 use Illuminate\Http\Request;
 use App\Models\Product;
 use App\Models\Category;
 use App\Models\Tag;
-// Model baru tidak perlu di-import di sini karena kita akses melalui relasi Product
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -31,8 +31,22 @@ class ProductController extends Controller
      */
     public function create()
     {
-        $categories = Category::orderBy('name')->get();
-        return view('dashboard-mitra.products.create', compact('categories'));
+        $user = Auth::user();
+        $subCategories = collect(); // Initialize as an empty collection
+
+        // Assuming 'shop' relationship exists on the User model
+        // and 'product_categories' stores the slug of the main category
+        $mainCategorySlug = optional($user->shop)->product_categories;
+
+        if ($mainCategorySlug) {
+            $mainCategory = Category::where('slug', $mainCategorySlug)->first();
+            if ($mainCategory) {
+                // Assuming Category model has a hasMany relationship to SubCategory model named 'subCategories'
+                $subCategories = $mainCategory->subCategories()->orderBy('name', 'asc')->get();
+            }
+        }
+
+        return view('dashboard-mitra.products.create', compact('subCategories'));
     }
 
     /**
@@ -45,7 +59,7 @@ class ProductController extends Controller
             'short_description' => 'nullable|string',
             'description' => 'nullable|string',
             'price' => 'required|numeric|min:0',
-            'category_id' => 'required|exists:categories,id',
+            'sub_category_id' => 'required|exists:sub_categories,id', // Changed to sub_category_id
             'main_image' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
             'gallery_images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:2048',
             'variants' => 'required|array',
@@ -70,7 +84,7 @@ class ProductController extends Controller
                 'description' => $validatedData['description'],
                 'price' => $validatedData['price'],
                 'sku' => $validatedData['sku'],
-                'category_id' => $validatedData['category_id'],
+                'sub_category_id' => $validatedData['sub_category_id'], // Changed to sub_category_id
                 'main_image' => $mainImagePath,
                 'status' => 'active', // Default status
                 'is_best_seller' => $request->has('is_best_seller'),
@@ -113,7 +127,7 @@ class ProductController extends Controller
      */
     public function show(Product $product)
     {
-        $product->load(['category', 'tags', 'variants', 'gallery']);
+        $product->load(['subCategory', 'tags', 'variants', 'gallery']); // Changed 'category' to 'subCategory'
         return view('dashboard-mitra.products.show', compact('product'));
     }
 
@@ -123,8 +137,18 @@ class ProductController extends Controller
     public function edit(Product $product)
     {
         $product->load(['tags', 'variants', 'gallery']);
-        $categories = Category::orderBy('name')->get();
-        return view('dashboard-mitra.products.edit', compact('product', 'categories'));
+        $user = Auth::user();
+        $subCategories = collect(); // Initialize as an empty collection
+
+        $mainCategorySlug = optional($user->shop)->product_categories;
+
+        if ($mainCategorySlug) {
+            $mainCategory = Category::where('slug', $mainCategorySlug)->first();
+            if ($mainCategory) {
+                $subCategories = $mainCategory->subCategories()->orderBy('name', 'asc')->get();
+            }
+        }
+        return view('dashboard-mitra.products.edit', compact('product', 'subCategories')); // Pass subCategories
     }
 
     /**
@@ -137,7 +161,7 @@ class ProductController extends Controller
             'short_description' => 'nullable|string',
             'description' => 'nullable|string',
             'price' => 'required|numeric|min:0',
-            'category_id' => 'required|exists:categories,id',
+            'sub_category_id' => 'required|exists:sub_categories,id', // Changed to sub_category_id
             'main_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
             'gallery_images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:2048',
             'variants' => 'required|array',
@@ -154,10 +178,10 @@ class ProductController extends Controller
         DB::beginTransaction();
         try {
             $updateData = $validatedData;
-            
+
             unset($updateData['variants'], $updateData['tags'], $updateData['gallery_images']);
 
-            // Tambahkan data dari checkbox
+            // Add checkbox data
             $updateData['is_best_seller'] = $request->has('is_best_seller');
             $updateData['is_new_arrival'] = $request->has('is_new_arrival');
             $updateData['is_hot_sale'] = $request->has('is_hot_sale');
@@ -182,7 +206,7 @@ class ProductController extends Controller
             } else {
                 $product->tags()->sync([]);
             }
-            
+
             $product->variants()->delete();
             foreach ($validatedData['variants'] as $variantData) {
                 $product->variants()->create($variantData);

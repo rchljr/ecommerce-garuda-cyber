@@ -39,6 +39,10 @@ class EnsureTenantExists
         //    agar bisa diakses oleh controller.
         $request->attributes->add(['tenant' => $tenant]);
 
+        // Bagikan variabel $currentTenant dan $currentShop
+        // ke SEMUA view yang akan di-render selama request ini.
+        view()->share('currentTenant', $tenant);
+
         if ($tenant->subdomain && $tenant->subdomain->user && $tenant->subdomain->user->shop) {
             view()->share('currentShop', $tenant->subdomain->user->shop);
         } else {

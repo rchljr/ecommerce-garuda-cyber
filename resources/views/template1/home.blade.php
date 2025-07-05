@@ -1,7 +1,5 @@
 @extends('template1.layouts.template')
 
-{{-- @section('title', 'Beranda - Male-Fashion') --}}
-
 @section('content')
     <!-- Hero Section Begin -->
     <section class="hero">

@@ -1,6 +1,6 @@
 @extends('template1.layouts.template')
 
-@section('title', 'Toko - Male-Fashion')
+@section('title', 'Produk')
 
 @push('styles')
     {{-- CSS Khusus untuk Notifikasi Toast dan Wishlist Aktif --}}
@@ -76,6 +76,11 @@
 
 
 @section('content')
+    @php
+        // Ambil subdomain saat ini sekali saja dari parameter rute agar lebih efisien.
+        $currentSubdomain = request()->route('subdomain');
+    @endphp
+
     <!-- Breadcrumb Section Begin -->
     <section class="breadcrumb-option">
         <div class="container">
@@ -84,7 +89,7 @@
                     <div class="breadcrumb__text">
                         <h4>Shop</h4>
                         <div class="breadcrumb__links">
-                            <a href="{{ route('home') }}">Home</a>
+                            <a href="{{ route('tenant.home', ['subdomain' => $currentSubdomain]) }}">Home</a>
                             <span>/</span>
                             <span>Shop</span>
                         </div>
@@ -99,7 +104,7 @@
     <section class="product spad">
         <div class="container">
             {{-- Form untuk semua filter dan sorting --}}
-            <form id="filter-sort-form" method="GET" action="{{ route('shop') }}">
+            <form id="filter-sort-form" method="GET" action="{{ route('tenant.shop', ['subdomain' => $currentSubdomain]) }}">
                 <div class="row">
                     {{-- Sidebar Filter --}}
                     <div class="col-lg-3 col-md-3">
@@ -110,10 +115,10 @@
                                 </div>
                                 <ul>
                                     {{-- Link kategori menjadi dinamis --}}
-                                    <li><a href="{{ route('shop') }}" class="{{ !request('category') ? 'active' : '' }}">All
+                                    <li><a href="{{ route('tenant.shop', ['subdomain' => $currentSubdomain]) }}" class="{{ !request('category') ? 'active' : '' }}">All
                                             Categories</a></li>
                                     @forelse ($categories as $category)
-                                        <li><a href="{{ route('shop', ['category' => $category->slug]) }}"
+                                        <li><a href="{{ route('tenant.shop', ['subdomain' => $currentSubdomain, 'category' => $category->slug]) }}"
                                                 class="{{ request('category') == $category->slug ? 'active' : '' }}">{{ $category->name }}</a>
                                         </li>
                                     @empty
@@ -150,7 +155,8 @@
                             <div class="row">
                                 <div class="col-lg-6 col-md-6 col-sm-6">
                                     <p>Menampilkan {{ $products->firstItem() ?? 0 }}–{{ $products->lastItem() ?? 0 }} dari
-                                        {{ $products->total() }} hasil</p>
+                                        {{ $products->total() }} hasil
+                                    </p>
                                 </div>
                                 <div class="col-lg-6 col-md-6 col-sm-6">
                                     <div class="select__option">
@@ -158,11 +164,10 @@
                                         <select name="sort" id="sort-by" class="nice-select">
                                             <option value="latest" {{ request('sort') == 'latest' ? 'selected' : '' }}>
                                                 Urutkan: Terbaru</option>
-                                            <option value="price_asc"
-                                                {{ request('sort') == 'price_asc' ? 'selected' : '' }}>Harga: Rendah ke
+                                            <option value="price_asc" {{ request('sort') == 'price_asc' ? 'selected' : '' }}>
+                                                Harga: Rendah ke
                                                 Tinggi</option>
-                                            <option value="price_desc"
-                                                {{ request('sort') == 'price_desc' ? 'selected' : '' }}>Harga: Tinggi ke
+                                            <option value="price_desc" {{ request('sort') == 'price_desc' ? 'selected' : '' }}>Harga: Tinggi ke
                                                 Rendah</option>
                                         </select>
                                     </div>
@@ -185,7 +190,7 @@
                                                         data-product-id="{{ $product->id }}"><img
                                                             src="{{ asset('template1/img/icon/heart.png') }}"
                                                             alt="Wishlist"></a></li>
-                                                <li><a href="{{ route('shop.details', ['product' => $product->slug]) }}"><img
+                                                <li><a href="{{ route('tenant.product.details', ['subdomain' => $currentSubdomain, 'product' => $product->slug]) }}"><img
                                                             src="{{ asset('template1/img/icon/search.png') }}"
                                                             alt="Details"></a></li>
                                             </ul>
@@ -193,9 +198,9 @@
                                         <div class="product__item__text">
                                             <h6>{{ $product->name }}</h6>
                                             <h6><a
-                                                    href="{{ route('shop.details', ['product' => $product->slug]) }}">{{ $product->name }}</a>
+                                                    href="{{ route('tenant.product.details', ['subdomain' => $currentSubdomain, 'product' => $product->slug]) }}">{{ $product->name }}</a>
                                             </h6>
-                                            <a href="#" class="add-cart" data-product-id="{{ $product->id }}">+ Add
+                                            <a href="{{ route('tenant.cart.add', ['subdomain' => $currentSubdomain]) }}" class="add-cart" data-product-id="{{ $product->id }}">+ Add
                                                 To Cart</a>
                                             <div class="rating">
                                                 @for ($i = 1; $i <= 5; $i++)
@@ -233,19 +238,19 @@
 
 @push('scripts')
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             // --- Inisialisasi Nice Select untuk dropdown sorting ---
             if (typeof jQuery !== 'undefined' && jQuery.fn.niceSelect) {
                 $('#sort-by').niceSelect();
             }
 
             // --- Kirim form secara otomatis saat sorting diubah ---
-            document.getElementById('sort-by').addEventListener('change', function() {
+            document.getElementById('sort-by').addEventListener('change', function () {
                 document.getElementById('filter-sort-form').submit();
             });
 
             // --- Fungsi untuk memformat ulang harga dari slider sebelum submit ---
-            document.getElementById('filter-sort-form').addEventListener('submit', function(e) {
+            document.getElementById('filter-sort-form').addEventListener('submit', function (e) {
                 const minAmountInput = document.getElementById('minamount');
                 const maxAmountInput = document.getElementById('maxamount');
 
@@ -274,12 +279,12 @@
             if (!csrfToken) {
                 console.error(
                     'CSRF token not found! Pastikan ada <meta name="csrf-token" content="{{ csrf_token() }}"> di layout Anda.'
-                    );
+                );
             }
 
             // Fungsi untuk AJAX Add to Cart
             document.querySelectorAll('.add-cart').forEach(button => {
-                button.addEventListener('click', function(e) {
+                button.addEventListener('click', function (e) {
                     e.preventDefault();
                     if (!csrfToken) {
                         showToast('Terjadi kesalahan. Coba refresh halaman.', 'error');
@@ -292,18 +297,18 @@
                     this.disabled = true;
                     this.textContent = 'Adding...';
 
-                    fetch("{{ route('cart.add') }}", {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Accept': 'application/json',
-                                'X-CSRF-TOKEN': csrfToken
-                            },
-                            body: JSON.stringify({
-                                product_id: productId,
-                                quantity: 1
-                            })
+                    fetch("{{ route('tenant.cart.add', ['subdomain' => $currentSubdomain]) }}", {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken
+                        },
+                        body: JSON.stringify({
+                            product_id: productId,
+                            quantity: 1
                         })
+                    })
                         .then(response => response.json())
                         .then(data => {
                             if (data.success) {
@@ -336,7 +341,7 @@
 
             // Fungsi untuk AJAX Wishlist
             document.querySelectorAll('.toggle-wishlist').forEach(button => {
-                button.addEventListener('click', function(e) {
+                button.addEventListener('click', function (e) {
                     e.preventDefault();
                     if (!csrfToken) {
                         showToast('Terjadi kesalahan. Coba refresh halaman.', 'error');
@@ -345,17 +350,17 @@
 
                     const productId = this.dataset.productId;
 
-                    fetch("{{ route('wishlist.toggle') }}", {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Accept': 'application/json',
-                                'X-CSRF-TOKEN': csrfToken
-                            },
-                            body: JSON.stringify({
-                                product_id: productId
-                            })
+                    fetch("{{ route('tenant.wishlist.toggle', ['subdomain' => $currentSubdomain]) }}", {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken
+                        },
+                        body: JSON.stringify({
+                            product_id: productId
                         })
+                    })
                         .then(response => {
                             if (response.status === 401) {
                                 window.location.href = "{{ route('login') }}";
@@ -403,7 +408,7 @@
                         min: minPrice,
                         max: maxPrice,
                         values: [minPrice, maxPrice],
-                        slide: function(event, ui) {
+                        slide: function (event, ui) {
                             minamount.val('Rp ' + ui.values[0].toLocaleString('id-ID'));
                             maxamount.val('Rp ' + ui.values[1].toLocaleString('id-ID'));
                         }
@@ -413,12 +418,24 @@
                 }
             }
         });
-        fbq('track', 'ViewContent', {
-            content_name: '{{ addslashes($product->name) }}',
-            content_ids: ['{{ $product->sku }}'], // Gunakan SKU atau ID unik
-            content_type: 'product',
-            value: {{ $product->price }},
-            currency: 'IDR'
+
+        //PERBAIKAN: Kode Facebook Pixel sekarang melacak
+        // event 'ViewCategory' yang lebih sesuai.
+        @php
+            // Tentukan nama kategori yang sedang dilihat
+            $viewedCategoryName = 'All Products'; // Default jika tidak ada filter
+            if (request('category') && isset($categories)) {
+                $filteredCategory = $categories->firstWhere('slug', request('category'));
+                if ($filteredCategory) {
+                    $viewedCategoryName = $filteredCategory->name;
+                }
+            }
+        @endphp
+
+        // Kirim event ViewCategory ke Facebook Pixel
+        fbq('track', 'ViewCategory', {
+            content_name: '{{ addslashes($viewedCategoryName) }}',
+            content_category: '{{ addslashes($viewedCategoryName) }}'
         });
     </script>
 @endpush

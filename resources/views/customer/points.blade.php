@@ -2,6 +2,10 @@
 @section('title', 'Poin Saya')
 
 @section('content')
+    @php
+        $currentSubdomain = request()->route('subdomain');
+    @endphp
+
     <div class="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
         <div class="flex flex-col md:flex-row gap-8">
             <!-- Sidebar Kiri -->
@@ -55,7 +59,9 @@
                                                 d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                         </svg>
                                     </button>
-                                    <form action="{{ route('customer.points.redeem', $reward->id) }}" method="POST"
+                                    <form
+                                        action="{{ route('tenant.account.points.redeem', ['subdomain' => $currentSubdomain, 'rewardId' => $reward->id]) }}"
+                                        method="POST"
                                         onsubmit="return confirm('Tukarkan {{ $reward->points_required }} poin dengan {{ $reward->name }}?')">
                                         @csrf
                                         <button type="submit"

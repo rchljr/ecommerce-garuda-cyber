@@ -3,6 +3,11 @@
 @section('title', 'Wishlist Saya')
 
 @section('content')
+    @php
+        // Ambil subdomain saat ini sekali saja dari parameter rute agar lebih efisien.
+        $currentSubdomain = request()->route('subdomain');
+    @endphp
+
     <!-- Breadcrumb -->
     <section class="breadcrumb-option">
         <div class="container">
@@ -11,7 +16,7 @@
                     <div class="breadcrumb__text">
                         <h4>Wishlist Saya</h4>
                         <div class="breadcrumb__links">
-                            <a href="{{ route('home') }}">Home</a>
+                            <a href="{{ route('tenant.home', ['subdomain' => $currentSubdomain]) }}">Home</a>
                             <span>Wishlist</span>
                         </div>
                     </div>
@@ -23,7 +28,6 @@
     <!-- Halaman Wishlist -->
     <section class="shopping-cart spad">
         <div class="container">
-            {{-- PERBAIKAN: Tambahkan isset() untuk mencegah error jika variabel tidak ada --}}
             @if(isset($wishlistItems) && $wishlistItems->isNotEmpty())
                 <div class="row">
                     <div class="col-lg-12">
@@ -52,13 +56,14 @@
                                             </td>
                                             <td class="cart__close">
                                                 {{-- Tombol Hapus dari Wishlist --}}
-                                                <form action="{{ route('wishlist.toggle') }}" method="POST" class="d-inline">
+                                                <form action="{{ route('tenant.wishlist.toggle', ['subdomain' => $currentSubdomain]) }}" method="POST" class="d-inline">
                                                     @csrf
                                                     <input type="hidden" name="product_id" value="{{ $item->product->id }}">
                                                     <button type="submit" class="btn btn-danger btn-sm">Hapus</button>
                                                 </form>
                                                 {{-- Tombol Tambah ke Keranjang --}}
-                                                <a href="#" class="add-cart btn btn-primary btn-sm" data-product-id="{{ $item->product->id }}">Add To Cart</a>
+                                                <a href="{{ route('tenant.cart.add', ['subdomain' => $currentSubdomain]) }}" class="add-cart btn btn-primary btn-sm"
+                                                    data-product-id="{{ $item->product->id }}">Add To Cart</a>
                                             </td>
                                         </tr>
                                     @endforeach
@@ -71,7 +76,7 @@
                 <div class="row">
                     <div class="col-lg-12 text-center">
                         <h4>Wishlist Anda masih kosong.</h4>
-                        <a href="{{ route('shop') }}" class="primary-btn mt-4">Mulai Belanja</a>
+                        <a href="{{ route('tenant.shop', ['subdomain' => $currentSubdomain]) }}" class="primary-btn mt-4">Mulai Belanja</a>
                     </div>
                 </div>
             @endif

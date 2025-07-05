@@ -10,11 +10,11 @@
                     Buat Akun Baru
                 </h2>
                 <p class="mt-2 text-center text-sm text-gray-600">
-                    Sudah punya akun? <a href="{{ route('customer.login.form') }}"
+                    Sudah punya akun? <a href="{{ route('tenant.customer.login.form', ['subdomain' => request()->route('subdomain')]) }}"
                         class="font-medium text-gray-800 hover:text-black">Login di sini</a>
                 </p>
             </div>
-            <form class="mt-8 space-y-4" action="{{ route('customer.register.submit') }}" method="POST">
+            <form class="mt-8 space-y-4" action="{{ route('tenant.customer.register.submit', ['subdomain' => request()->route('subdomain')]) }}" method="POST">
                 @csrf
                 <div>
                     <label for="name" class="block text-sm font-medium text-gray-700">Nama Lengkap</label>
