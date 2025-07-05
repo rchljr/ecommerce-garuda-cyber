@@ -31,15 +31,16 @@ class CustomerAuthController extends Controller
             'password' => ['required'],
         ]);
 
-        if (Auth::attempt($credentials)) {
-            $user = Auth::user();
+        if (Auth::guard('customers')->attempt($credentials)) {
+            $user = Auth::guard('customers')->user();
+
             if ($user && $user->hasRole('customer')) {
                 $request->session()->regenerate();
                 $cartService->mergeSessionCart();
                 // Arahkan kembali ke halaman utama tenant
                 return redirect()->route('tenant.home', ['subdomain' => $tenant->subdomain->subdomain_name]);
             }
-            Auth::logout();
+            Auth::guard('customers')->logout();
             return back()->withErrors(['email' => 'Akun Anda belum terdaftar sebagai customer.'])->withInput();
         }
         return back()->withErrors(['email' => 'Email atau password salah.'])->withInput();
@@ -73,7 +74,7 @@ class CustomerAuthController extends Controller
             'status' => 'active',
         ]);
         $user->assignRole('customer');
-        Auth::login($user);
+        Auth::guard('customers')->login($user);
 
         // Arahkan kembali ke halaman utama tenant
         return redirect()->route('tenant.home', ['subdomain' => $tenant->subdomain->subdomain_name]);
@@ -85,7 +86,7 @@ class CustomerAuthController extends Controller
     public function logout(Request $request)
     {
         $tenant = $request->get('tenant');
-        Auth::logout();
+        Auth::guard('customers')->logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
