@@ -1,58 +1,65 @@
 @extends('template1.layouts.template')
 
 @section('content')
+    @php
+        // Ambil subdomain saat ini sekali saja dari parameter rute agar lebih efisien.
+        $currentSubdomain = request()->route('subdomain');
+    @endphp
+
     <!-- Hero Section Begin -->
     <section class="hero">
         <div class="hero__slider owl-carousel">
             @forelse ($heroes as $hero)
-            <div class="hero__items set-bg" data-setbg="{{ $hero->image_url }}">
-                <div class="container">
-                    <div class="row">
-                        <div class="col-xl-5 col-lg-7 col-md-8">
-                            <div class="hero__text">
-                                @if ($hero->subtitle)
-                                    <h6>{{ $hero->subtitle }}</h6>
-                                @endif
-                                <h2>{{ $hero->title }}</h2>
-                                @if ($hero->description)
-                                    <p>{{ $hero->description }}</p>
-                                @endif
-                                @if ($hero->button_text && $hero->button_url)
-                                    <a href="{{ $hero->button_url }}" class="primary-btn">{{ $hero->button_text }} <span class="arrow_right"></span></a>
-                                @endif
-                                <div class="hero__social">
-                                    <a href="#"><i class="fa fa-facebook"></i></a>
-                                    <a href="#"><i class="fa fa-twitter"></i></a>
-                                    <a href="#"><i class="fa fa-pinterest"></i></a>
-                                    <a href="#"><i class="fa fa-instagram"></i></a>
+                <div class="hero__items set-bg" data-setbg="{{ $hero->image_url }}">
+                    <div class="container">
+                        <div class="row">
+                            <div class="col-xl-5 col-lg-7 col-md-8">
+                                <div class="hero__text">
+                                    @if ($hero->subtitle)
+                                        <h6>{{ $hero->subtitle }}</h6>
+                                    @endif
+                                    <h2>{{ $hero->title }}</h2>
+                                    @if ($hero->description)
+                                        <p>{{ $hero->description }}</p>
+                                    @endif
+                                    @if ($hero->button_text && $hero->button_url)
+                                        <a href="{{ $hero->button_url }}" class="primary-btn">{{ $hero->button_text }} <span
+                                                class="arrow_right"></span></a>
+                                    @endif
+                                    <div class="hero__social">
+                                        <a href="#"><i class="fa fa-facebook"></i></a>
+                                        <a href="#"><i class="fa fa-twitter"></i></a>
+                                        <a href="#"><i class="fa fa-pinterest"></i></a>
+                                        <a href="#"><i class="fa fa-instagram"></i></a>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
             @empty
-            {{-- Konten default jika tidak ada hero yang diatur --}}
-            <div class="hero__items set-bg" data-setbg="{{ asset('template1/img/hero/hero-default.jpg') }}"> {{-- Pastikan ada gambar default di public/template1/img/hero/hero-default.jpg --}}
-                <div class="container">
-                    <div class="row">
-                        <div class="col-xl-5 col-lg-7 col-md-8">
-                            <div class="hero__text">
-                                <h6>Selamat Datang!</h6>
-                                <h2>Toko Fashion Terbaik Anda</h2>
-                                <p>Ini Adalah Hero Bisa Kamu Edit diDasboard</p>
-                                <a href="#" class="primary-btn">Telusuri Sekarang <span class="arrow_right"></span></a>
-                                <div class="hero__social">
-                                    <a href="#"><i class="fa fa-facebook"></i></a>
-                                    <a href="#"><i class="fa fa-twitter"></i></a>
-                                    <a href="#"><i class="fa fa-pinterest"></i></a>
-                                    <a href="#"><i class="fa fa-instagram"></i></a>
+                {{-- Konten default jika tidak ada hero yang diatur --}}
+                <div class="hero__items set-bg" data-setbg="{{ asset('template1/img/hero/hero-default.jpg') }}"> {{-- Pastikan
+                    ada gambar default di public/template1/img/hero/hero-default.jpg --}}
+                    <div class="container">
+                        <div class="row">
+                            <div class="col-xl-5 col-lg-7 col-md-8">
+                                <div class="hero__text">
+                                    <h6>Selamat Datang!</h6>
+                                    <h2>Toko Fashion Terbaik Anda</h2>
+                                    <p>Ini Adalah Hero Bisa Kamu Edit diDasboard</p>
+                                    <a href="#" class="primary-btn">Telusuri Sekarang <span class="arrow_right"></span></a>
+                                    <div class="hero__social">
+                                        <a href="#"><i class="fa fa-facebook"></i></a>
+                                        <a href="#"><i class="fa fa-twitter"></i></a>
+                                        <a href="#"><i class="fa fa-pinterest"></i></a>
+                                        <a href="#"><i class="fa fa-instagram"></i></a>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
             @endforelse
         </div>
     </section>
@@ -63,8 +70,10 @@
         <div class="container">
             <div class="row">
                 @forelse ($banners as $banner)
-                    <div class="{{ $loop->first && $banners->count() > 1 ? 'col-lg-7 offset-lg-4' : ($loop->index === 1 && $banners->count() > 2 ? 'col-lg-5' : 'col-lg-7') }}">
-                        <div class="banner__item {{ $loop->index === 1 ? 'banner__item--middle' : ($loop->last && $banners->count() > 1 ? 'banner__item--last' : '') }}">
+                    <div
+                        class="{{ $loop->first && $banners->count() > 1 ? 'col-lg-7 offset-lg-4' : ($loop->index === 1 && $banners->count() > 2 ? 'col-lg-5' : 'col-lg-7') }}">
+                        <div
+                            class="banner__item {{ $loop->index === 1 ? 'banner__item--middle' : ($loop->last && $banners->count() > 1 ? 'banner__item--last' : '') }}">
                             <div class="banner__item__pic">
                                 <img src="{{ $banner->image_url }}" alt="{{ $banner->title }}">
                             </div>
@@ -134,7 +143,7 @@
                     </ul>
                 </div>
             </div>
-            
+
             {{-- Mengganti grid produk statis menjadi dinamis --}}
             @php
                 // Menggabungkan semua produk dan memastikan tidak ada duplikat
@@ -146,9 +155,12 @@
                     @php
                         // Menentukan class untuk filter MixItUp
                         $classes = '';
-                        if (($bestSellers ?? collect())->contains($product)) $classes .= ' best-seller';
-                        if (($newArrivals ?? collect())->contains($product)) $classes .= ' new-arrival';
-                        if (($hotSales ?? collect())->contains($product)) $classes .= ' hot-sale';
+                        if (($bestSellers ?? collect())->contains($product))
+                            $classes .= ' best-seller';
+                        if (($newArrivals ?? collect())->contains($product))
+                            $classes .= ' new-arrival';
+                        if (($hotSales ?? collect())->contains($product))
+                            $classes .= ' hot-sale';
                     @endphp
                     <div class="col-lg-3 col-md-6 col-sm-6 mix{{ $classes }}">
                         <div class="product__item">
@@ -161,12 +173,17 @@
                                 @endif
                                 <ul class="product__hover">
                                     <li><a href="#"><img src="{{ asset('template1/img/icon/heart.png') }}" alt=""></a></li>
-                                    <li><a href="{{ route('shop.details', $product->slug) }}"><img src="{{ asset('template1/img/icon/search.png') }}" alt=""></a></li>
+                                    {{-- PERBAIKAN: Tambahkan parameter subdomain ke rute tenant.product.details --}}
+                                    <li><a
+                                            href="{{ route('tenant.product.details', ['subdomain' => $currentSubdomain, 'product' => $product->slug]) }}"><img
+                                                src="{{ asset('template1/img/icon/search.png') }}" alt=""></a></li>
                                 </ul>
                             </div>
                             <div class="product__item__text">
                                 <h6>{{ $product->name }}</h6>
-                                <a href="#" class="add-cart">+ Add To Cart</a>
+                                {{-- PERBAIKAN: Tambahkan parameter subdomain ke rute tenant.cart.add --}}
+                                <a href="{{ route('tenant.cart.add', ['subdomain' => $currentSubdomain]) }}" class="add-cart">+
+                                    Add To Cart</a>
                                 <div class="rating">
                                     @for ($i = 1; $i <= 5; $i++)
                                         <i class="fa {{ ($product->rating_product ?? 0) >= $i ? 'fa-star' : 'fa-star-o' }}"></i>
@@ -240,19 +257,25 @@
             <div class="row">
                 <div class="col-lg-8">
                     <div class="instagram__pic">
-                        <div class="instagram__pic__item set-bg" data-setbg="{{ asset('template1/img/instagram/instagram-1.jpg') }}"></div>
-                        <div class="instagram__pic__item set-bg" data-setbg="{{ asset('template1/img/instagram/instagram-2.jpg') }}"></div>
-                        <div class="instagram__pic__item set-bg" data-setbg="{{ asset('template1/img/instagram/instagram-3.jpg') }}"></div>
-                        <div class="instagram__pic__item set-bg" data-setbg="{{ asset('template1/img/instagram/instagram-4.jpg') }}"></div>
-                        <div class="instagram__pic__item set-bg" data-setbg="{{ asset('template1/img/instagram/instagram-5.jpg') }}"></div>
-                        <div class="instagram__pic__item set-bg" data-setbg="{{ asset('template1/img/instagram/instagram-6.jpg') }}"></div>
+                        <div class="instagram__pic__item set-bg"
+                            data-setbg="{{ asset('template1/img/instagram/instagram-1.jpg') }}"></div>
+                        <div class="instagram__pic__item set-bg"
+                            data-setbg="{{ asset('template1/img/instagram/instagram-2.jpg') }}"></div>
+                        <div class="instagram__pic__item set-bg"
+                            data-setbg="{{ asset('template1/img/instagram/instagram-3.jpg') }}"></div>
+                        <div class="instagram__pic__item set-bg"
+                            data-setbg="{{ asset('template1/img/instagram/instagram-4.jpg') }}"></div>
+                        <div class="instagram__pic__item set-bg"
+                            data-setbg="{{ asset('template1/img/instagram/instagram-5.jpg') }}"></div>
+                        <div class="instagram__pic__item set-bg"
+                            data-setbg="{{ asset('template1/img/instagram/instagram-6.jpg') }}"></div>
                     </div>
                 </div>
                 <div class="col-lg-4">
                     <div class="instagram__text">
                         <h2>Instagram</h2>
                         <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut
-                        labore et dolore magna aliqua.</p>
+                            labore et dolore magna aliqua.</p>
                         <h3>#Male_Fashion</h3>
                     </div>
                 </div>

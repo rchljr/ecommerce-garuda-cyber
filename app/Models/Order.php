@@ -8,6 +8,7 @@ use Illuminate\Support\Str;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 
 class Order extends Model
 {
@@ -20,6 +21,17 @@ class Order extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+    public function userPackage(): HasOneThrough
+    {
+        return $this->hasOneThrough(
+            UserPackage::class, // Model tujuan
+            User::class,        // Model perantara
+            'id',               // Foreign key di tabel User
+            'user_id',          // Foreign key di tabel UserPackage
+            'user_id',          // Local key di tabel Order
+            'id'                // Local key di tabel User
+        );
     }
     public function voucher()
     {

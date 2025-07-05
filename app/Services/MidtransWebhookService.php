@@ -10,82 +10,106 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
-// Kita tidak menggunakan MidtransNotification secara langsung di sini untuk tes
-// use Midtrans\Notification as MidtransNotification;
+use Midtrans\Notification as MidtransNotification;
 
 class MidtransWebhookService
 {
     /**
-     * PERBAIKAN: Tipe argumen diubah dari 'MidtransNotification' menjadi 'object'
-     * Ini memungkinkan kita mengirim data "palsu" dari Postman untuk pengujian.
-     *
-     * @param object $notification
+     * Menangani notifikasi webhook dari Midtrans dengan validasi dan logging yang detail.
      */
-    public function handle(object $notification): void
+    public function handle(MidtransNotification $notification): void
     {
-        Log::info('Midtrans Webhook: Notifikasi diterima.', (array) $notification);
+        Log::info('MidtransWebhookService: Service handle dipanggil.', ['order_id_midtrans' => $notification->order_id]);
 
-        $order = Order::find($notification->order_id);
-
-        if (!$order) {
-            Log::warning('Midtrans Webhook: Order tidak ditemukan.', ['order_id' => $notification->order_id]);
+        // 1. Validasi Tipe Transaksi
+        if ($notification->transaction_status !== 'settlement' && $notification->transaction_status !== 'capture') {
+            Log::info('MidtransWebhookService: Status transaksi bukan settlement atau capture, diabaikan.', ['status' => $notification->transaction_status]);
             return;
         }
 
-        if (in_array($notification->transaction_status, ['settlement', 'capture'])) {
-            Log::info('Midtrans Webhook: Status pembayaran sukses, memproses aktivasi.', ['order_id' => $order->id]);
-            $this->handleSuccessfulPayment($order, $notification);
+        // 2. Ekstrak ID Order Asli dengan Aman
+        $transactionId = $notification->order_id;
+        $lastHyphenPos = strrpos($transactionId, '-');
+        if ($lastHyphenPos === false) {
+            Log::warning('MidtransWebhookService: Format order_id dari Midtrans tidak valid.', ['order_id' => $transactionId]);
+            return;
         }
+        $originalOrderId = substr($transactionId, 0, $lastHyphenPos);
+        Log::info('MidtransWebhookService: ID Order asli berhasil diekstrak.', ['original_order_id' => $originalOrderId]);
+
+        // 3. Cari Order dan Lakukan Validasi Ketat
+        $order = Order::with('user.userPackage')->find($originalOrderId);
+
+        if (!$order) {
+            Log::warning('MidtransWebhookService: Order dengan ID asli tidak ditemukan di database.', ['original_order_id' => $originalOrderId]);
+            return;
+        }
+
+        if ($order->status === 'completed') {
+            Log::info('MidtransWebhookService: Order ini sudah pernah diproses (status completed).', ['order_id' => $order->id]);
+            return;
+        }
+
+        // Validasi tambahan untuk memastikan relasi ada sebelum masuk ke transaksi DB
+        if (!$order->user) {
+            Log::error('MidtransWebhookService: Relasi User pada Order tidak ditemukan.', ['order_id' => $order->id]);
+            return;
+        }
+        if (!$order->user->userPackage) {
+            Log::error('MidtransWebhookService: Relasi UserPackage pada User tidak ditemukan.', ['user_id' => $order->user->id]);
+            return;
+        }
+
+        // 4. Lakukan Proses dalam Transaksi Database
+        $this->processSuccessfulPayment($order, $notification);
     }
 
     /**
-     * Tipe argumen notifikasi juga diubah menjadi 'object' di sini.
+     * Memproses pembayaran yang sukses di dalam transaksi DB.
      */
-    protected function handleSuccessfulPayment(Order $order, object $notification)
+    protected function processSuccessfulPayment(Order $order, MidtransNotification $notification)
     {
-        if ($order->status === 'completed') {
-            Log::info('Midtrans Webhook: Order sudah pernah diproses.', ['order_id' => $order->id]);
-            return;
-        }
-
         DB::transaction(function () use ($order, $notification) {
             try {
-                // 1. Buat catatan pembayaran
+                // Langkah A: Buat Catatan Pembayaran
                 Payment::create([
                     'user_id' => $order->user_id,
                     'order_id' => $order->id,
                     'subs_package_id' => $order->user->userPackage->subs_package_id,
-                    'midtrans_order_id' => $notification->order_id,
+                    'midtrans_order_id' => $notification->transaction_id,
                     'midtrans_transaction_status' => $notification->transaction_status,
                     'midtrans_payment_type' => $notification->payment_type,
                     'total_payment' => $notification->gross_amount,
-                    // Menggunakan json_encode langsung karena objek pengujian kita
-                    // tidak memiliki metode getResponse().
-                    'midtrans_response' => json_encode($notification),
+                    'midtrans_response' => $notification->getResponse(),
                 ]);
-                Log::info('Midtrans Webhook: Catatan pembayaran berhasil dibuat.', ['order_id' => $order->id]);
+                Log::info('MidtransWebhookService: Catatan pembayaran berhasil dibuat.', ['order_id' => $order->id]);
 
-                // 2. Update status order
+                // Langkah B: Update Status Order
                 $order->update(['status' => 'completed']);
-                Log::info('Midtrans Webhook: Status order berhasil diupdate.', ['order_id' => $order->id]);
+                Log::info('MidtransWebhookService: Status order berhasil diupdate menjadi completed.', ['order_id' => $order->id]);
 
-                // 3. Aktivasi Akun
+                // Langkah C: Aktivasi Akun
                 $this->activateSubscription($order->user);
 
             } catch (\Exception $e) {
-                Log::error('Midtrans Webhook: Gagal saat memproses pembayaran sukses.', [
+                Log::critical('MidtransWebhookService: GAGAL TOTAL saat memproses transaksi database.', [
                     'order_id' => $order->id,
                     'error' => $e->getMessage(),
                     'trace' => $e->getTraceAsString()
                 ]);
+                // Melempar kembali exception akan otomatis me-rollback transaksi DB.
                 throw $e;
             }
         });
     }
 
+    /**
+     * Mengaktifkan langganan dan mengubah role pengguna.
+     */
     protected function activateSubscription(User $user)
     {
         if ($user->hasRole('mitra')) {
+            Log::info('MidtransWebhookService: Aktivasi dihentikan karena user sudah menjadi mitra.', ['user_id' => $user->id]);
             return;
         }
 
@@ -94,8 +118,6 @@ class MidtransWebhookService
         $expiredDate = $userPackage->plan_type === 'yearly' ? $activeDate->copy()->addYear() : $activeDate->copy()->addMonth();
 
         $userPackage->update(['status' => 'active', 'active_date' => $activeDate, 'expired_date' => $expiredDate]);
-
-        $user->update(['status' => 'active']);
         $user->removeRole('calon-mitra');
         $user->assignRole('mitra');
 
@@ -104,6 +126,6 @@ class MidtransWebhookService
         }
 
         Notification::send($user, new PartnerActivatedNotification($user));
-        Log::info('Midtrans Webhook: Aktivasi User, Role, dan Subdomain berhasil.', ['user_id' => $user->id]);
+        Log::info('MidtransWebhookService: Aktivasi User, Role, dan Subdomain berhasil.', ['user_id' => $user->id]);
     }
 }
