@@ -37,7 +37,7 @@
             <button
                 class="sidebar-item dropdown-toggle w-full flex items-center justify-between p-3 rounded-lg hover:bg-red-800 transition-colors">
                 <div class="flex items-center">
-                    <span class="sidebar-icon">@include('dashboard-admin.icons.paket')</span>
+                    <span class="sidebar-icon">@include('dashboard-admin.icons.kategori')</span>
                     <span class="sidebar-text ml-4">Panel</span>
                 </div>
                 <svg class="w-4 h-4 text-white/70 dropdown-arrow sidebar-text" fill="none" stroke="currentColor"
@@ -57,8 +57,14 @@
 
         <a href="{{ route('mitra.contacts') }}"
             class="sidebar-item flex items-center p-3 rounded-lg hover:bg-red-800 transition-colors">
-            <span class="sidebar-icon">@include('dashboard-admin.icons.voucher')</span>
+            <span class="sidebar-icon">@include('dashboard-admin.icons.testimoni')</span>
             <span class="sidebar-text ml-4">Kelola Kontak</span>
+        </a>
+
+        <a href="{{ route('mitra.orders.index') }}"
+            class="sidebar-item flex items-center p-3 rounded-lg hover:bg-red-800 transition-colors">
+            <span class="sidebar-icon">@include('dashboard-admin.icons.landing')</span>
+            <span class="sidebar-text ml-4">Kelola Order</span>
         </a>
         {{-- <a href="{{ route('admin.kategori.index') }}"
             class="sidebar-item flex items-center p-3 rounded-lg hover:bg-red-800 transition-colors">

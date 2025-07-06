@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ShopController;
+use App\Http\Controllers\OrderController;
 use App\Http\Controllers\TenantController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ProductController;
@@ -290,6 +291,8 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/tema', [TemaController::class, 'create'])->name('tema');
         Route::post('/tema', [TemaController::class, 'store'])->name('tema.store');
 
+        Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
+        Route::get('/orders', [OrderController::class, 'show'])->name('orders.show');
         // Route::resource('pages', PageController::class); // Ini akan membuat mitra.pages.* routes
 
         // Manajemen Seksi Halaman (PageSectionController) - Nested Resource

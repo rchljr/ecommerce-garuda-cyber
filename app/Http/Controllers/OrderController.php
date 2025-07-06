@@ -2,63 +2,28 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Order;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
-class OrderController extends BaseController
+class OrderController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Menampilkan daftar semua pesanan untuk toko user.
      */
     public function index()
     {
-        //
-    }
+        $user = Auth::user();
+        // Asumsi user punya relasi ke subdomain/toko
+        $subdomain = $user->subdomain;
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
+        // Ambil data order dengan relasinya (eager loading)
+        $orders = Order::where('subdomain_id', $subdomain->id)
+                       ->with(['user', 'items.product'])
+                       ->latest()
+                       ->paginate(15);
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        //
-    }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
+        // Kirim data ke view 'orders.index'
+        return view('dashboard-mitra.orders.index', compact('orders'));
     }
 }

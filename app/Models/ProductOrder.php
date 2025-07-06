@@ -14,8 +14,7 @@ class ProductOrder extends Model
     use HasFactory, HasUuids;
     public $incrementing = false;
     protected $keyType = 'string';
-    protected $fillable = ['product_id', 'order_id', 'unit_price'];
-    
+    protected $fillable = ['product_id', 'order_id', 'quantity', 'unit_price'];
     public function product()
     {
         return $this->belongsTo(Product::class, 'product_id', 'id');
