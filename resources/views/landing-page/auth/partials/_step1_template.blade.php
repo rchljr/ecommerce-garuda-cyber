@@ -41,7 +41,8 @@
                            {{ $isRecommended ? 'checked' : '' }} 
                            required>
 
-                    <img src="https://picsum.photos/seed/{{ $template->slug }}/400/300" 
+                    <img src="{{ asset('storage/' . $template->image_preview) }}" 
+                         onerror="this.onerror=null;this.src='https://placehold.co/400x300/f1f5f9/cbd5e1?text=No+Image';"
                          alt="{{ $template->name }}" class="w-full h-48 object-cover rounded-t-lg">
 
                     <div class="p-5 flex flex-col flex-grow">
@@ -57,10 +58,7 @@
                         </div>
                     </div>
 
-                    {{-- PERBAIKAN: Menghapus border hijau dan menyatukan logika seleksi --}}
                     <div class="absolute inset-0 rounded-2xl pointer-events-none border-4 border-transparent peer-checked:border-red-500 transition-all">
-                        
-                        {{-- Ikon centang merah sekarang muncul di semua item yang dipilih --}}
                         <div class="absolute top-0 right-0 m-3 opacity-0 peer-checked:opacity-100 transition-opacity">
                             <svg class="w-8 h-8 text-white bg-red-600 rounded-full p-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>

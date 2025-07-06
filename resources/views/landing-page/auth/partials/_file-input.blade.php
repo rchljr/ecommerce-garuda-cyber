@@ -1,4 +1,4 @@
-<div>
+<div class="mb-4">
     <label for="{{ $name }}" class="block text-base font-semibold text-gray-800 mb-1">
         {{ $label1 ?? '' }}
         @if(isset($required) && $required)

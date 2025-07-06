@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Template;
 use App\Models\Testimoni;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -41,11 +42,15 @@ class LandingPageController extends BaseController
             return 1;
         });
 
+        // Ambil Template
+        $templates = Template::all();
+
         // 5. Kirim semua data yang dibutuhkan ke view
         return view('landing-page.index', [
             'stats' => $stats,
             'testimonials' => $testimonials,
-            'packages' => $sortedPackages
+            'packages' => $sortedPackages,
+            'templates' => $templates,
         ]);
     }
     /**

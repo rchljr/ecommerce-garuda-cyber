@@ -26,19 +26,19 @@ class UserPackage extends Model
         'status',
     ];
 
-    public function subscriptionPackage(): BelongsTo
-    {
-        // 'subs_package_id' adalah foreign key di tabel ini.
-        // 'id' adalah primary key di tabel subscription_packages.
-        return $this->belongsTo(SubscriptionPackage::class, 'subs_package_id', 'id');
-    }
-
-    /**
-     * Relasi ke model User.
-     */
-    public function user(): BelongsTo
+    public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function subscriptionPackage()
+    {
+        return $this->belongsTo(SubscriptionPackage::class, 'subs_package_id');
+    }
+
+    public function order()
+    {
+        return $this->hasOne(Order::class, 'user_id', 'user_id');
     }
 
 }

@@ -8,6 +8,7 @@ use App\Models\Order;
 use App\Models\Template;
 use App\Models\Subdomain;
 use App\Traits\UploadFile;
+use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use App\Services\CategoryService;
 use App\Models\SubscriptionPackage;
@@ -15,6 +16,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use App\Services\RegistrationService;
 use App\Http\Controllers\BaseController;
+use Illuminate\Support\Facades\Validator;
 use App\Services\SubscriptionPackageService;
 use Illuminate\Support\Facades\Notification;
 use App\Notifications\NewPartnerRegistration;
@@ -80,11 +82,11 @@ class AuthController extends BaseController
         }
 
         // Jika pengguna kembali ke step 0, bersihkan session untuk memulai dari awal.
-        if ($request->query('step') == '0' || !$request->has('step')) {
+        if ($step == '0' || !$request->has('step')) {
             // Pengecualian: jangan clear jika user sedang menunggu verifikasi
             if (!$userIdFromSession) {
                 $this->multiStep->clear();
-                session()->forget('newly_registered_user_id');
+                session()->forget(['newly_registered_user_id', 'register_step']);
             }
         }
 
@@ -160,17 +162,87 @@ class AuthController extends BaseController
     // Step 1: Pilih Subdomain
     public function submitSubdomain(Request $request)
     {
-        if ($request->has('choose_subdomain')) {
-            $subdomain = session('register.subdomain_normalized');
-            $this->multiStep->setStepData(1, ['subdomain' => $subdomain]);
-            return redirect()->route('register.form', ['step' => 2]);
+        // Validasi bahwa subdomain yang dipilih ada di session
+        $request->validate(['chosen_subdomain' => 'required|string']);
+
+        $subdomainToSave = session('register.subdomain_normalized');
+
+        // Pastikan subdomain yang akan disimpan sama dengan yang ada di form
+        if ($request->chosen_subdomain !== $subdomainToSave) {
+            return back()->with('error', 'Terjadi kesalahan. Silakan cek ulang subdomain Anda.');
         }
+
+        $this->multiStep->setStepData(1, ['subdomain' => $subdomainToSave]);
+        session(['register_step' => 2]);
+        return redirect()->route('register.form', ['step' => 2]);
+    }
+
+    /**
+     * Method BARU untuk menangani pengecekan ketersediaan via AJAX.
+     */
+    public function checkSubdomain(Request $request)
+    {
         $originalInput = $request->input('subdomain');
-        $normalizedSubdomain = strtolower(str_replace(' ', '-', trim($originalInput)));
-        $request->merge(['subdomain_for_validation' => $normalizedSubdomain]);
-        $request->validate(['subdomain_for_validation' => 'required|string|max:63|alpha_dash|unique:subdomains,subdomain_name']);
-        session(['register.original_subdomain_input' => $originalInput, 'register.subdomain_normalized' => $normalizedSubdomain, 'register.subdomain_status' => 'Tersedia', 'register_step' => 1]);
-        return redirect()->route('register.form', ['step' => 1]);
+        $normalizedSubdomain = Str::slug(substr($originalInput, 0, 40));
+
+        $validator = Validator::make(['subdomain' => $normalizedSubdomain], [
+            'subdomain' => 'required|string|max:40|alpha_dash|unique:subdomains,subdomain_name',
+        ], [
+            'subdomain.unique' => 'Subdomain ini sudah digunakan. Coba nama lain.'
+        ]);
+
+        if ($validator->fails()) {
+            // Jika subdomain sudah terpakai, generate beberapa saran
+            $suggestions = $this->generateSubdomainSuggestions($normalizedSubdomain);
+
+            return response()->json([
+                'available' => false,
+                // 'message' => $validator->errors()->first('subdomain'),
+                'suggestions' => $suggestions // Kirim saran ke frontend
+            ]);
+        }
+
+        // Jika validasi lolos, berarti subdomain tersedia
+        session([
+            'register.original_subdomain_input' => $originalInput,
+            'register.subdomain_normalized' => $normalizedSubdomain,
+        ]);
+
+        return response()->json(['available' => true]);
+    }
+
+    private function generateSubdomainSuggestions(string $baseName, int $limit = 3): array
+    {
+        // Batasi panjang nama dasar untuk menjaga URL tetap pendek
+        $baseName = Str::limit(Str::slug($baseName), 20, '');
+        $suggestions = [];
+        $attempts = 0;
+
+        // Coba hingga 20 kali untuk menemukan jumlah saran yang diinginkan
+        while (count($suggestions) < $limit && $attempts < 20) {
+            // Buat saran baru dengan angka acak
+            $newSuggestion = $baseName . '-' . rand(100, 999);
+
+            // Pastikan saran ini belum ada di dalam list sementara
+            if (!in_array($newSuggestion, $suggestions)) {
+                $suggestions[] = $newSuggestion;
+            }
+            $attempts++;
+        }
+
+        // Jika tidak ada saran yang bisa dibuat, kembalikan array kosong
+        if (empty($suggestions)) {
+            return [];
+        }
+
+        // Cek ke database untuk melihat mana saja yang sudah ada
+        $existing = Subdomain::whereIn('subdomain_name', $suggestions)->pluck('subdomain_name')->toArray();
+
+        // Ambil hanya saran yang belum ada di database menggunakan array_diff
+        $availableSuggestions = array_diff($suggestions, $existing);
+
+        // Kembalikan jumlah saran sesuai limit
+        return array_slice(array_values($availableSuggestions), 0, $limit);
     }
 
     // Step 2: Data Diri

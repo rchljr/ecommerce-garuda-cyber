@@ -1,6 +1,6 @@
-<div class="w-full mx-auto flex flex-col h-full">
+@include('landing-page.auth.partials._back_button')
+<div class="w-full max-w-4xl mx-auto flex flex-col h-full">
     <div class="flex-shrink-0">
-        @include('landing-page.auth.partials._back_button')
         <h2 class="text-3xl font-bold text-gray-900 mb-4">Lengkapi Data Diri Anda</h2>
     </div>
 
@@ -11,19 +11,19 @@
             <div>
                 <label for="name" class="block text-base font-semibold text-gray-800 mb-1">Nama Lengkap<span
                         class="text-red-600">*</span></label>
-                <input type="text" id="name" name="name" value="{{ old('name') }}"
+                <input type="text" id="name" name="name" value="{{ session('register.step_2.name') ?? old('name') }}"
                     class="block w-full h-12 px-4 border-2 rounded-lg bg-white hover:border-red-600 focus:border-red-600 focus:ring-0 transition @error('name') border-red-500 @else border-gray-300 @enderror"
                     placeholder="Masukkan Nama Lengkap Anda" required>
                 @error('name')
                     <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                 @enderror
             </div>
-            
+
             {{-- Jabatan --}}
             <div>
                 <label for="position" class="block text-base font-semibold text-gray-800 mb-1">Jabatan<small
                         class="font-normal">(Opsional)</small></label>
-                <input type="text" id="position" name="position" value="{{ old('position') }}"
+                <input type="text" id="position" name="position" value="{{ session('register.step_2.position') ?? old('position') }}"
                     class="block w-full h-12 px-4 border-2 border-gray-300 rounded-lg bg-white hover:border-red-600 focus:border-red-600 focus:ring-0 transition"
                     placeholder="Masukkan Jabatan Anda">
             </div>
@@ -32,7 +32,7 @@
             <div>
                 <label for="email" class="block text-base font-semibold text-gray-800 mb-1">Email <span
                         class="text-red-600">*</span></label>
-                <input type="email" id="email" name="email" value="{{ old('email') }}"
+                <input type="email" id="email" name="email" value="{{ session('register.step_2.email') ?? old('email') }}"
                     class="block w-full h-12 px-4 border-2 rounded-lg bg-white hover:border-red-600 focus:border-red-600 focus:ring-0 transition @error('email') border-red-500 @else border-gray-300 @enderror"
                     placeholder="Masukkan Email Anda" required>
                 @error('email')
@@ -44,7 +44,7 @@
             <div>
                 <label for="phone" class="block text-base font-semibold text-gray-800 mb-1">No HP/Whatsapp <span
                         class="text-red-600">*</span></label>
-                <input type="tel" id="phone" name="phone" value="{{ old('phone') }}"
+                <input type="tel" id="phone" name="phone" value="{{ session('register.step_2.phone') ?? old('phone') }}"
                     class="block w-full h-12 px-4 border-2 rounded-lg bg-white hover:border-red-600 focus:border-red-600 focus:ring-0 transition @error('phone') border-red-500 @else border-gray-300 @enderror"
                     placeholder="e.g., 6281234567890" required>
                 @error('phone')
@@ -73,10 +73,10 @@
                     class="block w-full h-12 px-4 border-2 border-gray-300 rounded-lg bg-white hover:border-red-600 focus:border-red-600 focus:ring-0 transition"
                     placeholder="Masukkan ulang kata sandi" required>
             </div>
-        </div>
-        <div class="flex-shrink-0 pt-4">
-            <button type="submit"
-                class="w-full bg-red-700 text-white font-semibold py-3 rounded-lg hover:bg-red-800 transition-colors text-lg">Lanjut</button>
+            <div class="flex-shrink-0 pt-4">
+                <button type="submit"
+                    class="w-full bg-red-700 text-white font-semibold py-3 rounded-lg hover:bg-red-800 transition-colors text-lg">Lanjut</button>
+            </div>
         </div>
     </form>
 </div>

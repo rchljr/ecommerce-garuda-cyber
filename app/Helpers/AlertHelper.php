@@ -78,21 +78,18 @@ HTML;
 }
 
 if (!function_exists('deactivateConfirmScript')) {
-    /**
-     * DITAMBAHKAN: Render script global untuk konfirmasi NONAKTIFKAN.
-     * Target: Form dengan class .deactivate-form.
-     */
     function deactivateConfirmScript(): string
     {
         return <<<HTML
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    document.querySelectorAll('.deactivate-form').forEach(function(form) {
-        form.addEventListener('submit', function(e) {
+    document.body.addEventListener('submit', function(e) {
+        if (e.target.matches('.deactivate-form')) {
             e.preventDefault();
+            const form = e.target;
             Swal.fire({
                 title: 'Anda Yakin?',
-                text: 'Anda akan menonaktifkan paket mitra ini.',
+                text: 'Anda akan menonaktifkan paket mitra ini. Toko mereka akan offline.',
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#d33',
@@ -104,7 +101,39 @@ document.addEventListener('DOMContentLoaded', function() {
                     form.submit();
                 }
             });
-        });
+        }
+    });
+});
+</script>
+HTML;
+    }
+}
+
+if (!function_exists('reactivateConfirmScript')) {
+    function reactivateConfirmScript(): string
+    {
+        return <<<HTML
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.body.addEventListener('submit', function(e) {
+        if (e.target.matches('.reactivate-form')) {
+            e.preventDefault();
+            const form = e.target;
+            Swal.fire({
+                title: 'Anda Yakin?',
+                text: 'Anda akan mengaktifkan kembali paket mitra ini.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Ya, Aktifkan!',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    form.submit();
+                }
+            });
+        }
     });
 });
 </script>

@@ -68,6 +68,10 @@
     </div>
 
     @include('layouts._partials.scripts')
+
+    {!! showAlert() !!}
+    {!! deactivateConfirmScript() !!}
+    {!! reactivateConfirmScript() !!}
     @stack('scripts')
 </body>
 </html>

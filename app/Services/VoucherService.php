@@ -57,32 +57,4 @@ class VoucherService
         $voucher = Voucher::findOrFail($id);
         return $voucher->delete();
     }
-
-    public function apply(string $code, Order $order)
-    {
-        $voucher = Voucher::where('voucher_code', strtolower($code))
-            ->where('start_date', '<=', now())
-            ->where('expired_date', '>=', now())
-            ->first();
-
-        if (!$voucher) {
-            return ['error' => 'Voucher tidak valid atau sudah kedaluwarsa.'];
-        }
-
-        if ($order->total_price < $voucher->min_spending) {
-            return ['error' => 'Total belanja tidak memenuhi minimum ' . format_rupiah($voucher->min_spending)];
-        }
-
-        $originalPrice = $order->total_price;
-        $discountAmount = $voucher->discount;
-        $newPrice = $originalPrice - $discountAmount;
-
-        return [
-            'success' => true,
-            'original_price_formatted' => format_rupiah($originalPrice),
-            'discount_formatted' => '- ' . format_rupiah($discountAmount),
-            'new_total_formatted' => format_rupiah($newPrice < 0 ? 0 : $newPrice),
-            'new_total' => $newPrice < 0 ? 0 : $newPrice
-        ];
-    }
 }

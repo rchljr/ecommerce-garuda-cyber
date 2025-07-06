@@ -58,7 +58,7 @@ class InitialDataSeeder extends Seeder
             ['path' => 'template1'],
             [
                 'name' => 'Sleek',
-                'slug' => 'pakaian-dan-aksesoris', // Sesuaikan slug agar konsisten
+                'slug' => 'pakaian-aksesoris', // Sesuaikan slug agar konsisten
                 'description' => 'Desain yang bersih dan modern, memberikan pengalaman pengguna yang intuitif dan elegan.'
             ]
         );

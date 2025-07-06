@@ -76,7 +76,7 @@
                                 <form action="{{ route('admin.voucher.destroy', $voucher->id) }}" method="POST" class="inline delete-form">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="p-1 text-gray-600 hover:text-red-600 delete-confirm" title="Delete">
+                                    <button type="submit" class="delete-btn p-1 text-gray-600 hover:text-red-600 delete-confirm" title="Delete">
                                         <img src="{{ asset('images/delete.png') }}" alt="Delete" class="w-6 h-6">
                                     </button>
                                 </form>
@@ -207,12 +207,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const submitButton = this.querySelector('button[type="submit"]');
         const originalButtonText = submitButton.textContent;
         submitButton.disabled = true;
-        submitButton.textContent = 'Simpan';
+        submitButton.textContent = 'Menyimpan...';
 
+        const isEditMode = !!this.dataset.editId;
         const formData = new FormData(this);
         let actionUrl = this.dataset.storeUrl;
         
-        if (this.dataset.editId) {
+        if (isEditMode) {
             actionUrl = this.dataset.updateUrlTemplate.replace('VOUCHER_ID', this.dataset.editId);
             formData.append('_method', 'PUT');
         }
@@ -236,6 +237,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     throw new Error(result.message || 'Terjadi kesalahan pada server.');
                 }
             } else {
+                // Jika berhasil, muat ulang halaman.
+                // Notifikasi akan ditampilkan oleh helper showAlert() setelah reload.
                 window.location.reload();
             }
         } catch (error) {
@@ -246,7 +249,7 @@ document.addEventListener('DOMContentLoaded', () => {
             submitButton.textContent = originalButtonText;
         }
     });
-
+    
     if (tableBody) {
         tableBody.addEventListener('click', async (e) => {
             const editBtn = e.target.closest('.edit-btn');

@@ -18,11 +18,8 @@ return new class extends Migration {
             $table->string('midtrans_order_id')->nullable()->comment('Order ID dari Midtrans');
             $table->string('midtrans_transaction_status', 50)->nullable();
             $table->string('midtrans_payment_type', 50)->nullable();
-            $table->string('midtrans_va_number', 50)->nullable();
-            $table->string('midtrans_pdf_url', 255)->nullable();
             $table->text('midtrans_response')->nullable();
             $table->decimal('total_payment', 15, 2)->nullable();
-            $table->decimal('admin_fee', 15, 2)->nullable();
             $table->timestamps();
 
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');

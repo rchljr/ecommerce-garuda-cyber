@@ -1,4 +1,8 @@
 @php
+    // Cek apakah ini mode preview. Jika ya, $currentSubdomain akan null.
+    // Variabel $isPreview akan dikirim dari TemplateController.
+    $isPreview = $isPreview ?? false;
+
     // Ambil subdomain saat ini sekali saja dari parameter rute agar lebih efisien.
     // Ini tersedia karena middleware 'tenant.exists' sudah memprosesnya.
     $currentSubdomain = request()->route('subdomain');
@@ -10,28 +14,41 @@
             {{-- Link ini akan selalu tampil --}}
             <a href="#">FAQs</a>
             {{-- Tampilkan link ini jika pengguna adalah tamu (belum login) --}}
-            @guest
-                <a href="{{ route('tenant.customer.login.form', ['subdomain' => $currentSubdomain]) }}">Login</a>
-                <a href="{{ route('tenant.customer.register.form', ['subdomain' => $currentSubdomain]) }}">Daftar</a>
+            @guest('customers')
+                <a href="#">FAQs</a>
+                {{-- PERBAIKAN: Nonaktifkan link jika dalam mode preview --}}
+                @if(!$isPreview)
+                    <a href="{{ route('tenant.customer.login.form', ['subdomain' => $currentSubdomain]) }}">Login</a>
+                    <a href="{{ route('tenant.customer.register.form', ['subdomain' => $currentSubdomain]) }}">Daftar</a>
+                @else
+                    <a href="#" class="disabled-link">Login</a>
+                    <a href="#" class="disabled-link">Daftar</a>
+                @endif
             @endguest
 
             {{-- Tampilkan menu ini jika pengguna sudah login --}}
-            @auth
+            @auth('customers')
                 <div class="header__top__dropdown">
-                    <a href="#"><i class="fa fa-user"></i> Hi, {{ strtok(Auth::user()->name, ' ') }}</a>
+                    <a href="#"><i class="fa fa-user"></i> Hi, {{ strtok(Auth::guard('customers')->user()->name, ' ') }}</a>
                     <span class="arrow_carrot-down"></span>
                     <ul>
-                        <li>
-                            <a href="{{ route('tenant.customer.logout', ['subdomain' => $currentSubdomain]) }}"
-                                onclick="event.preventDefault(); document.getElementById('logout-form-header').submit();">
-                                Log Out
-                            </a>
-                            <form id="logout-form-header"
-                                action="{{ route('tenant.customer.logout', ['subdomain' => $currentSubdomain]) }}"
-                                method="POST" style="display: none;">
-                                @csrf
-                            </form>
-                        </li>
+                        @if(!$isPreview)
+                            <li><a href="{{ route('tenant.account.profile', ['subdomain' => $currentSubdomain]) }}">Akun
+                                    Saya</a></li>
+                            <li><a href="{{ route('tenant.account.orders', ['subdomain' => $currentSubdomain]) }}">Pesanan
+                                    Saya</a></li>
+                            <li>
+                                <a href="{{ route('tenant.customer.logout', ['subdomain' => $currentSubdomain]) }}"
+                                    onclick="event.preventDefault(); document.getElementById('logout-form-header').submit();">
+                                    Log Out
+                                </a>
+                                <form id="logout-form-header"
+                                    action="{{ route('tenant.customer.logout', ['subdomain' => $currentSubdomain]) }}"
+                                    method="POST" style="display: none;">
+                                    @csrf
+                                </form>
+                            </li>
+                        @endif
                     </ul>
                 </div>
             @endauth
