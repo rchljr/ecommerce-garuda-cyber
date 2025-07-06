@@ -189,8 +189,10 @@ Route::get('/template1/beranda', [HomeController::class, 'index'])->name('home')
 
 
 //== MIDTRANS WEBHOOK (TIDAK MEMERLUKAN AUTH/CSRF) ==//
-Route::post('/payment/webhook', [PaymentController::class, 'handleWebhook'])->name('payment.webhook');
-
+//Route::post('/midtrans/webhook', [PaymentController::class, 'handleWebhook'])->name('midtrans.webhook');
+Route::get('/fruit', function () {
+    return view('template2.home');
+});
 // == GRUP RUTE UNTUK PENGGUNA YANG SUDAH LOGIN ==
 Route::middleware(['auth'])->group(function () {
     /// Rute yang bisa diakses oleh semua user yang login
