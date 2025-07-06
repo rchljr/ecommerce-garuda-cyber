@@ -120,6 +120,7 @@ Route::prefix('register')->name('register.')->group(function () {
     Route::get('/', [AuthController::class, 'showRegisterForm'])->name('form');
     Route::post('/package', [AuthController::class, 'submitPackage'])->name('package.submit');
     Route::post('/subdomain', [AuthController::class, 'submitSubdomain'])->name('subdomain.submit');
+    Route::post('/check-subdomain', [AuthController::class, 'checkSubdomain'])->name('subdomain.check');
     Route::post('/user', [AuthController::class, 'submitUser'])->name('user.submit');
     Route::post('/shop', [AuthController::class, 'submitShop'])->name('shop.submit');
     Route::post('/template', [AuthController::class, 'submitTemplate'])->name('template.submit');
@@ -189,7 +190,8 @@ Route::get('/template1/beranda', [HomeController::class, 'index'])->name('home')
 
 
 //== MIDTRANS WEBHOOK (TIDAK MEMERLUKAN AUTH/CSRF) ==//
-//Route::post('/midtrans/webhook', [PaymentController::class, 'handleWebhook'])->name('midtrans.webhook');
+Route::post('/midtrans/webhook', [PaymentController::class, 'handleWebhook'])->name('midtrans.webhook');
+
 Route::get('/fruit', function () {
     return view('template2.home');
 });
@@ -221,7 +223,8 @@ Route::middleware(['auth'])->group(function () {
 
         // Kelola Mitra
         Route::get('kelola-mitra', [KelolaMitraController::class, 'index'])->name('mitra.kelola');
-        Route::patch('kelola-mitra/{user}/status', [KelolaMitraController::class, 'updateStatus'])->name('mitra.updateStatus');
+        Route::patch('kelola-mitra/{user}/deactivate', [KelolaMitraController::class, 'deactivate'])->name('mitra.deactivate');
+        Route::patch('kelola-mitra/{user}/reactivate', [KelolaMitraController::class, 'reactivate'])->name('mitra.reactivate');
 
         // Kelola Landing Page
         Route::get('/landing-page', [LandingPageController::class, 'adminLanding'])->name('landing-page.statistics');

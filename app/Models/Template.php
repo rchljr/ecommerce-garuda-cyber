@@ -14,6 +14,7 @@ class Template extends Model
         'slug',
         'path',
         'description',
+        'image_preview',
     ];
 
     /**

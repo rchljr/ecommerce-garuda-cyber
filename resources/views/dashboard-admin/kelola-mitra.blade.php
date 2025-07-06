@@ -21,18 +21,6 @@
             </div> 
         </div>
 
-        {{-- Notifikasi --}}
-        @if(session('success'))
-            <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-4" role="alert">
-                <p>{{ session('success') }}</p>
-            </div>
-        @endif
-        @if(session('error'))
-            <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4" role="alert">
-                <p>{{ session('error') }}</p>
-            </div>
-        @endif
-
         {{-- Tabel Mitra --}}
         <div class="flex-grow overflow-auto bg-white rounded-lg shadow border border-gray-200">
             <table class="w-full whitespace-no-wrap min-w-[1000px]">
@@ -77,8 +65,8 @@
                         <tr class="text-gray-700 text-center">
                             <td class="px-6 py-4 text-left">
                                 <div class="font-bold text-black">{{ optional($mitra->shop)->shop_name ?? 'N/A' }}</div>
-                                <a href="http://{{ optional($mitra->subdomain)->subdomain_name }}.gci.com" target="_blank" class="text-sm text-gray-500 underline">
-                                    {{ optional($mitra->subdomain)->subdomain_name }}.gci.com
+                                <a href="http://ecommercegaruda.my.id/tenant/{{ optional($mitra->subdomain)->subdomain_name }}" target="_blank" class="text-sm text-gray-500 underline">
+                                    {{ optional($mitra->subdomain)->subdomain_name }}.ecommercegaruda.my.id
                                 </a>
                             </td>
                             <td class="px-6 py-4 text-left">
@@ -121,17 +109,25 @@
                                     {{ $statusText }}
                                 </span>
                             </td>
-                            <td class="px-6 py-8 flex justify-center gap-3">
-                                @if(optional($userPackage)->status == 'active')
-                                {{-- PERUBAHAN: Menghapus onsubmit, dan menambahkan class 'deactivate-form' --}}
-                                <form action="{{ route('admin.mitra.updateStatus', $mitra->id) }}" method="POST" class="deactivate-form">
-                                    @csrf
-                                    @method('PATCH')
-                                    <input type="hidden" name="status" value="inactive">
-                                    <button type="submit" title="Nonaktifkan" class="text-gray-600 hover:text-red-600">
-                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path></svg>
-                                    </button>
-                                </form>
+                            <td class="px-6 py-4 flex justify-center gap-3">
+                                @if(optional($mitra->userPackage)->status == 'active')
+                                    {{-- Form untuk Menonaktifkan --}}
+                                    <form action="{{ route('admin.mitra.deactivate', $mitra->id) }}" method="POST" class="deactivate-form">
+                                        @csrf
+                                        @method('PATCH')
+                                        <button type="submit" title="Nonaktifkan" class="text-gray-500 hover:text-red-600 transition-colors">
+                                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path></svg>
+                                        </button>
+                                    </form>
+                                @else
+                                    {{-- Form untuk Mengaktifkan Kembali --}}
+                                    <form action="{{ route('admin.mitra.reactivate', $mitra->id) }}" method="POST" class="reactivate-form">
+                                        @csrf
+                                        @method('PATCH')
+                                        <button type="submit" title="Aktifkan Kembali" class="text-gray-500 hover:text-green-600 transition-colors">
+                                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                        </button>
+                                    </form>
                                 @endif
                             </td>
                         </tr>
@@ -155,31 +151,3 @@
         </div>
     </div>
 @endsection
-
-{{-- @push('scripts')
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const searchBtn = document.getElementById('search-icon-btn');
-        const searchForm = document.getElementById('search-form');
-        const searchInput = searchForm.querySelector('input');
-
-        if (searchBtn && searchForm && searchInput) {
-            // Jika ada nilai pencarian (misalnya dari hasil pencarian),
-            // maka tampilkan form pencarian secara default.
-            if (searchInput.value) {
-                searchForm.classList.remove('hidden');
-            }
-
-            searchBtn.addEventListener('click', function () {
-                // Toggle (tampilkan/sembunyikan) form pencarian
-                searchForm.classList.toggle('hidden');
-                
-                // Jika form sekarang terlihat, langsung fokuskan ke inputnya
-                if (!searchForm.classList.contains('hidden')) {
-                    searchInput.focus();
-                }
-            });
-        }
-    });
-</script>
-@endpush --}}

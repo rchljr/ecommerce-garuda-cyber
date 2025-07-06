@@ -1,11 +1,15 @@
 @php
+    // Cek apakah ini mode preview. Jika ya, $currentSubdomain akan null.
+    // Variabel $isPreview akan dikirim dari TemplateController.
+    $isPreview = $isPreview ?? false;
+
     // Ambil subdomain saat ini sekali saja dari parameter rute agar lebih efisien.
     // Ini tersedia karena middleware 'tenant.exists' sudah memprosesnya.
-    $currentSubdomain = request()->route('subdomain');
+    $currentSubdomain = !$isPreview ? request()->route('subdomain') : null;
 
     // Asumsi: Anda memiliki relasi one-to-one bernama 'customTema' di model Shop Anda.
     // public function customTema() { return $this->hasOne(CustomTema::class); }
-    $logoPath = optional($currentShop->customTema)->shop_logo;
+    $logoPath = (isset($currentShop) && $currentShop) ? optional($currentShop->customTema)->shop_logo : null;
 
     // Tentukan URL logo: gunakan logo kustom jika ada, jika tidak, gunakan logo default template.
     // Pastikan file kustom di-upload ke 'storage/app/public/logos' atau path serupa.
@@ -24,31 +28,45 @@
                     <div class="header__top__right">
                         <div class="header__top__links">
                             {{-- Tampilkan link ini jika pengguna adalah tamu (belum login) --}}
-                            @guest
+                            @guest('customers')
                                 <a href="#">FAQs</a>
-                                <a href="{{ route('tenant.customer.login.form', ['subdomain' => $currentSubdomain]) }}">Login</a>
-                                <a href="{{ route('tenant.customer.register.form', ['subdomain' => $currentSubdomain]) }}">Daftar</a>
+                                @if(!$isPreview)
+                                    <a
+                                        href="{{ route('tenant.customer.login.form', ['subdomain' => $currentSubdomain]) }}">Login</a>
+                                    <a
+                                        href="{{ route('tenant.customer.register.form', ['subdomain' => $currentSubdomain]) }}">Daftar</a>
+                                @else
+                                    <a href="#" class="disabled-link">Login</a>
+                                    <a href="#" class="disabled-link">Daftar</a>
+                                @endif
                             @endguest
 
                             {{-- Tampilkan menu ini jika pengguna sudah login --}}
-                            @auth
+                            @auth('customers')
                                 <a href="#">FAQs</a>
                                 <div class="header__top__dropdown">
-                                    <a href="#"><i class="fa fa-user"></i> Hi, {{ strtok(Auth::user()->name, ' ') }}</a>
+                                    <a href="#"><i class="fa fa-user"></i> Hi, {{ strtok(Auth::guard('customers')->user()->name, ' ') }}</a>
                                     <span class="arrow_carrot-down"></span>
                                     <ul>
-                                        <li><a href="{{ route('tenant.account.profile', ['subdomain' => $currentSubdomain]) }}">Akun Saya</a></li>
-                                        <li><a href="{{ route('tenant.account.orders', ['subdomain' => $currentSubdomain]) }}">Pesanan Saya</a></li>
-                                        <li>
-                                            <a href="{{ route('tenant.customer.logout', ['subdomain' => $currentSubdomain]) }}"
-                                                onclick="event.preventDefault(); document.getElementById('logout-form-header').submit();">
-                                                Log Out
-                                            </a>
-                                            <form id="logout-form-header" action="{{ route('tenant.customer.logout', ['subdomain' => $currentSubdomain]) }}"
-                                                method="POST" style="display: none;">
-                                                @csrf
-                                            </form>
-                                        </li>
+                                        @if(!$isPreview)
+                                            <li><a
+                                                    href="{{ route('tenant.account.profile', ['subdomain' => $currentSubdomain]) }}">Akun
+                                                    Saya</a></li>
+                                            <li><a
+                                                    href="{{ route('tenant.account.orders', ['subdomain' => $currentSubdomain]) }}">Pesanan
+                                                    Saya</a></li>
+                                            <li>
+                                                <a href="{{ route('tenant.customer.logout', ['subdomain' => $currentSubdomain]) }}"
+                                                    onclick="event.preventDefault(); document.getElementById('logout-form-header').submit();">
+                                                    Log Out
+                                                </a>
+                                                <form id="logout-form-header"
+                                                    action="{{ route('tenant.customer.logout', ['subdomain' => $currentSubdomain]) }}"
+                                                    method="POST" style="display: none;">
+                                                    @csrf
+                                                </form>
+                                            </li>
+                                        @endif
                                     </ul>
                                 </div>
                             @endauth
@@ -62,7 +80,7 @@
         <div class="row">
             <div class="col-lg-3 col-md-3">
                 <div class="header__logo">
-                    <a href="{{ route('tenant.home', ['subdomain' => $currentSubdomain]) }}">
+                    <a href="{{ !$isPreview ? route('tenant.home', ['subdomain' => $currentSubdomain]) : '#' }}">
                         <img src="{{ $logoUrl }}" alt="{{ optional($currentShop)->shop_name ?? 'Logo Toko' }}">
                     </a>
                 </div>
@@ -72,11 +90,11 @@
                     <ul>
                         {{-- Home --}}
                         <li class="{{ request()->routeIs('tenant.home') ? 'active' : '' }}"><a
-                                href="{{ route('tenant.home', ['subdomain' => $currentSubdomain]) }}">Beranda</a></li>
+                                href="{{ !$isPreview ? route('tenant.home', ['subdomain' => $currentSubdomain]) : '#' }}">Beranda</a></li>
 
                         {{-- Shop --}}
                         <li class="{{ request()->routeIs('tenant.shop') ? 'active' : '' }}">
-                            <a href="{{ route('tenant.shop', ['subdomain' => $currentSubdomain]) }}">Produk</a>
+                            <a href="{{ !$isPreview ? route('tenant.shop', ['subdomain' => $currentSubdomain]) : '#' }}">Produk</a>
                         </li>
 
                         {{-- Pages Dropdown --}}
@@ -85,10 +103,10 @@
                             <a href="#">Pages</a>
                             <ul class="dropdown">
                                 <li><a href="contact"
-                                        class="{{ route('tenant.contact', ['subdomain' => $currentSubdomain]) }}">Tentang
+                                        class="{{ !$isPreview ? route('tenant.contact', ['subdomain' => $currentSubdomain]) : '#' }}">Tentang
                                         Kami</a>
                                 </li>
-                                <li><a href="{{ route('tenant.cart.index', ['subdomain' => $currentSubdomain]) }}"
+                                <li><a href="{{ !$isPreview ? route('tenant.cart.index', ['subdomain' => $currentSubdomain]) : '#' }}"
                                         class="{{ request()->routeIs('cart.index') ? 'active' : '' }}">Keranjang
                                         Belanja</a></li>
 
@@ -106,7 +124,7 @@
 
                         {{-- Contacts --}}
                         <li class="{{ request()->routeIs('tenant.contact') ? 'active' : '' }}"><a
-                                href="{{ route('tenant.contact', ['subdomain' => $currentSubdomain]) }}">Tentang
+                                href="{{ !$isPreview ? route('tenant.contact', ['subdomain' => $currentSubdomain]) : '#' }}">Tentang
                                 Kami</a></li>
                     </ul>
                 </nav>
@@ -115,9 +133,10 @@
                 <div class="header__nav__option">
                     <a href="#" class="search-switch"><img src="{{ asset('template1/img/icon/search.png') }}"
                             alt=""></a>
-                    <a href="{{ route('tenant.wishlist', ['subdomain' => $currentSubdomain]) }}"><img
+                    <a href="{{ !$isPreview ? route('tenant.wishlist', ['subdomain' => $currentSubdomain]) : '#' }}"><img
                             src="{{ asset('template1/img/icon/heart.png') }}" alt=""></a>
-                    <a href="{{ route('tenant.cart.index', ['subdomain' => $currentSubdomain]) }}"><img src="{{ asset('template1/img/icon/cart.png') }}" alt="">
+                    <a href="{{ !$isPreview ? route('tenant.cart.index', ['subdomain' => $currentSubdomain]) : '#' }}"><img
+                            src="{{ asset('template1/img/icon/cart.png') }}" alt="">
                         <span id="cart-count">{{-- ... --}}</span>
                     </a>
                 </div>

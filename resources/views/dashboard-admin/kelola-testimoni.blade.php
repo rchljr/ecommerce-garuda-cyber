@@ -86,7 +86,7 @@
                                 <form action="{{ route('admin.testimoni.destroy', $testimonial->id) }}" method="POST" class="inline delete-form">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="delete-confirm p-1 text-gray-600 hover:text-red-600" title="Hapus">
+                                    <button type="submit" class="delete-btn p-1 text-gray-600 hover:text-red-600" title="Hapus">
                                         <img src="{{ asset('images/delete.png') }}" alt="Delete" class="w-6 h-6">
                                     </button>
                                 </form>

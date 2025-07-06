@@ -2,8 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Services\VoucherService;
+use App\Models\Voucher;
 use Illuminate\Http\Request;
+use App\Services\VoucherService;
 
 class VoucherController extends Controller
 {
@@ -40,8 +41,8 @@ class VoucherController extends Controller
         $validated['min_spending'] = $validated['min_spending'] ?? 0;
 
         $this->service->createVoucher($validated);
-        if ($request->ajax() || $request->wantsJson()) {
-            return response()->json(['success' => true, 'message' => 'Voucher berhasil ditambahkan.']);
+        if ($request->wantsJson()) {
+            return response()->json(['message' => 'Voucher berhasil ditambahkan!']);
         }
         
         return redirect()->route('admin.voucher.index')->with('success', 'Voucher berhasil ditambahkan.');
@@ -61,6 +62,10 @@ class VoucherController extends Controller
         ]);
 
         $this->service->updateVoucher($id, $validated);
+        if ($request->wantsJson()) {
+            return response()->json(['message' => 'Voucher berhasil diperbarui!']);
+        }
+        
         return back()->with('success', 'Voucher berhasil diperbarui.');
     }
 
@@ -72,12 +77,16 @@ class VoucherController extends Controller
 
     public function showJson($id)
     {
-        $voucher = $this->service->getVoucherById($id);
+        try {
+            $voucher = Voucher::findOrFail($id);
+            // Mengubah format tanggal agar sesuai dengan input type="date"
+            $voucher->start_date = \Carbon\Carbon::parse($voucher->start_date)->format('Y-m-d');
+            $voucher->expired_date = \Carbon\Carbon::parse($voucher->expired_date)->format('Y-m-d');
 
-        // Format tanggal menjadi string yang sesuai input type=date (YYYY-MM-DD)
-        $voucher->start_date = $voucher->start_date ? $voucher->start_date->format('Y-m-d') : null;
-        $voucher->expired_date = $voucher->expired_date ? $voucher->expired_date->format('Y-m-d') : null;
+            return response()->json($voucher);
 
-        return response()->json($voucher);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json(['message' => 'Voucher tidak ditemukan.'], 404);
+        }
     }
 }

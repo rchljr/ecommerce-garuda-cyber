@@ -49,14 +49,15 @@ class TemplateController extends Controller
         }
 
         // Kirim semua data yang diperlukan ke tampilan
-        return view($template->path . '.home', compact(
-            'template',
-            'heroes',
-            'banners',
-            'bestSellers',
-            'newArrivals',
-            'hotSales',
-            'currentShop',
-        ));
+        return view($template->path . '.home', [
+            'template' => $template,
+            'heroes' => $heroes,
+            'banners' => $banners,
+            'bestSellers' => $bestSellers,
+            'newArrivals' => $newArrivals,
+            'hotSales' => $hotSales,
+            'currentShop' => null, // Preview tidak memiliki shop context
+            'isPreview' => true, 
+        ]);
     }
 }

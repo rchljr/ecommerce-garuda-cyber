@@ -20,9 +20,12 @@ class DashboardController extends Controller
         $currentYear = $now->year;
         $currentMonth = $now->month;
 
-        // Total Pendapatan Belum Lunas (semua yang statusnya bukan 'settlement'/'capture')
-        $totalPendapatanBelumLunas = Payment::whereNotIn('midtrans_transaction_status', ['settlement', 'capture'])
-            ->sum('total_payment');
+        // Mitra Baru Bulan Ini (Mitra yang statusnya menjadi 'active' di bulan ini)
+        $jumlahMitraBaruBulanIni = User::role('mitra')
+            ->where('status', 'active')
+            ->whereYear('updated_at', $currentYear)
+            ->whereMonth('updated_at', $currentMonth)
+            ->count();
 
         // Menghitung jumlah calon mitra yang statusnya pending
         $jumlahMitraPerluVerifikasi = User::role('calon-mitra')
@@ -68,7 +71,7 @@ class DashboardController extends Controller
 
 
         return view('dashboard-admin.dashboard', compact(
-            'totalPendapatanBelumLunas',
+            'jumlahMitraBaruBulanIni', 
             'jumlahMitraPerluVerifikasi', // Mengirim variabel baru
             'totalPendapatanPerBulan',
             'jumlahSeluruhAkunMitra',

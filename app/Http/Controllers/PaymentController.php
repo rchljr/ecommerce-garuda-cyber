@@ -7,6 +7,7 @@ use Midtrans\Snap;
 use Midtrans\Config;
 use App\Models\Order;
 use Midtrans\CoreApi;
+use App\Models\Payment;
 use App\Models\Voucher;
 use Midtrans\Notification;
 use Illuminate\Http\Request;
@@ -20,7 +21,6 @@ class PaymentController extends Controller
 {
     protected $multiStep;
 
-    // 2. Inject service melalui constructor
     public function __construct(MultiStepRegistrationService $multiStep)
     {
         $this->multiStep = $multiStep;
@@ -34,13 +34,14 @@ class PaymentController extends Controller
      */
     public function show()
     {
+        // Hapus session registrasi lama saat pengguna sampai di halaman pembayaran
         $this->multiStep->clear();
         session()->forget('newly_registered_user_id');
 
         $user = Auth::user();
         $order = Order::with('userPackage.subscriptionPackage', 'voucher')
             ->where('user_id', $user->id)
-            ->where('status', 'pending')
+            ->whereIn('status', ['pending', 'waiting_payment', 'failed', 'cancelled']) // Tambahkan status gagal/batal
             ->latest()
             ->first();
 
@@ -48,10 +49,31 @@ class PaymentController extends Controller
             return redirect()->route('mitra.dashboard')->with('info', 'Anda tidak memiliki tagihan yang perlu dibayar.');
         }
 
+        // Jika order gagal/batal, reset statusnya ke pending agar bisa coba bayar lagi
+        if (in_array($order->status, ['failed', 'cancelled'])) {
+            $order->update(['status' => 'pending']);
+            // Hapus juga catatan pembayaran lama yang gagal agar bisa buat baru
+            Payment::where('order_id', $order->id)->delete();
+        }
+
+        // Cek apakah sudah ada instruksi pembayaran yang aktif untuk order ini
+        $pendingPayment = Payment::where('order_id', $order->id)
+            ->where('midtrans_transaction_status', 'pending')
+            ->first();
+
+        // Jika sudah ada, langsung tampilkan instruksi yang ada
+        if ($pendingPayment && $pendingPayment->midtrans_response) {
+            $paymentDetails = json_decode($pendingPayment->midtrans_response);
+            return view('landing-page.auth.partials._step5', [
+                'order' => $order,
+                'pendingPayment' => $paymentDetails
+            ]);
+        }
+
         return view('landing-page.auth.partials._step5', ['order' => $order]);
     }
     /**
-     * Method  yang paling penting untuk menangani pembayaran via Core API.
+     * Membuat sesi pembayaran dan MENYIMPAN instruksinya.
      */
     public function chargeCoreApi(Request $request)
     {
@@ -74,7 +96,6 @@ class PaymentController extends Controller
             $finalPrice -= $discountAmount;
         }
 
-        // PERBAIKAN: Pastikan harga adalah integer (pembulatan) untuk Midtrans.
         $finalPrice = round($finalPrice);
         if ($finalPrice < 0)
             $finalPrice = 0;
@@ -82,7 +103,6 @@ class PaymentController extends Controller
         $order->total_price = $finalPrice;
         $order->save();
 
-        // PERBAIKAN: Buat ID transaksi unik untuk setiap percobaan pembayaran.
         $transactionId = $order->id . '-' . time();
 
         $params = [
@@ -99,16 +119,10 @@ class PaymentController extends Controller
 
         switch ($request->payment_method) {
             case 'bca_va':
-                $params['payment_type'] = 'bank_transfer';
-                $params['bank_transfer'] = ['bank' => 'bca'];
-                break;
             case 'bni_va':
-                $params['payment_type'] = 'bank_transfer';
-                $params['bank_transfer'] = ['bank' => 'bni'];
-                break;
             case 'bri_va':
                 $params['payment_type'] = 'bank_transfer';
-                $params['bank_transfer'] = ['bank' => 'bri'];
+                $params['bank_transfer'] = ['bank' => str_replace('_va', '', $request->payment_method)];
                 break;
             case 'gopay':
                 $params['payment_type'] = 'gopay';
@@ -120,9 +134,25 @@ class PaymentController extends Controller
 
         try {
             $response = CoreApi::charge($params);
+
+            Payment::updateOrCreate(
+                ['order_id' => $order->id],
+                [
+                    'user_id' => $order->user_id,
+                    'subs_package_id' => $order->user->userPackage->subs_package_id,
+                    'midtrans_order_id' => $response->order_id,
+                    'midtrans_transaction_id' => $response->transaction_id,
+                    'midtrans_transaction_status' => $response->transaction_status,
+                    'midtrans_payment_type' => $response->payment_type,
+                    'total_payment' => $response->gross_amount,
+                    'midtrans_response' => json_encode($response),
+                ]
+            );
+
+            $order->update(['status' => 'waiting_payment']);
+
             return response()->json($response);
         } catch (Exception $e) {
-            // PERBAIKAN: Logging dan pesan error yang lebih detail.
             $errorBody = $e->getMessage();
             $decodedError = json_decode($errorBody);
             $errorMessage = $errorBody;
@@ -180,7 +210,8 @@ class PaymentController extends Controller
             'message' => 'Voucher berhasil diterapkan!',
             'final_price' => $finalPrice,
             'discount_amount' => $discountAmount,
-            'original_price' => $originalPrice
+            'original_price' => $originalPrice,
+            'voucher_code' => $voucher->voucher_code
         ]);
     }
 
@@ -222,12 +253,12 @@ class PaymentController extends Controller
         try {
             // Buat instance notifikasi dari Midtrans, ini akan membaca input dari request secara otomatis
             $notification = new Notification();
-            
+
             // Panggil service dengan object notifikasi yang sudah divalidasi
             $webhookService->handle($notification);
 
             return response()->json(['status' => 'ok', 'message' => 'Webhook processed successfully.']);
-            
+
         } catch (Exception $e) {
             Log::error('Midtrans Webhook Error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
             return response()->json(['status' => 'error', 'message' => 'Webhook Error: ' . $e->getMessage()], 400);
