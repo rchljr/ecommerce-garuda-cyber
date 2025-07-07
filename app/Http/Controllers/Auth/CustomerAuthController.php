@@ -86,7 +86,9 @@ class CustomerAuthController extends Controller
     public function logout(Request $request)
     {
         $tenant = $request->get('tenant');
+
         Auth::guard('customers')->logout();
+        
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 

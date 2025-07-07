@@ -16,7 +16,7 @@
                     class="px-8 py-3 font-bold text-white bg-red-700 rounded-full hover:bg-red-800 transition-colors shadow-md">
                     Daftar
                 </a>
-                <a href="#"
+                <a href="https://drive.google.com/drive/folders/1r8xT7RScvLgCbsbV9hjiTVLC9GlTtCcl?usp=sharing"
                     class="flex items-center space-x-3 px-8 py-3 font-bold text-red-700 bg-white border-2 border-red-700 rounded-full hover:bg-red-50 transition-colors shadow-md">
                     <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
