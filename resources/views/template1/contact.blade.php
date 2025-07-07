@@ -26,7 +26,7 @@
                         </div>
 
                         {{-- Menggunakan data dari variabel $contact jika ada --}}
-                        @if(isset($contact) && $contact)
+                        @if (isset($contact) && $contact)
                             <ul>
                                 <li>
                                     <h4>Alamat</h4>
@@ -57,11 +57,15 @@
 
                 <div class="col-lg-6 col-md-6">
                     <div class="contact__map">
-                        {{-- GANTI `src` DI BAWAH INI DENGAN KODE EMBED GOOGLE MAPS ANDA --}}
-                        <iframe
-                            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3989.663116997452!2d101.43981507476259!3d0.5143365995133796!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x31d5ac1c6363c89d%3A0x8f453c15a8f46cfd!2sXL%20Center%20Pekanbaru!5e0!3m2!1sen!2sid!4v1719766699309!5m2!1sen!2sid"
-                            height="500" style="border:0;" allowfullscreen="" aria-hidden="false" tabindex="0">
-                        </iframe>
+                        @if ($mapEmbedCode)
+                            {{-- Gunakan {!! !!} untuk merender HTML mentah dari database --}}
+                            {!! $mapEmbedCode !!}
+                        @else
+                            {{-- Tampilkan pesan jika kode embed tidak ditemukan di database --}}
+                            <div class="w-full h-[500px] bg-gray-200 flex items-center justify-center">
+                                <p class="text-gray-500">Lokasi peta tidak tersedia.</p>
+                            </div>
+                        @endif
                     </div>
                 </div>
             </div>
