@@ -55,5 +55,26 @@
 @endsection
 
 @push('scripts')
-    {{-- ... script Anda yang sudah ada ... --}}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('.toggle-password-visibility').forEach(button => {
+            button.addEventListener('click', function () {
+                const targetInputId = this.dataset.target;
+                const targetInput = document.getElementById(targetInputId);
+                const eyeIcon = this.querySelector('.eye-icon');
+                const eyeSlashIcon = this.querySelector('.eye-slash-icon');
+
+                if (targetInput.type === 'password') {
+                    targetInput.type = 'text';
+                    eyeIcon.classList.add('hidden');
+                    eyeSlashIcon.classList.remove('hidden');
+                } else {
+                    targetInput.type = 'password';
+                    eyeIcon.classList.remove('hidden');
+                    eyeSlashIcon.classList.add('hidden');
+                }
+            });
+        });
+    });
+</script>
 @endpush

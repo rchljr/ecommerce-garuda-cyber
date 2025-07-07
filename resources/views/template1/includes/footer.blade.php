@@ -25,7 +25,6 @@
                         <li><a href="#">Produk Baru</a></li>
                         <li><a href="#">Kualitas Terbaik</a></li>
                         <li><a href="#">Support UMKM</a></li>
-                        {{-- PERBAIKAN: Link "Belanja" sekarang menunjuk ke halaman toko tenant --}}
                         <li><a
                                 href="{{ !$isPreview ? route('tenant.shop', ['subdomain' => $currentSubdomain]) : '#' }}">Belanja</a>
                         </li>

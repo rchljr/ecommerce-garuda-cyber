@@ -84,7 +84,7 @@
                                 </button>
                             </form>
                         @else
-                            <a href="#"
+                            <a href="https://wa.me/6282210098869?text=Halo%20Admin%20E-Commerce%20Garuda%2C%20saya%20ingin%20bertanya%20mengenai%20layanan%20Anda."
                                 class="w-full block text-center py-3 font-semibold text-gray-800 bg-yellow-400 rounded-lg hover:bg-yellow-500 transition-colors">
                                 Hubungi Kami
                             </a>

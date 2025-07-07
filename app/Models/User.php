@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Spatie\Permission\Traits\HasRoles;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use App\Models\Product; 
+use App\Models\Product;
 
 class User extends Authenticatable
 {
@@ -61,9 +61,9 @@ class User extends Authenticatable
         return $this->hasOne(Shop::class);
     }
     public function tenant()
-{
-    return $this->hasOne(Tenant::class);
-}
+    {
+        return $this->hasOne(Tenant::class);
+    }
     public function subdomain()
     {
         return $this->hasOne(Subdomain::class);
@@ -76,5 +76,11 @@ class User extends Authenticatable
     {
         return $this->hasMany(Product::class, 'user_id', 'id');
     }
-
+    /**
+     * Mendefinisikan bahwa satu User memiliki satu Cart.
+     */
+    public function cart()
+    {
+        return $this->hasOne(Cart::class);
+    }
 }
