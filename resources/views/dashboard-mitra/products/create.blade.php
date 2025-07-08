@@ -218,12 +218,14 @@
                     <div class="bg-white p-6 rounded-lg shadow">
                         <h2 class="text-xl font-semibold mb-4">Organisasi</h2>
                         <div class="mb-4">
-                            <label for="sub_category_id" class="block text-sm font-medium text-gray-700 mb-1">Kategori</label>
-                            <select id="sub_category_id" name="sub_category_id" class="w-full border-gray-300 rounded-md shadow-sm" required>
-                                <option value="">Pilih Kategori</option>
-                                {{-- Loop sekarang menggunakan variabel $subCategories --}}
+                            <label for="sub_category_id">Sub Kategori:</label>
+                            <select name="sub_category_id" id="sub_category_id" required>
+                                <option value="">Pilih Sub Kategori</option>
                                 @foreach ($subCategories as $subCategory)
-                                    <option value="{{ $subCategory->id }}">{{ $subCategory->name }}</option>
+                                    <option value="{{ $subCategory->id }}"
+                                        {{ old('sub_category_id', optional($product ?? null)->sub_category_id) == $subCategory->id ? 'selected' : '' }}>
+                                        {{ $subCategory->name }}
+                                    </option>
                                 @endforeach
                             </select>
                         </div>

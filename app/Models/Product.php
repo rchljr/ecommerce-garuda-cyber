@@ -87,9 +87,9 @@ class Product extends Model
         return $this->belongsTo(User::class, 'user_id');
     }
 
-    public function subCategory(): BelongsTo // Changed relation name to subCategory
+    public function subCategory()
     {
-        return $this->belongsTo(SubCategory::class, 'sub_category_id'); // Changed to SubCategory and sub_category_id
+        return $this->belongsTo(SubCategory::class, 'sub_category_id');
     }
 
     public function variants(): HasMany

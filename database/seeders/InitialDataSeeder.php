@@ -65,6 +65,7 @@ class InitialDataSeeder extends Seeder
         $admin->assignRole('admin');
         $customer->assignRole('customer');
 
+
         // 3. Data Kategori dan Sub-kategori
         $categoriesData = [
             'Kuliner' => ['Makanan', 'Minuman', 'Snack', 'Kue & Roti', 'Lainnya'],

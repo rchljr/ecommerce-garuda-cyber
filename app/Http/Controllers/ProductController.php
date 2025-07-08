@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Auth;
 
+
 class ProductController extends Controller
 {
     /**
@@ -21,8 +22,23 @@ class ProductController extends Controller
      */
     public function index()
     {
-        // Mengambil produk berdasarkan user yang login jika perlu, atau semua produk jika admin global
-        $products = Product::latest()->paginate(10);
+        $user = Auth::user();
+        $shop = $user->shop;
+
+        // PENINGKATAN: Pastikan mitra punya toko
+        if (!$shop || !$shop->product_categories) {
+            abort(403, 'Profil toko Anda belum lengkap.');
+        }
+
+        // Ambil ID semua sub-kategori yang dimiliki toko ini
+        $mainCategory = Category::where('slug', $shop->product_categories)->first();
+        $subCategoryIds = $mainCategory ? $mainCategory->subCategories()->pluck('id') : [];
+        
+        // Tampilkan produk yang hanya memiliki sub_category_id yang diizinkan
+        $products = Product::whereIn('sub_category_id', $subCategoryIds)
+                            ->latest()
+                            ->paginate(10);
+
         return view('dashboard-mitra.products.index', compact('products'));
     }
 
@@ -78,6 +94,7 @@ class ProductController extends Controller
             $mainImagePath = $request->file('main_image')->store('products/main', 'public');
 
             $product = Product::create([
+                'user_id' => auth::id(),
                 'name' => $validatedData['name'],
                 'slug' => Str::slug($validatedData['name']) . '-' . uniqid(),
                 'short_description' => $validatedData['short_description'],

@@ -47,6 +47,6 @@ class Order extends Model
     } // Toko tempat order dibuat
     public function items()
     {
-        return $this->hasMany(ProductOrder::class);
-    }
+        return $this->hasMany(ProductOrder::class, 'order_id', 'id');
+    } 
 }
