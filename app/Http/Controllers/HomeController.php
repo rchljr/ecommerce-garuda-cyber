@@ -6,9 +6,11 @@ use Illuminate\Http\Request;
 use App\Models\Hero; 
 use App\Models\Banner;
 use App\Models\Product;
+use Illuminate\Support\Facades\DB;
 
 class HomeController extends Controller
 {
+    
     /**
      * Menampilkan halaman utama (homepage) dari sebuah tenant.
      *
@@ -17,6 +19,8 @@ class HomeController extends Controller
      */
     public function index(Request $request)
     {
+        dd('Database yang sedang aktif:', DB::connection()->getDatabaseName());
+
         // 1. Ambil data tenant dari request (sudah disiapkan oleh middleware)
         $tenant = $request->get('tenant');
         $templatePath = $tenant->template->path;
@@ -30,5 +34,6 @@ class HomeController extends Controller
 
         // 3. Tampilkan view dari template yang benar dengan semua data
         return view($templatePath . '.home', compact('tenant', 'heroes', 'banners', 'bestSellers', 'newArrivals', 'hotSales'));
+       
     }
 }

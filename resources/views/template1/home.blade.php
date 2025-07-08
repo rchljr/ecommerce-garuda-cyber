@@ -39,7 +39,8 @@
                 </div>
             @empty
                 {{-- Konten default jika tidak ada hero yang diatur --}}
-                <div class="hero__items set-bg" data-setbg="{{ asset('template1/img/hero/hero-default.jpg') }}"> {{-- Pastikan
+                <div class="hero__items set-bg" data-setbg="{{ asset('template1/img/hero/hero-default.jpg') }}">
+                    {{-- Pastikan
                     ada gambar default di public/template1/img/hero/hero-default.jpg --}}
                     <div class="container">
                         <div class="row">
@@ -48,7 +49,8 @@
                                     <h6>Selamat Datang!</h6>
                                     <h2>Toko Fashion Terbaik Anda</h2>
                                     <p>Ini Adalah Hero Bisa Kamu Edit diDasboard</p>
-                                    <a href="#" class="primary-btn">Telusuri Sekarang <span class="arrow_right"></span></a>
+                                    <a href="#" class="primary-btn">Telusuri Sekarang <span
+                                            class="arrow_right"></span></a>
                                     <div class="hero__social">
                                         <a href="#"><i class="fa fa-facebook"></i></a>
                                         <a href="#"><i class="fa fa-twitter"></i></a>
@@ -147,7 +149,10 @@
             {{-- Mengganti grid produk statis menjadi dinamis --}}
             @php
                 // Menggabungkan semua produk dan memastikan tidak ada duplikat
-                $allProducts = collect($bestSellers ?? [])->merge($newArrivals ?? [])->merge($hotSales ?? [])->unique('id');
+                $allProducts = collect($bestSellers ?? [])
+                    ->merge($newArrivals ?? [])
+                    ->merge($hotSales ?? [])
+                    ->unique('id');
             @endphp
 
             <div class="row product__filter">
@@ -155,24 +160,28 @@
                     @php
                         // Menentukan class untuk filter MixItUp
                         $classes = '';
-                        if (($bestSellers ?? collect())->contains($product))
+                        if (($bestSellers ?? collect())->contains($product)) {
                             $classes .= ' best-seller';
-                        if (($newArrivals ?? collect())->contains($product))
+                        }
+                        if (($newArrivals ?? collect())->contains($product)) {
                             $classes .= ' new-arrival';
-                        if (($hotSales ?? collect())->contains($product))
+                        }
+                        if (($hotSales ?? collect())->contains($product)) {
                             $classes .= ' hot-sale';
+                        }
                     @endphp
                     <div class="col-lg-3 col-md-6 col-sm-6 mix{{ $classes }}">
                         <div class="product__item">
                             <div class="product__item__pic set-bg" data-setbg="{{ $product->image_url }}">
                                 {{-- PERBAIKAN: Menggunakan flag dari database --}}
-                                @if($product->is_new_arrival)
+                                @if ($product->is_new_arrival)
                                     <span class="label">New</span>
                                 @elseif($product->is_hot_sale)
                                     <span class="label">Sale</span>
                                 @endif
                                 <ul class="product__hover">
-                                    <li><a href="#"><img src="{{ asset('template1/img/icon/heart.png') }}" alt=""></a></li>
+                                    <li><a href="#"><img src="{{ asset('template1/img/icon/heart.png') }}"
+                                                alt=""></a></li>
                                     {{-- PERBAIKAN: Tambahkan parameter subdomain ke rute tenant.product.details --}}
                                     <li><a
                                             href="{{ route('tenant.product.details', ['subdomain' => $currentSubdomain, 'product' => $product->slug]) }}"><img
@@ -182,11 +191,16 @@
                             <div class="product__item__text">
                                 <h6>{{ $product->name }}</h6>
                                 {{-- PERBAIKAN: Tambahkan parameter subdomain ke rute tenant.cart.add --}}
-                                <a href="{{ route('tenant.cart.add', ['subdomain' => $currentSubdomain]) }}" class="add-cart">+
-                                    Add To Cart</a>
+                                <a href="#" class="add-cart add-cart-button" data-product-id="{{ $product->id }}"
+                                    data-product-name="{{ $product->name }}" data-product-price="{{ $product->price }}"
+                                    data-product-image="{{ asset('storage/' . $product->main_image) }}"
+                                    data-product-variants="{{ json_encode($product->variants) }}">
+                                    + Add To Cart
+                                </a>
                                 <div class="rating">
                                     @for ($i = 1; $i <= 5; $i++)
-                                        <i class="fa {{ ($product->rating_product ?? 0) >= $i ? 'fa-star' : 'fa-star-o' }}"></i>
+                                        <i
+                                            class="fa {{ ($product->rating_product ?? 0) >= $i ? 'fa-star' : 'fa-star-o' }}"></i>
                                     @endfor
                                 </div>
                                 <h5>Rp {{ number_format($product->price, 0, ',', '.') }}</h5>

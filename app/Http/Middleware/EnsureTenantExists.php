@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use App\Models\Tenant;
+use Illuminate\Support\Facades\DB; // PASTIKAN FACADE INI DI-IMPORT
 
 class EnsureTenantExists
 {
@@ -21,43 +22,49 @@ class EnsureTenantExists
         $subdomainName = $request->route('subdomain');
 
         if (!$subdomainName) {
-            // Seharusnya tidak pernah terjadi jika middleware hanya digunakan di grup domain
             return abort(404, 'Subdomain tidak ditemukan.');
         }
 
-        // 2. Cari tenant di database berdasarkan nama subdomain
+        // 2. Cari tenant, ABAIKAN STATUS untuk sementara waktu demi debugging
         $tenant = Tenant::whereHas('subdomain', function ($query) use ($subdomainName) {
-            // Kondisi 1: Nama subdomain harus cocok DAN statusnya harus 'active'
-            $query->where('subdomain_name', $subdomainName)
-                ->where('status', 'active');
+            $query->where('subdomain_name', $subdomainName);
+                  //->where('status', 'active'); // Pengecekan status dinonaktifkan
         })
-            ->whereHas('user.userPackage', function ($query) {
-                // Kondisi 2: Tenant harus memiliki user dengan userPackage yang statusnya 'active'
-                $query->where('status', 'active');
-            })
-            ->first();
+        ->first();
 
-        // 3. Jika tenant tidak ditemukan, tampilkan halaman 404
-        if (!$tenant) {
-            return abort(404, 'Toko tidak ditemukan atau tidak aktif.');
+        // --- DEBUGGING: Tampilkan hasil pencarian tenant ---
+        // Jika ini menampilkan null, berarti nama subdomain di URL salah.
+        // Jika ini menampilkan data tenant, berarti masalahnya ada di status atau db_name.
+        dd($tenant);
+        // ---------------------------------------------------
+
+
+        // 3. Jika tenant atau nama databasenya tidak ada, hentikan proses
+        if (!$tenant || empty($tenant->db_name)) {
+            return abort(404, 'Toko tidak ditemukan atau konfigurasi database tidak lengkap.');
         }
 
-        // 4. Jika ditemukan, simpan objek tenant ke dalam request
-        //    agar bisa diakses oleh controller.
+        // =================================================================
+        // 4. LOGIKA KUNCI UNTUK SWITCH DATABASE
+        // =================================================================
+        config(['database.connections.mysql.database' => $tenant->db_name]);
+        DB::purge('mysql');
+        DB::reconnect('mysql');
+        // =================================================================
+
+        // 5. Jika ditemukan, simpan objek tenant ke dalam request
         $request->attributes->add(['tenant' => $tenant]);
 
-        // Bagikan variabel $currentTenant dan $currentShop
-        // ke SEMUA view yang akan di-render selama request ini.
+        // 6. Bagikan variabel ke SEMUA view yang akan di-render
         view()->share('currentTenant', $tenant);
 
         if ($tenant->subdomain && $tenant->subdomain->user && $tenant->subdomain->user->shop) {
             view()->share('currentShop', $tenant->subdomain->user->shop);
         } else {
-            // Sediakan objek kosong jika relasi tidak ditemukan untuk menghindari error
             view()->share('currentShop', null);
         }
 
-        // 5. Lanjutkan request ke controller
+        // 7. Lanjutkan request ke controller
         return $next($request);
     }
 }
