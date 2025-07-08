@@ -38,6 +38,7 @@
 
     <!-- KEDUA: Muat Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     @stack('styles')
 </head>

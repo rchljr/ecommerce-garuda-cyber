@@ -66,8 +66,8 @@
 
 @section('content')
     @php
-        // Ambil subdomain saat ini sekali saja dari parameter rute agar lebih efisien.
-        $currentSubdomain = request()->route('subdomain');
+        $isPreview = $isPreview ?? false;
+        $currentSubdomain = !$isPreview ? request()->route('subdomain') : null;
     @endphp
 
     <!-- Shop Details Section Begin -->
@@ -78,9 +78,9 @@
                     <div class="col-lg-12">
                         <div class="product__details__breadcrumb">
                             {{-- PERBAIKAN: Tambahkan parameter subdomain ke rute tenant.home --}}
-                            <a href="{{ route('tenant.home', ['subdomain' => $currentSubdomain]) }}">Home</a>
+                            <a href="{{ !$isPreview ? route('tenant.home', ['subdomain' => $currentSubdomain]) : '#' }}">Home</a>
                             {{-- PERBAIKAN: Tambahkan parameter subdomain ke rute tenant.shop --}}
-                            <a href="{{ route('tenant.shop', ['subdomain' => $currentSubdomain]) }}">Shop</a>
+                            <a href="{{ !$isPreview ? route('tenant.shop', ['subdomain' => $currentSubdomain]) : '#' }}">Shop</a>
                             <span>{{ $product->name ?? 'Detail Produk' }}</span>
                         </div>
                     </div>
@@ -146,7 +146,7 @@
 
                             {{-- PERBAIKAN: Tambahkan parameter subdomain ke rute tenant.cart.add --}}
                             <form id="add-to-cart-form"
-                                action="{{ route('tenant.cart.add', ['subdomain' => $currentSubdomain]) }}" method="POST">
+                                action="{{ !$isPreview ? route('tenant.cart.add', ['subdomain' => $currentSubdomain]) : '#' }}" method="POST">
                                 @csrf
                                 <input type="hidden" name="product_id" value="{{ $product->id }}">
 
@@ -374,7 +374,7 @@
                     const productId = this.dataset.productId;
 
                     // PERBAIKAN: Tambahkan parameter subdomain ke rute tenant.wishlist.toggle
-                    fetch("{{ route('tenant.wishlist.toggle', ['subdomain' => $currentSubdomain]) }}", {
+                    fetch("{{ !$isPreview ? route('tenant.wishlist.toggle', ['subdomain' => $currentSubdomain]) : '#' }}", {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
                         body: JSON.stringify({ product_id: productId })
@@ -382,7 +382,7 @@
                         .then(response => {
                             if (response.status === 401) {
                                 // PERBAIKAN: Tambahkan parameter subdomain ke rute tenant.customer.login.form
-                                window.location.href = "{{ route('tenant.customer.login.form', ['subdomain' => $currentSubdomain]) }}";
+                                window.location.href = "{{ !$isPreview ? route('tenant.customer.login.form', ['subdomain' => $currentSubdomain]) : '#' }}";
                                 throw new Error('Unauthorized');
                             }
                             return response.json();

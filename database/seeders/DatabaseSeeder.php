@@ -14,13 +14,17 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call([
+            RolesAndPermissionsSeeder::class,
             SubscriptionPackageSeeder::class,
             InitialDataSeeder::class,
-            RolesAndPermissionsSeeder::class,
             TestimonialSeeder::class,
             VoucherSeeder::class,
             PointRewardSeeder::class,
-            TemplateSeeder::class
+            TemplateSeeder::class,
+        ]);
+
+        $this->call([
+            MitraTokoSeeder::class,
         ]);
     }
 }

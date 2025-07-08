@@ -14,6 +14,17 @@
     // Tentukan URL logo: gunakan logo kustom jika ada, jika tidak, gunakan logo default template.
     // Pastikan file kustom di-upload ke 'storage/app/public/logos' atau path serupa.
     $logoUrl = $logoPath ? asset('storage/' . $logoPath) : asset('template1/img/logo.png');
+
+    // Logika untuk hitungan keranjang
+    $cartCount = 0;
+    if (Auth::guard('customers')->check()) {
+        // Jika pelanggan login, hitung dari database
+        $cart = Auth::guard('customers')->user()->cart;
+        $cartCount = $cart ? $cart->items->sum('quantity') : 0;
+    } elseif (session()->has('cart')) {
+        // Jika tamu, hitung dari session
+        $cartCount = array_sum(array_column(session('cart'), 'quantity'));
+    }
 @endphp
 
 <header class="header">
@@ -45,7 +56,8 @@
                             @auth('customers')
                                 <a href="#">FAQs</a>
                                 <div class="header__top__dropdown">
-                                    <a href="#"><i class="fa fa-user"></i> Hi, {{ strtok(Auth::guard('customers')->user()->name, ' ') }}</a>
+                                    <a href="#"><i class="fa fa-user"></i> Hi,
+                                        {{ strtok(Auth::guard('customers')->user()->name, ' ') }}</a>
                                     <span class="arrow_carrot-down"></span>
                                     <ul>
                                         @if(!$isPreview)
@@ -90,11 +102,13 @@
                     <ul>
                         {{-- Home --}}
                         <li class="{{ request()->routeIs('tenant.home') ? 'active' : '' }}"><a
-                                href="{{ !$isPreview ? route('tenant.home', ['subdomain' => $currentSubdomain]) : '#' }}">Beranda</a></li>
+                                href="{{ !$isPreview ? route('tenant.home', ['subdomain' => $currentSubdomain]) : '#' }}">Beranda</a>
+                        </li>
 
                         {{-- Shop --}}
                         <li class="{{ request()->routeIs('tenant.shop') ? 'active' : '' }}">
-                            <a href="{{ !$isPreview ? route('tenant.shop', ['subdomain' => $currentSubdomain]) : '#' }}">Produk</a>
+                            <a
+                                href="{{ !$isPreview ? route('tenant.shop', ['subdomain' => $currentSubdomain]) : '#' }}">Produk</a>
                         </li>
 
                         {{-- Pages Dropdown --}}
@@ -137,7 +151,7 @@
                             src="{{ asset('template1/img/icon/heart.png') }}" alt=""></a>
                     <a href="{{ !$isPreview ? route('tenant.cart.index', ['subdomain' => $currentSubdomain]) : '#' }}"><img
                             src="{{ asset('template1/img/icon/cart.png') }}" alt="">
-                        <span id="cart-count">{{-- ... --}}</span>
+                        <span id="cart-count">{{ $cartCount }}</span>
                     </a>
                 </div>
             </div>
@@ -145,3 +159,7 @@
         <div class="canvas__open"><i class="fa fa-bars"></i></div>
     </div>
 </header>
+
+<style>
+    .disabled-link { color: #b2b2b2 !important; cursor: not-allowed; }
+</style>

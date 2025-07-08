@@ -8,6 +8,7 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Database\Eloquent\Model;
 use \Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Shop extends Model
@@ -57,5 +58,10 @@ class Shop extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function mainCategory(): BelongsTo
+    {
+        return $this->belongsTo(Category::class, 'product_categories', 'slug');
     }
 }

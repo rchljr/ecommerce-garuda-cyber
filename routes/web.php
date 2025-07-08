@@ -27,6 +27,8 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\PendapatanController;
 use App\Http\Controllers\Admin\KelolaMitraController;
 use App\Http\Controllers\Auth\CustomerAuthController;
+use App\Http\Controllers\Auth\ResetPasswordController;
+use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\SubscriptionPackageController;
 use App\Http\Controllers\Mitra\DashboardMitraController;
 use App\Http\Controllers\Customer\CustomerOrderController;
@@ -52,9 +54,12 @@ use App\Http\Controllers\Customer\CustomerNotificationController;
 // RUTE SUBDOMAIN (HARUS DI ATAS RUTE UMUM)
 // ===================================================================
 Route::prefix('tenant/{subdomain}')
-    ->middleware('tenant.exists') // Terapkan middleware di sini
-    ->name('tenant.') // Memberi nama prefix untuk semua rute di dalam grup
+    ->middleware(['web', 'tenant.exists']) // Middleware 'web' menangani session
+    ->name('tenant.') // Memberi nama prefix "tenant." untuk semua rute di dalam grup
     ->group(function () {
+        Route::get('/ping', function () {
+            return 'Pong! Rute subdomain berhasil diakses.';
+        });
 
         // Rute Halaman Publik Toko
         Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -80,7 +85,7 @@ Route::prefix('tenant/{subdomain}')
             Route::get('/', [CartController::class, 'index'])->name('index');
             Route::post('/add', [CartController::class, 'add'])->name('add');
             Route::patch('/update/{productCartId}', [CartController::class, 'update'])->name('update');
-            Route::delete('/remove/{productCartId}', [CartController::class, 'remove'])->name('remove');
+            Route::delete('/remove', [CartController::class, 'removeItems'])->name('remove');
         });
 
         // Rute Checkout
@@ -89,7 +94,7 @@ Route::prefix('tenant/{subdomain}')
             Route::post('/process', [CheckoutController::class, 'process'])->name('process');
         });
 
-        // Rute Dasbor Pelanggan (Memerlukan Login)
+        // Rute Dasbor Pelanggan
         Route::prefix('account')->middleware(['auth:customers'])->name('account.')->group(function () {
             Route::get('/profile', [CustomerProfileController::class, 'show'])->name('profile');
             Route::post('/profile/update', [CustomerProfileController::class, 'update'])->name('profile.update');
@@ -116,6 +121,12 @@ Route::get('/login', fn() => view('landing-page.auth.login'))->name('login');
 Route::post('/login', [AuthController::class, 'login'])->name('login.submit');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
+// Rute untuk Lupa Password (Mitra & Admin)
+Route::get('password/reset', [ForgotPasswordController::class, 'showLinkRequestForm'])->name('password.request');
+Route::post('password/email', [ForgotPasswordController::class, 'sendResetLinkEmail'])->name('password.email');
+Route::get('password/reset/{token}', [ResetPasswordController::class, 'showResetForm'])->name('password.reset');
+Route::post('password/reset', [ResetPasswordController::class, 'reset'])->name('password.update');
+
 // Proses Registrasi Multi-Langkah (Publik)
 Route::prefix('register')->name('register.')->group(function () {
     Route::get('/', [AuthController::class, 'showRegisterForm'])->name('form');
@@ -128,7 +139,7 @@ Route::prefix('register')->name('register.')->group(function () {
     Route::get('/clear', [AuthController::class, 'clearRegistration'])->name('clear');
 });
 //preview template
-Route::get('/{template:slug}/beranda', [TemplateController::class, 'preview'])->name('template.preview');
+Route::get('/{template:name}/beranda', [TemplateController::class, 'preview'])->name('template.preview');
 
 //Mitra Sementara
 // Route::prefix('dashboard-mitra')->name('mitra.')->group(function () {

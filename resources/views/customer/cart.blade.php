@@ -3,56 +3,105 @@
 
 @section('content')
     @php
+        // Ambil subdomain saat ini untuk digunakan di dalam rute
         $currentSubdomain = request()->route('subdomain');
     @endphp
 
     <div class="bg-gray-100 py-12">
         <div class="container mx-auto px-4">
             <h1 class="text-3xl font-bold text-gray-800 mb-8">Keranjang Belanja Anda</h1>
-            <form id="cart-form" action="{{ route('tenant.checkout.index', ['subdomain' => $currentSubdomain]) }}" method="GET">
+
+            {{-- Form ini akan mengarahkan ke halaman checkout saat disubmit --}}
+            <form id="cart-form" action="{{ route('tenant.checkout.index', ['subdomain' => $currentSubdomain]) }}"
+                method="GET">
                 <div class="flex flex-col lg:flex-row gap-8">
-                    <!-- Daftar Item Keranjang -->
+
+                    <!-- Kolom Kiri: Daftar Item Keranjang -->
                     <div class="w-full lg:w-2/3">
                         <div class="bg-white rounded-lg shadow-md p-6 space-y-4">
-                            <div class="flex justify-between items-center border-b pb-4">
-                                <label class="flex items-center">
-                                    <input type="checkbox" id="select-all-items"
-                                        class="h-5 w-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
-                                    <span class="ml-3 text-sm font-medium">Pilih Semua</span>
-                                </label>
-                                <button type="button" id="remove-selected-btn"
-                                    class="text-sm text-red-600 hover:underline">Hapus yang Dipilih</button>
-                            </div>
+                            @if(isset($cartItems) && $cartItems->isNotEmpty())
+                                <div class="flex justify-between items-center border-b pb-4">
+                                    <label class="flex items-center">
+                                        <input type="checkbox" id="select-all-items"
+                                            class="h-5 w-5 rounded border-gray-300 text-red-600 focus:ring-red-500">
+                                        <span class="ml-3 text-sm font-medium">Pilih Semua</span>
+                                    </label>
+                                    <button type="button" id="remove-selected-btn"
+                                        class="text-sm text-red-600 hover:underline">Hapus yang Dipilih</button>
+                                </div>
+                            @endif
 
                             @forelse ($cartItems as $item)
-                                <div class="flex items-center border-b py-4 cart-item">
-                                    <input type="checkbox" name="items[]" value="{{ $item->id }}"
-                                        class="item-checkbox h-5 w-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                                        data-price="{{ $item->product->price }}" data-quantity="{{ $item->quantity }}">
-                                    <img src="https://placehold.co/80x80" alt="{{ $item->product->name }}"
+                                @php
+                                    $product = is_object($item->product) ? $item->product : (object) ($item['product'] ?? []);
+                                    $itemId = $item->id ?? $item['id'];
+                                    $quantity = $item->quantity ?? $item['quantity'];
+                                    $color = $item->color ?? '';
+                                    $size = $item->size ?? '';
+                                    $slug = optional($product)->slug;
+                                @endphp
+                                <div class="flex items-start border-b py-4 cart-item" data-id="{{ $itemId }}">
+                                    {{-- Checkbox ini harus memiliki name="items[]" agar nilainya terkirim ke halaman checkout
+                                    --}}
+                                    <input type="checkbox" name="items[]" value="{{ $itemId }}"
+                                        class="item-checkbox h-5 w-5 rounded border-gray-300 text-red-600 focus:ring-red-500 mt-1"
+                                        data-price="{{ $product->price ?? 0 }}">
+
+                                    <img src="{{ asset('storage/' . ($product->main_image ?? 'images/placeholder.png')) }}"
+                                        onerror="this.onerror=null;this.src='https://placehold.co/80x80/f1f5f9/cbd5e1?text=No+Image';"
+                                        alt="{{ $product->name ?? 'Produk tidak ditemukan' }}"
                                         class="w-20 h-20 rounded-md object-cover mx-4">
+
                                     <div class="flex-grow">
-                                        <p class="font-semibold">{{ $item->product->name }}</p>
-                                        <p class="text-sm text-gray-500">Toko:
-                                            {{ data_get($item, 'product.shopOwner.shop.shop_name', 'Toko Tidak Tersedia') }}</p>
+                                        @if($slug)
+                                            <a href="{{ route('tenant.product.details', ['subdomain' => $currentSubdomain, 'product' => $slug]) }}"
+                                                class="font-semibold text-gray-800 hover:text-red-600">{{ $product->name ?? 'Nama Produk' }}</a>
+                                        @else
+                                            <span class="font-semibold text-gray-800">{{ $product->name ?? 'Nama Produk' }}</span>
+                                        @endif
+                                        <p class="text-sm text-gray-500">
+                                            Varian: {{ $color }} / {{ $size }}
+                                        </p>
                                         <p class="text-lg font-bold text-gray-800 mt-1">
-                                            {{ format_rupiah($item->product->price) }}</p>
+                                            {{ format_rupiah($product->price ?? 0) }}
+                                        </p>
                                     </div>
-                                    <div class="flex items-center gap-3">
-                                        <button type="button" class="quantity-btn" data-action="decrease">-</button>
-                                        <input type="number"
-                                            class="w-12 text-center border-gray-300 rounded-md quantity-input"
-                                            value="{{ $item->quantity }}" min="1">
-                                        <button type="button" class="quantity-btn" data-action="increase">+</button>
+                                    <div class="flex flex-col items-end gap-3">
+                                        <div class="flex items-center border border-gray-300 rounded-md">
+                                            <button type="button" class="quantity-btn px-2 py-1"
+                                                data-action="decrease">-</button>
+                                            <input type="number"
+                                                class="w-12 text-center border-l border-r border-gray-300 quantity-input"
+                                                value="{{ $quantity }}" min="1">
+                                            <button type="button" class="quantity-btn px-2 py-1"
+                                                data-action="increase">+</button>
+                                        </div>
+                                        <button type="button"
+                                            class="remove-item-btn text-xs text-gray-500 hover:text-red-600 hover:underline">Hapus</button>
                                     </div>
                                 </div>
                             @empty
-                                <p class="text-center text-gray-500 py-10">Keranjang Anda kosong.</p>
+                                <div class="text-center py-16">
+                                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24"
+                                        stroke="currentColor" aria-hidden="true">
+                                        <path vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round"
+                                            stroke-width="2"
+                                            d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                                    </svg>
+                                    <h3 class="mt-2 text-sm font-medium text-gray-900">Keranjang Anda kosong</h3>
+                                    <p class="mt-1 text-sm text-gray-500">Ayo mulai belanja dan temukan produk favorit Anda!</p>
+                                    <div class="mt-6">
+                                        <a href="{{ route('tenant.shop', ['subdomain' => $currentSubdomain]) }}"
+                                            class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700">
+                                            Mulai Belanja
+                                        </a>
+                                    </div>
+                                </div>
                             @endforelse
                         </div>
                     </div>
 
-                    <!-- Ringkasan Pesanan -->
+                    <!-- Kolom Kanan: Ringkasan & Pembayaran -->
                     <div class="w-full lg:w-1/3">
                         <div class="bg-white rounded-lg shadow-md p-6 sticky top-24">
                             <h2 class="text-xl font-bold border-b pb-4">Ringkasan Pesanan</h2>
@@ -60,14 +109,24 @@
                                 <div class="flex justify-between">
                                     <span class="text-gray-600">Subtotal (<span id="selected-items-count">0</span>
                                         item)</span>
-                                    <span id="subtotal-price" class="font-semibold">{{ format_rupiah(0) }}</span>
+                                    <span id="subtotal-price"
+                                        class="font-semibold text-gray-800">{{ format_rupiah(0) }}</span>
                                 </div>
                             </div>
-                            <button type="submit" id="checkout-btn"
-                                class="w-full mt-6 bg-gray-800 text-white font-bold py-3 rounded-lg hover:bg-black disabled:bg-gray-400"
-                                disabled>
-                                Checkout
-                            </button>
+
+                            @guest('customers')
+                                <a href="{{ route('tenant.customer.login.form', ['subdomain' => $currentSubdomain, 'redirect' => route('tenant.cart.index', ['subdomain' => $currentSubdomain])]) }}"
+                                    class="block text-center w-full mt-6 bg-red-600 text-white font-bold py-3 rounded-lg hover:bg-red-700">
+                                    Login untuk Checkout
+                                </a>
+                            @else
+                                {{-- Tombol Checkout ini adalah tombol submit untuk form di atas --}}
+                                <button type="submit" id="checkout-btn"
+                                    class="w-full mt-6 bg-gray-800 text-white font-bold py-3 rounded-lg hover:bg-black disabled:bg-gray-400 disabled:cursor-not-allowed"
+                                    disabled>
+                                    Checkout
+                                </button>
+                            @endguest
                         </div>
                     </div>
                 </div>
@@ -79,19 +138,19 @@
 @push('scripts')
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // Referensi ke elemen-elemen penting
-            const cartForm = document.getElementById('cart-form');
-            const selectAllCheckbox = document.getElementById('select-all-items');
-            const itemCheckboxes = document.querySelectorAll('.item-checkbox');
+            // Ambil elemen dengan aman untuk menghindari error jika tidak ada
+            const csrfTokenEl = document.querySelector('meta[name="csrf-token"]');
+            const csrfToken = csrfTokenEl ? csrfTokenEl.getAttribute('content') : null;
             const checkoutBtn = document.getElementById('checkout-btn');
-            const subtotalPriceEl = document.getElementById('subtotal-price');
-            const selectedItemsCountEl = document.getElementById('selected-items-count');
-            
-            // --- FUNGSI UNTUK UPDATE RINGKASAN PESANAN (KODE ANDA SUDAH BENAR) ---
+
+            function formatRupiah(number) {
+                return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(number);
+            }
+
             function updateSummary() {
                 let subtotal = 0;
                 let selectedCount = 0;
-                itemCheckboxes.forEach(checkbox => {
+                document.querySelectorAll('.item-checkbox').forEach(checkbox => {
                     if (checkbox.checked) {
                         const cartItem = checkbox.closest('.cart-item');
                         const price = parseFloat(checkbox.dataset.price);
@@ -101,66 +160,120 @@
                     }
                 });
 
-                subtotalPriceEl.textContent = new Intl.NumberFormat('id-ID', {
-                    style: 'currency',
-                    currency: 'IDR',
-                    minimumFractionDigits: 0
-                }).format(subtotal);
+                const subtotalPriceEl = document.getElementById('subtotal-price');
+                const selectedItemsCountEl = document.getElementById('selected-items-count');
 
-                selectedItemsCountEl.textContent = selectedCount;
-                checkoutBtn.disabled = selectedCount === 0;
+                if (subtotalPriceEl) subtotalPriceEl.textContent = formatRupiah(subtotal);
+                if (selectedItemsCountEl) selectedItemsCountEl.textContent = selectedCount;
+
+                // PERBAIKAN: Logika untuk mengaktifkan tombol checkout
+                // Tombol akan aktif jika ada pelanggan yang login DAN jumlah item yang dipilih lebih dari 0.
+                if (checkoutBtn) {
+                    checkoutBtn.disabled = (selectedCount === 0);
+                }
             }
 
+            // ... (fungsi updateCartItem dan handleRemove tetap sama seperti sebelumnya) ...
+            let updateTimeout;
+            function updateCartItem(itemId, quantity) {
+                clearTimeout(updateTimeout);
+                updateTimeout = setTimeout(() => {
+                    if (!csrfToken) return;
+                    fetch(`{{ route('tenant.cart.update', ['subdomain' => $currentSubdomain, 'productCartId' => '__ID__']) }}`.replace('__ID__', itemId), {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+                        body: JSON.stringify({ quantity: quantity })
+                    }).catch(console.error);
+                }, 500);
+            }
+
+            function handleRemove(itemIds) {
+                if (!csrfToken) return;
+                Swal.fire({
+                    title: 'Anda Yakin?', text: `Anda akan menghapus ${itemIds.length} item dari keranjang.`, icon: 'warning',
+                    showCancelButton: true, confirmButtonColor: '#d33', cancelButtonColor: '#6e7881',
+                    confirmButtonText: 'Ya, hapus!', cancelButtonText: 'Batal'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        fetch(`{{ route('tenant.cart.remove', ['subdomain' => $currentSubdomain]) }}`, {
+                            method: 'DELETE',
+                            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+                            body: JSON.stringify({ ids: itemIds })
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                itemIds.forEach(id => {
+                                    document.querySelector(`.cart-item[data-id="${id}"]`)?.remove();
+                                });
+                                updateSummary();
+                                document.getElementById('cart-count').textContent = data.cart_count;
+                                Swal.fire('Dihapus!', data.message, 'success');
+                                if (document.querySelectorAll('.cart-item').length === 0) {
+                                    window.location.reload();
+                                }
+                            } else {
+                                Swal.fire('Gagal', data.message || 'Gagal menghapus item.', 'error');
+                            }
+                        }).catch(err => Swal.fire('Error', 'Terjadi kesalahan.', 'error'));
+                    }
+                });
+            }
+
+
+            // --- Event Listeners ---
+            const selectAllCheckbox = document.getElementById('select-all-items');
             if (selectAllCheckbox) {
                 selectAllCheckbox.addEventListener('change', (e) => {
-                    itemCheckboxes.forEach(checkbox => checkbox.checked = e.target.checked);
+                    document.querySelectorAll('.item-checkbox').forEach(checkbox => {
+                        checkbox.checked = e.target.checked;
+                    });
                     updateSummary();
                 });
             }
 
-            itemCheckboxes.forEach(checkbox => {
+            document.querySelectorAll('.item-checkbox').forEach(checkbox => {
                 checkbox.addEventListener('change', updateSummary);
             });
-            
-            document.querySelectorAll('.quantity-input, .quantity-btn').forEach(element => {
-                // Tambahkan event listener yang sesuai untuk update quantity
-                // (Logika update quantity Anda di sini)
-                // Setelah quantity diubah, panggil updateSummary()
-            });
 
-            // --- INI BAGIAN PENTING UNTUK META PIXEL ---
-            cartForm.addEventListener('submit', function(event) {
-                // 1. Kumpulkan data untuk Pixel dari item yang dicentang
-                let content_ids = [];
-                let totalValue = 0;
-                let num_items = 0;
+            document.querySelectorAll('.cart-item').forEach(cartItem => {
+                const quantityInput = cartItem.querySelector('.quantity-input');
+                const itemId = cartItem.dataset.id;
 
-                document.querySelectorAll('.item-checkbox:checked').forEach(checkbox => {
-                    const cartItem = checkbox.closest('.cart-item');
-                    const productSku = checkbox.value; // Asumsi value adalah SKU atau ID unik
-                    const price = parseFloat(checkbox.dataset.price);
-                    const quantity = parseInt(cartItem.querySelector('.quantity-input').value);
-
-                    content_ids.push(productSku);
-                    totalValue += price * quantity;
-                    num_items += quantity;
+                cartItem.querySelector('.quantity-btn[data-action="increase"]')?.addEventListener('click', () => {
+                    quantityInput.stepUp();
+                    updateSummary();
+                    updateCartItem(itemId, quantityInput.value);
                 });
-                
-                // 2. Pastikan ada item yang dipilih sebelum memicu event
-                if (content_ids.length > 0) {
-                    // 3. Picu event InitiateCheckout
-                    fbq('track', 'InitiateCheckout', {
-                        content_ids: content_ids,
-                        value: totalValue,
-                        currency: 'IDR',
-                        num_items: num_items
-                    });
-                }
-                
-                // Form akan melanjutkan proses submit secara normal setelah ini
+
+                cartItem.querySelector('.quantity-btn[data-action="decrease"]')?.addEventListener('click', () => {
+                    if (quantityInput.value > 1) {
+                        quantityInput.stepDown();
+                        updateSummary();
+                        updateCartItem(itemId, quantityInput.value);
+                    }
+                });
+
+                cartItem.querySelector('.remove-item-btn')?.addEventListener('click', function () {
+                    handleRemove([itemId]);
+                });
             });
 
-            updateSummary(); // Kalkulasi awal saat halaman dimuat
+            const removeSelectedBtn = document.getElementById('remove-selected-btn');
+            if (removeSelectedBtn) {
+                removeSelectedBtn.addEventListener('click', () => {
+                    const selectedItems = Array.from(document.querySelectorAll('.item-checkbox:checked'));
+                    if (selectedItems.length === 0) {
+                        Swal.fire('Oops...', 'Silakan pilih item yang ingin dihapus.', 'info');
+                        return;
+                    }
+                    const idsToRemove = selectedItems.map(cb => cb.value);
+                    handleRemove(idsToRemove);
+                });
+            }
+
+            // Panggil sekali saat halaman dimuat untuk memastikan status tombol sudah benar
+            updateSummary();
         });
     </script>
 @endpush

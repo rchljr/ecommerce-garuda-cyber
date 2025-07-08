@@ -31,18 +31,23 @@ class CustomerProfileController extends Controller
     {
         $user = Auth::user();
 
+        $maxBirthDate = now()->subYears(10)->format('Y-m-d');
+
         // Validasi input
         $request->validate([
             'name' => 'required|string|max:255',
             // Pastikan email unik, tapi abaikan email user saat ini
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
             'phone' => ['nullable', 'string', 'max:20'],
-            'tanggal_lahir' => 'nullable|date',
+            'tanggal_lahir' => ['nullable', 'date_format:Y-m-d', 'before_or_equal:' . $maxBirthDate],
             'jenis_kelamin' => ['nullable', 'string', Rule::in(['pria', 'wanita'])],
             'alamat' => 'nullable|string',
             'photo' => 'nullable|image|mimes:jpeg,png,jpg|max:2048', // Validasi untuk foto profil
             // Password hanya divalidasi jika diisi
             'password' => 'nullable|string|min:8|confirmed',
+        ], [
+            'tanggal_lahir.before_or_equal' => 'Anda harus berusia minimal 10 tahun untuk menggunakan layanan ini.',
+            'tanggal_lahir.date_format' => 'Format tanggal lahir tidak valid.',
         ]);
 
         // Siapkan data untuk diupdate

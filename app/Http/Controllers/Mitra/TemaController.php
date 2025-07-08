@@ -19,9 +19,9 @@ class TemaController extends Controller
 
         // Daftar template yang tersedia
         $templates = [
-            'template1' => 'Tema Modern',
-            'template2' => 'Tema Klasik',
-            'template3' => 'Tema Minimalis',
+            'template1' => 'Sleek',
+            'template2' => 'Vibrant',
+            'template3' => 'Refined',
         ];
 
         return view('dashboard-mitra.tema', compact('tema', 'templates'));

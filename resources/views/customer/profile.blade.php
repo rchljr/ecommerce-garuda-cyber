@@ -5,7 +5,7 @@
     @php
         $currentSubdomain = request()->route('subdomain');
     @endphp
-    
+
     <div class="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
         <div class="flex flex-col md:flex-row gap-8">
 
@@ -27,41 +27,47 @@
                         </div>
                     @endif
 
-                    <form action="{{ route('tenant.account.profile.update', ['subdomain' => $currentSubdomain]) }}" method="POST" enctype="multipart/form-data">
+                    <form action="{{ route('tenant.account.profile.update', ['subdomain' => $currentSubdomain]) }}"
+                        method="POST" enctype="multipart/form-data">
                         @csrf
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-x-8">
                             <!-- Kolom Kiri Form -->
                             <div class="space-y-6">
                                 <div class="mb-6">
                                     <label for="name" class="block text-sm font-medium text-gray-700">Username</label>
-                                    <input type="text" name="name" id="name" value="{{ old('name', $user->name) }}"
+                                    <input type="text" name="name" id="name" value="{{ $user->name }}"
                                         class="mt-1 block w-full h-12 px-4 border border-gray-300 rounded-md shadow-sm focus:border-red-500 focus:ring-red-500">
                                     @error('name')<span class="text-red-500 text-sm mt-1">{{ $message }}</span>@enderror
                                 </div>
                                 <div class="mb-6">
                                     <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
-                                    <input type="email" name="email" id="email" value="{{ old('email', $user->email) }}"
+                                    <input type="email" name="email" id="email" value="{{ $user->email }}"
                                         class="mt-1 block w-full h-12 px-4 border border-gray-300 rounded-md shadow-sm focus:border-red-500 focus:ring-red-500">
                                     @error('email')<span class="text-red-500 text-sm mt-1">{{ $message }}</span>@enderror
                                 </div>
                                 <div class="mb-6">
-                                    <label for="tanggal_lahir" class="block text-sm font-medium text-gray-700">Tanggal Lahir</label>
+                                    <label for="tanggal_lahir" class="block text-sm font-medium text-gray-700">Tanggal
+                                        Lahir</label>
                                     <input type="date" name="tanggal_lahir" id="tanggal_lahir"
-                                        value="{{ old('tanggal_lahir', $user->tanggal_lahir) }}"
+                                        value="{{ $user->tanggal_lahir }}"
                                         class="mt-1 block w-full h-12 px-4 border border-gray-300 rounded-md shadow-sm focus:border-red-500 focus:ring-red-500">
+                                    @error('tanggal_lahir')<span
+                                    class="text-red-500 text-sm mt-1">{{ $message }}</span>@enderror
                                 </div>
                                 <div class="mb-6">
-                                    <label for="jenis_kelamin" class="block text-sm font-medium text-gray-700">Jenis Kelamin</label>
+                                    <label for="jenis_kelamin" class="block text-sm font-medium text-gray-700">Jenis
+                                        Kelamin</label>
                                     <select name="jenis_kelamin" id="jenis_kelamin"
                                         class="mt-1 mb-6 block w-full h-12 px-4 border border-gray-300 rounded-md shadow-sm focus:border-red-500 focus:ring-red-500">
-                                        <option value="" disabled {{ is_null($user->jenis_kelamin) ? 'selected' : '' }}>Pilih jenis kelamin</option>
-                                        <option value="pria" {{ old('jenis_kelamin', $user->jenis_kelamin) == 'pria' ? 'selected' : '' }}>Pria</option>
-                                        <option value="wanita" {{ old('jenis_kelamin', $user->jenis_kelamin) == 'wanita' ? 'selected' : '' }}>Wanita</option>
+                                        <option value="" disabled {{ is_null($user->jenis_kelamin) ? 'selected' : '' }}>
+                                            Pilih jenis kelamin</option>
+                                        <option value="pria" {{ $user->jenis_kelamin == 'pria' ? 'selected' : '' }}>Pria</option>
+                                        <option value="wanita" {{ $user->jenis_kelamin == 'wanita' ? 'selected' : '' }}>Wanita</option>
                                     </select>
                                 </div>
                                 <div class="mb-10">
                                     <label for="phone" class="block text-sm font-medium text-gray-700">Nomor Telepon</label>
-                                    <input type="tel" name="phone" id="phone" value="{{ old('phone', $user->phone) }}"
+                                    <input type="tel" name="phone" id="phone" value="{{$user->phone }}"
                                         class="mt-1 block w-full h-12 px-4 border border-gray-300 rounded-md shadow-sm focus:border-red-500 focus:ring-red-500">
                                 </div>
                             </div>
@@ -69,7 +75,8 @@
                             <!-- Kolom Kanan Form -->
                             <div class="space-y-6">
                                 <div class="mb-6">
-                                    <label for="password" class="block text-sm font-medium text-gray-700">Password Baru</label>
+                                    <label for="password" class="block text-sm font-medium text-gray-700">Password
+                                        Baru</label>
                                     <input type="password" name="password" id="password"
                                         class="mt-1 block w-full h-12 px-4 border border-gray-300 rounded-md shadow-sm focus:border-red-500 focus:ring-red-500"
                                         placeholder="********">
@@ -77,7 +84,8 @@
                                     @error('password')<span class="text-red-500 text-sm mt-1">{{ $message }}</span>@enderror
                                 </div>
                                 <div class="mb-6">
-                                    <label for="password_confirmation" class="block text-sm font-medium text-gray-700">Konfirmasi Password</label>
+                                    <label for="password_confirmation"
+                                        class="block text-sm font-medium text-gray-700">Konfirmasi Password</label>
                                     <input type="password" name="password_confirmation" id="password_confirmation"
                                         class="mt-1 block w-full h-12 px-4 border border-gray-300 rounded-md shadow-sm focus:border-red-500 focus:ring-red-500"
                                         placeholder="********">
