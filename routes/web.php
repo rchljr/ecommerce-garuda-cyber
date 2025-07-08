@@ -294,24 +294,9 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/tema', [TemaController::class, 'create'])->name('tema');
         Route::post('/tema', [TemaController::class, 'store'])->name('tema.store');
 
-        Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
+        Route::get('/orders', [OrderController::class, 'index'])->name('orders');
         Route::get('/orders', [OrderController::class, 'show'])->name('orders.show');
-        // Route::resource('pages', PageController::class); // Ini akan membuat mitra.pages.* routes
-
-        // Manajemen Seksi Halaman (PageSectionController) - Nested Resource
-        // Route::resource('pages.sections', PageSectionController::class)->except(['show']); // Tidak butuh show untuk seksi
-
-        // Rute untuk mendapatkan partial form dinamis via AJAX
-        // Route::get('get-section-form-partial/{sectionType}', function ($sectionType) {
-        //     $content = request('content', []); // Untuk edit, menerima konten yang ada
-        //     if (view()->exists('dashboard-mitra.page_sections.partials.' . $sectionType . '_form')) {
-        //         return view('dashboard-mitra.page_sections.partials.' . $sectionType . '_form', compact('content'));
-        //     }
-        //     return response('', 404);
-        // })->name('get-section-form-partial');
-
-        // CRUD route untuk produk menggunakan ProductController
-        // Penting: URI 'products' saja karena sudah ada prefix 'dashboard-mitra'
+        
         Route::resource('products', ProductController::class)->names([
             'index' => 'products.index',    // Ini akan menjadi 'mitra.products.index'
             'create' => 'products.create',   // Ini akan menjadi 'mitra.products.create'

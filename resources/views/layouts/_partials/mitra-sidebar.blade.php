@@ -61,11 +61,11 @@
             <span class="sidebar-text ml-4">Kelola Kontak</span>
         </a>
 
-        <a href="{{ route('mitra.orders.index') }}"
+        {{-- <a href="{{ route('mitra.orders.show') }}"
             class="sidebar-item flex items-center p-3 rounded-lg hover:bg-red-800 transition-colors">
             <span class="sidebar-icon">@include('dashboard-admin.icons.landing')</span>
             <span class="sidebar-text ml-4">Kelola Order</span>
-        </a>
+        </a> --}}
         {{-- <a href="{{ route('admin.kategori.index') }}"
             class="sidebar-item flex items-center p-3 rounded-lg hover:bg-red-800 transition-colors">
             <span class="sidebar-icon">@include('dashboard-admin.icons.kategori')</span>

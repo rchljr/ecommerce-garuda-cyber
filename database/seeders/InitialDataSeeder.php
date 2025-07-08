@@ -105,7 +105,7 @@ class InitialDataSeeder extends Seeder
                 'shop_name' => 'Toko Sejahtera Makmur',
                 'year_founded' => '2024-01-01',
                 'shop_address' => 'Jl. Jenderal Sudirman No. 45, Pekanbaru',
-                'product_categories' => 'pakaian-dan-aksesoris', // Slug kategori
+                'product_categories' => 'pakaian-aksesoris', // Slug kategori
                 'shop_photo' => '"D:\Collage\Semester 8 - Proyek Akhir\ecommerce\ecommerce-garuda\public\storage\ktp\2ab455ab-f83b-4318-b5cd-b564cd3563ba.png"', // Path contoh
                 'ktp' => '"D:\Collage\Semester 8 - Proyek Akhir\ecommerce\ecommerce-garuda\public\storage\ktp\2ab455ab-f83b-4318-b5cd-b564cd3563ba.png"', // Path contoh
             ]

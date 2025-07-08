@@ -14,8 +14,13 @@ class OrderController extends Controller
     public function index()
     {
         $user = Auth::user();
-        // Asumsi user punya relasi ke subdomain/toko
         $subdomain = $user->subdomain;
+
+        // Peningkatan: Pastikan user memiliki subdomain/toko
+        if (!$subdomain) {
+            // Jika tidak, tolak akses atau redirect
+            abort(403, 'Anda tidak memiliki akses ke halaman ini.');
+        }
 
         // Ambil data order dengan relasinya (eager loading)
         $orders = Order::where('subdomain_id', $subdomain->id)
@@ -23,7 +28,29 @@ class OrderController extends Controller
                        ->latest()
                        ->paginate(15);
 
-        // Kirim data ke view 'orders.index'
+        // Kirim data ke view 'dashboard-mitra.orders.index'
         return view('dashboard-mitra.orders.index', compact('orders'));
+    }
+
+    /**
+     * [BARU] Menampilkan halaman detail untuk satu pesanan.
+     * @param  \App\Models\Order  $order
+     * @return \Illuminate\View\View
+     */
+    public function show(Order $order)
+    {
+        $user = Auth::user();
+        $subdomain = $user->subdomain;
+
+        // Peningkatan Keamanan: Pastikan order ini milik toko user yang sedang login
+        if (!$subdomain || $order->subdomain_id !== $subdomain->id) {
+            abort(403, 'Anda tidak diizinkan melihat pesanan ini.');
+        }
+
+        // Memuat relasi untuk ditampilkan di halaman detail
+        $order->load(['user', 'items.product']);
+
+        // Kirim data order ke view 'dashboard-mitra.orders.show'
+        return view('dashboard-mitra.orders.show', compact('order'));
     }
 }
