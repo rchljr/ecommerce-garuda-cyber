@@ -92,7 +92,7 @@ class MitraTokoSeeder extends Seeder
 
         // 6. Buat Data Kontak Toko
         Contact::updateOrCreate(
-            ['id' => 1], 
+            ['user_id' => $mitra->id], 
             [
                 'address_line1' => 'Jl. Pahlawan No. 123',
                 'city' => 'Jakarta',

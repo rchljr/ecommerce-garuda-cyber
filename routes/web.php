@@ -92,6 +92,8 @@ Route::prefix('tenant/{subdomain}')
         Route::prefix('checkout')->name('checkout.')->middleware('auth:customers')->group(function () {
             Route::get('/', [CheckoutController::class, 'index'])->name('index');
             Route::post('/process', [CheckoutController::class, 'process'])->name('process');
+            Route::get('/search-destination', [CheckoutController::class, 'searchDestination'])->name('search_destination');
+            Route::get('/calculate-shipping', [CheckoutController::class, 'calculateShipping'])->name('calculate_shipping');
         });
 
         // Rute Dasbor Pelanggan
@@ -307,7 +309,7 @@ Route::middleware(['auth'])->group(function () {
 
         Route::get('/orders', [OrderController::class, 'index'])->name('orders');
         Route::get('/orders', [OrderController::class, 'show'])->name('orders.show');
-        
+
         Route::resource('products', ProductController::class)->names([
             'index' => 'products.index',    // Ini akan menjadi 'mitra.products.index'
             'create' => 'products.create',   // Ini akan menjadi 'mitra.products.create'

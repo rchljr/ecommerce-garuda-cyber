@@ -3,14 +3,11 @@
 namespace App\Http\Controllers;
 
 use Exception;
-use App\Models\Cart;
 use App\Models\Product;
-use App\Models\Subdomain;
 use Illuminate\Http\Request;
 use App\Services\CartService;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Session;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class CartController extends Controller
 {
@@ -20,65 +17,57 @@ class CartController extends Controller
     {
         $this->cartService = $cartService;
     }
-    /**
-     * Menambahkan produk beserta variannya ke keranjang.
-     */
-    public function add(Request $request)
-    {
-        $request->validate([
-            'product_id' => 'required|exists:products,id',
-            'quantity' => 'required|integer|min:1',
-            'size' => 'nullable|string', // Varian sekarang opsional
-            'color' => 'nullable|string', // Varian sekarang opsional
-        ]);
-
-        $product = Product::with('variants')->findOrFail($request->product_id);
-
-        // Jika varian tidak dikirim dari frontend (misalnya dari halaman toko),
-        // ambil varian pertama sebagai default.
-        if (!$request->filled('size') || !$request->filled('color')) {
-            $defaultVariant = $product->variants()->first();
-
-            if (!$defaultVariant) {
-                // Jika produk tidak punya varian sama sekali
-                if ($request->wantsJson()) {
-                    return response()->json(['success' => false, 'message' => 'Produk ini tidak memiliki varian yang tersedia.'], 404);
-                }
-                return back()->with('error', 'Produk ini tidak memiliki varian yang tersedia.');
-            }
-            // Tambahkan varian default ke dalam request
-            $request->merge([
-                'size' => $defaultVariant->size,
-                'color' => $defaultVariant->color,
-            ]);
-        }
-
-        // Gunakan service untuk menambahkan item ke keranjang
-        $this->cartService->add($request);
-
-        // Jika ini adalah permintaan AJAX, kirim kembali respons JSON
-        if ($request->wantsJson()) {
-            return response()->json([
-                'success' => true,
-                'message' => 'Produk berhasil ditambahkan!',
-                'cart_count' => $this->cartService->getCartCount() // Asumsi service punya method ini
-            ]);
-        }
-
-        return back()->with('success', 'Produk berhasil ditambahkan ke keranjang.');
-    }
 
     /**
      * Menampilkan halaman isi keranjang belanja.
      */
     public function index(Request $request)
     {
-        // Ambil data tenant dari request (sudah disiapkan oleh middleware)
-        $tenant = $request->get('tenant');
-
+        // Service akan menangani logika pengambilan data baik dari DB maupun session
         $cartItems = $this->cartService->getItems($request);
 
-        return view('customer.cart', compact('tenant', 'cartItems'));
+        return view('customer.cart', compact('cartItems'));
+    }
+
+    /**
+     * Menambahkan produk beserta variannya ke keranjang.
+     */
+    public function add(Request $request)
+    {
+        $validated = $request->validate([
+            'product_id' => 'required|exists:products,id',
+            'quantity' => 'required|integer|min:1',
+            'size' => 'required|string',
+            'color' => 'required|string',
+        ]);
+
+        try {
+            $this->cartService->add($request);
+
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Produk berhasil ditambahkan!',
+                    'cart_count' => $this->cartService->getCartCount(),
+                ]);
+            }
+            return back()->with('success', 'Produk berhasil ditambahkan ke keranjang.');
+
+        } catch (ModelNotFoundException $e) {
+            // Ini akan menangkap `firstOrFail()` di service jika varian tidak ditemukan
+            $message = 'Varian produk yang dipilih tidak valid.';
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $message], 404);
+            }
+            return back()->with('error', $message);
+        } catch (Exception $e) {
+            Log::error('Error adding to cart: ' . $e->getMessage());
+            $message = 'Gagal menambahkan produk ke keranjang.';
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $message], 500);
+            }
+            return back()->with('error', $message);
+        }
     }
 
     /**
@@ -90,40 +79,37 @@ class CartController extends Controller
 
         $this->cartService->update($productCartId, $validated['quantity']);
 
-        // Mengembalikan respons JSON yang konsisten
+        // Respons JSON yang konsisten
         return response()->json([
             'success' => true,
             'message' => 'Kuantitas berhasil diperbarui.',
-            'cart_count' => $this->cartService->getCartCount()
+            'cart_count' => $this->cartService->getCartCount(),
         ]);
     }
 
     /**
-     * Menghapus item dari keranjang.
+     * Menghapus satu atau lebih item dari keranjang.
      */
     public function removeItems(Request $request)
     {
-        try {
-            $validated = $request->validate([
-                'ids' => 'required|array',
-                'ids.*' => 'string',
-            ]);
+        $validated = $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'string', // Bisa UUID atau variant_id (string)
+        ]);
 
+        try {
             $this->cartService->removeItems($validated['ids']);
 
             return response()->json([
                 'success' => true,
                 'message' => 'Item yang dipilih berhasil dihapus.',
-                'cart_count' => $this->cartService->getCartCount()
+                'cart_count' => $this->cartService->getCartCount(),
             ]);
         } catch (Exception $e) {
-            // Log error untuk debugging di server
             Log::error('Cart Deletion Error: ' . $e->getMessage());
-
-            // Kirim respons error 500 dengan pesan yang jelas
             return response()->json([
                 'success' => false,
-                'message' => config('app.debug') ? $e->getMessage() : 'Terjadi kesalahan pada server saat menghapus item.'
+                'message' => 'Terjadi kesalahan saat menghapus item.',
             ], 500);
         }
     }

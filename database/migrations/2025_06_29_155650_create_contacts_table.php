@@ -12,7 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('contacts', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary(); // Menggunakan UUID sebagai primary key
+            $table->foreignUuid('user_id')->constrained()->onDelete('cascade'); // Relasi ke tabel users
             $table->string('address_line1')->nullable(); // Alamat Baris 1
             $table->string('address_line2')->nullable(); // Alamat Baris 2 (opsional)
             $table->string('city')->nullable();
