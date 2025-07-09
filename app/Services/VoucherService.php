@@ -39,6 +39,23 @@ class VoucherService
         return Voucher::findOrFail($id);
     }
 
+    /**
+     * Mengambil voucher yang aktif dan dapat digunakan berdasarkan subtotal belanja dan pemilik toko.
+     *
+     * @param float $subtotal
+     * @param int $shopOwnerId 
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function getApplicableVouchers(float $subtotal, int $shopOwnerId)
+    {
+        return Voucher::where('start_date', '<=', now())
+            ->where('expired_date', '>=', now())
+            ->where('min_spending', '<=', $subtotal)
+            ->where('user_id', $shopOwnerId) 
+            ->orderBy('min_spending', 'desc')
+            ->get();
+    }
+
     public function createVoucher(array $data)
     {
         $data['user_id'] = Auth::id();

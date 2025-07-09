@@ -18,7 +18,7 @@ class Authenticate extends Middleware
         // Jika request tidak mengharapkan JSON (permintaan web biasa)
         if (! $request->expectsJson()) {
             
-            // PERBAIKAN: Cek apakah request datang dari subdomain tenant
+            // Cek apakah request datang dari subdomain tenant
             if ($request->route('subdomain')) {
                 // Jika ya, arahkan ke halaman login customer untuk subdomain tersebut
                 return route('tenant.customer.login.form', ['subdomain' => $request->route('subdomain')]);

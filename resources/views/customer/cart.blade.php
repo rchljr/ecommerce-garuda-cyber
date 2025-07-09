@@ -33,16 +33,22 @@
 
                             @forelse ($cartItems as $item)
                                 @php
-                                    $product = is_object($item->product) ? $item->product : (object) ($item['product'] ?? []);
-                                    $itemId = $item->id ?? $item['id'];
-                                    $quantity = $item->quantity ?? $item['quantity'];
-                                    $color = $item->color ?? '';
-                                    $size = $item->size ?? '';
+                                    // Logika disederhanakan karena data sudah konsisten dari service
+                                    $product = $item->product;
+                                    $variant = $item->variant; // Ambil objek variant
+
+                                    // Untuk guest, ID item adalah variant_id. Untuk user login, ID item adalah UUID.
+                                    $itemId = $item->id;
+                                    $quantity = $item->quantity;
+
+                                    // Ambil data varian dari relasi
+                                    $color = optional($variant)->color ?? 'N/A';
+                                    $size = optional($variant)->size ?? 'N/A';
+
                                     $slug = optional($product)->slug;
                                 @endphp
+                                {{-- Gunakan $itemId sebagai data-id dan value checkbox --}}
                                 <div class="flex items-start border-b py-4 cart-item" data-id="{{ $itemId }}">
-                                    {{-- Checkbox ini harus memiliki name="items[]" agar nilainya terkirim ke halaman checkout
-                                    --}}
                                     <input type="checkbox" name="items[]" value="{{ $itemId }}"
                                         class="item-checkbox h-5 w-5 rounded border-gray-300 text-red-600 focus:ring-red-500 mt-1"
                                         data-price="{{ $product->price ?? 0 }}">
@@ -59,9 +65,12 @@
                                         @else
                                             <span class="font-semibold text-gray-800">{{ $product->name ?? 'Nama Produk' }}</span>
                                         @endif
+
+                                        {{-- Tampilkan data dari relasi variant --}}
                                         <p class="text-sm text-gray-500">
                                             Varian: {{ $color }} / {{ $size }}
                                         </p>
+
                                         <p class="text-lg font-bold text-gray-800 mt-1">
                                             {{ format_rupiah($product->price ?? 0) }}
                                         </p>
@@ -200,22 +209,22 @@
                             headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
                             body: JSON.stringify({ ids: itemIds })
                         })
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.success) {
-                                itemIds.forEach(id => {
-                                    document.querySelector(`.cart-item[data-id="${id}"]`)?.remove();
-                                });
-                                updateSummary();
-                                document.getElementById('cart-count').textContent = data.cart_count;
-                                Swal.fire('Dihapus!', data.message, 'success');
-                                if (document.querySelectorAll('.cart-item').length === 0) {
-                                    window.location.reload();
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.success) {
+                                    itemIds.forEach(id => {
+                                        document.querySelector(`.cart-item[data-id="${id}"]`)?.remove();
+                                    });
+                                    updateSummary();
+                                    document.getElementById('cart-count').textContent = data.cart_count;
+                                    Swal.fire('Dihapus!', data.message, 'success');
+                                    if (document.querySelectorAll('.cart-item').length === 0) {
+                                        window.location.reload();
+                                    }
+                                } else {
+                                    Swal.fire('Gagal', data.message || 'Gagal menghapus item.', 'error');
                                 }
-                            } else {
-                                Swal.fire('Gagal', data.message || 'Gagal menghapus item.', 'error');
-                            }
-                        }).catch(err => Swal.fire('Error', 'Terjadi kesalahan.', 'error'));
+                            }).catch(err => Swal.fire('Error', 'Terjadi kesalahan.', 'error'));
                     }
                 });
             }

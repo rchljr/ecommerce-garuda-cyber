@@ -24,9 +24,9 @@ class OrderController extends Controller
 
         // Ambil data order dengan relasinya (eager loading)
         $orders = Order::where('subdomain_id', $subdomain->id)
-                       ->with(['user', 'items.product'])
-                       ->latest()
-                       ->paginate(15);
+            ->with(['user', 'items.product'])
+            ->latest()
+            ->paginate(15);
 
         // Kirim data ke view 'dashboard-mitra.orders.index'
         return view('dashboard-mitra.orders.index', compact('orders'));

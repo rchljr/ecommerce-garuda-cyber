@@ -48,5 +48,9 @@ class Order extends Model
     public function items()
     {
         return $this->hasMany(ProductOrder::class, 'order_id', 'id');
-    } 
+    }
+    public function histories()
+    {
+        return $this->hasMany(OrderHistory::class);
+    }
 }
