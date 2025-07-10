@@ -16,7 +16,8 @@ $app->withMiddleware(function (Middleware $middleware) {
         'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
         'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
         'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
-        'tenant.exists' => \App\Http\Middleware\EnsureTenantExists::class,
+        'tenant.exist' => \App\Http\Middleware\EnsureTenantExists::class,
+        'set-tenant' => \App\Http\Middleware\SetTenantFromAuth::class,
     ]);
 });
 

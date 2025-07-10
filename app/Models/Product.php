@@ -10,11 +10,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Storage;
+use Spatie\Multitenancy\Models\Concerns\UsesTenantConnection;
 
 class Product extends Model
 {
+    use UsesTenantConnection;
     use HasFactory;
-
+    protected $connection = 'tenant';
     protected $primaryKey = 'id';
     public $incrementing = false;
     protected $keyType = 'string';

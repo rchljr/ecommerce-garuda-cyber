@@ -22,8 +22,11 @@ return new class extends Migration {
             $table->string('secondary_color', 20)->nullable();
             $table->timestamps();
 
-            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
-            $table->foreign('subdomain_id')->references('id')->on('subdomains')->onDelete('cascade');
+            // $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
+            // $table->uuid('user_id');
+            $table->index('user_id');
+            // $table->foreign('subdomain_id')->references('id')->on('subdomains')->onDelete('cascade');
+            $table->index('subdomain_id');
         });
     }
 

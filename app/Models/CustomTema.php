@@ -6,9 +6,13 @@ use App\Models\User;
 use App\Models\Subdomain;
 use Illuminate\Support\Str;
 use Illuminate\Database\Eloquent\Model;
+use Spatie\Multitenancy\Models\Concerns\UsesTenantConnection;
+
 
 class CustomTema extends Model
 {
+    use UsesTenantConnection;
+
     protected $primaryKey = 'id';
     public $incrementing = false;
     protected $keyType = 'string';

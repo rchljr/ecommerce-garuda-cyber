@@ -5,10 +5,13 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage; // Untuk accessor gambar
+use Spatie\Multitenancy\Models\Concerns\UsesTenantConnection;
 
 class Hero extends Model
 {
     use HasFactory;
+    use UsesTenantConnection;
+    protected $connection = 'tenant';
 
     protected $fillable = [
         'title',

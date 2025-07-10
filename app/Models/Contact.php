@@ -4,10 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Spatie\Multitenancy\Models\Concerns\UsesTenantConnection;
 
 class Contact extends Model
 {
     use HasFactory;
+    use UsesTenantConnection;
 
     protected $fillable = [
         'address_line1',

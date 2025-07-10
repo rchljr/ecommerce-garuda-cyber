@@ -5,10 +5,13 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
+use Spatie\Multitenancy\Models\Concerns\UsesTenantConnection;
+
 
 class Banner extends Model
 {
     use HasFactory;
+    use UsesTenantConnection;
 
     protected $fillable = [
         'title',

@@ -16,7 +16,9 @@ return new class extends Migration
         Schema::create('wishlists', function (Blueprint $table) {
             $table->id();
             // PERBAIKAN: Gunakan foreignUuid agar cocok dengan tipe data UUID di tabel users
-            $table->foreignUuid('user_id')->constrained('users')->onDelete('cascade');
+            // $table->foreignUuid('user_id')->constrained('users')->onDelete('cascade');
+            $table->uuid('user_id');
+            $table->index('user_id');
             $table->foreignUuid('product_id')->constrained('products')->onDelete('cascade');
             $table->timestamps();
         });

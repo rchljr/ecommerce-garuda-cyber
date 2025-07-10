@@ -8,8 +8,6 @@ use App\Models\Shop;
 use App\Models\Subdomain;
 use App\Models\Tenant;
 use App\Models\UserPackage;
-use App\Models\Order;
-use App\Models\Payment;
 use App\Models\SubscriptionPackage;
 use App\Models\Template;
 use App\Models\Contact;
@@ -17,6 +15,7 @@ use App\Models\Hero;
 use App\Models\Banner;
 use App\Models\Product;
 use App\Models\SubCategory;
+use Illuminate\Support\Facades\DB; // WAJIB DI-IMPORT
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
@@ -29,30 +28,25 @@ class MitraTokoSeeder extends Seeder
      */
     public function run()
     {
-        // Pastikan ada paket dan template untuk digunakan
+        // =================================================================
+        // BAGIAN 1: PERSIAPAN DATA DI DATABASE PUSAT
+        // =================================================================
+        $this->command->info('Memulai Seeder untuk Mitra Toko Demo...');
+
+        // Data ini diambil dari database pusat
         $businessPackage = SubscriptionPackage::where('package_name', 'Business Plan')->first();
         $template = Template::where('path', 'template1')->first();
         $subCategory = SubCategory::where('slug', 'baju-wanita')->first();
 
         if (!$businessPackage || !$template || !$subCategory) {
-            $this->command->error('Pastikan SubscriptionPackage, Template, dan SubCategory sudah ada di database sebelum menjalankan seeder ini.');
+            $this->command->error('Pastikan SubscriptionPackage, Template, dan SubCategory sudah ada sebelum menjalankan seeder ini.');
             return;
         }
 
-        // 1. Buat User Mitra
-        $mitra = User::firstOrCreate(
-            ['email' => 'mitra@gmail.com'],
-            [
-                'name' => 'Budi Santoso',
-                'password' => Hash::make('mitra123'),
-                'phone' => '6281298765432',
-                'position' => 'Pemilik Usaha',
-                'status' => 'active',
-            ]
-        );
+        // Membuat data di database pusat
+        $mitra = User::firstOrCreate(['email' => 'mitra@gmail.com'], ['name' => 'Budi Santoso', 'password' => Hash::make('mitra123'), 'status' => 'active']);
         $mitra->assignRole('mitra');
 
-        // 2. Buat Toko (Shop)
         $shop = Shop::updateOrCreate(
             ['user_id' => $mitra->id],
             [
@@ -64,77 +58,88 @@ class MitraTokoSeeder extends Seeder
                 'ktp' => 'seeders/ktp.jpg',
             ]
         );
+        $subdomain = Subdomain::updateOrCreate(['user_id' => $mitra->id], ['subdomain_name' => 'toko-maju-jaya', 'status' => 'active']);
+        
+        // =================================================================
+        // BAGIAN 2: MEMBUAT DATABASE TENANT & MENGISI RECORD TENANT
+        // =================================================================
+        
+        $dbName = 'tenant_' . str_replace('-', '_', $subdomain->subdomain_name);
 
-        // 3. Buat Subdomain
-        $subdomain = Subdomain::updateOrCreate(
-            ['user_id' => $mitra->id],
-            ['subdomain_name' => 'toko-maju-jaya', 'status' => 'active']
-        );
+        try {
+            DB::statement("CREATE DATABASE `{$dbName}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+            $this->command->info("Database '{$dbName}' berhasil dibuat.");
+        } catch (\Exception $e) {
+            $this->command->warn("Database '{$dbName}' sudah ada, proses pembuatan dilewati.");
+        }
 
-        // 4. Buat Tenant
-        Tenant::updateOrCreate(
-            ['user_id' => $mitra->id],
-            ['subdomain_id' => $subdomain->id, 'template_id' => $template->id]
-        );
+        // Membuat data di database pusat
+        $tenant = Tenant::updateOrCreate(['user_id' => $mitra->id], ['subdomain_id' => $subdomain->id, 'template_id' => $template->id, 'db_name' => $dbName]);
+        UserPackage::updateOrCreate(['user_id' => $mitra->id], ['subs_package_id' => $businessPackage->id, 'plan_type' => 'yearly', 'price_paid' => $businessPackage->yearly_price, 'active_date' => now(), 'expired_date' => now()->addYear(), 'status' => 'active']);
 
-        // 5. Buat Paket Langganan Aktif
-        UserPackage::updateOrCreate(
-            ['user_id' => $mitra->id],
-            [
-                'subs_package_id' => $businessPackage->id,
-                'plan_type' => 'yearly',
-                'price_paid' => $businessPackage->yearly_price,
-                'active_date' => now(),
-                'expired_date' => now()->addYear(),
-                'status' => 'active',
-            ]
-        );
+        // =================================================================
+        // BAGIAN 3: MENGISI DATA DI DALAM DATABASE TENANT
+        // =================================================================
+        
+        $originalDbName = DB::connection()->getDatabaseName();
 
-        // 6. Buat Data Kontak Toko
-        Contact::updateOrCreate(
-            ['id' => 1], 
-            [
-                'address_line1' => 'Jl. Pahlawan No. 123',
-                'city' => 'Jakarta',
-                'phone' => '6281298765432',
-                'email' => 'support@tokomajujaya.com',
-                'working_hours' => 'Senin - Sabtu: 09:00 - 21:00',
-            ]
-        );
+        try {
+            // PINDAH KONEKSI KE DATABASE TENANT
+            config(['database.connections.mysql.database' => $dbName]);
+            DB::purge('mysql');
+            DB::reconnect('mysql');
 
-        // 7. Buat Hero Sliders
-        Hero::updateOrCreate(['user_id' => $mitra->id, 'order' => 1], ['title' => 'Koleksi Musim Panas', 'subtitle' => 'Diskon Hingga 30%', 'image' => 'seeders/hero1.jpg', 'is_active' => true]);
-        Hero::updateOrCreate(['user_id' => $mitra->id, 'order' => 2], ['title' => 'Gaya Kasual Terbaik', 'subtitle' => 'Tampil Beda Setiap Hari', 'image' => 'seeders/hero2.jpg', 'is_active' => true]);
+            $this->command->info("Berpindah ke database '{$dbName}' untuk mengisi data...");
 
-        // 8. Buat Banner Promosi
-        Banner::updateOrCreate(['user_id' => $mitra->id, 'order' => 1], ['title' => 'Aksesoris Wajib Punya', 'image' => 'seeders/banner1.jpg', 'is_active' => true]);
-        Banner::updateOrCreate(['user_id' => $mitra->id, 'order' => 2], ['title' => 'Tas & Dompet Terbaru', 'image' => 'seeders/banner2.jpg', 'is_active' => true]);
+            // JALANKAN MIGRASI KHUSUS UNTUK TENANT
+            $this->command->call('migrate:fresh', [
+                '--database' => 'mysql',
+                '--path' => 'database/migrations/tenant',
+                '--force' => true
+            ]);
 
-        // 9. Buat Beberapa Produk
-        $products = [
-            ['name' => 'Blouse Wanita Elegan', 'price' => 185000, 'is_best_seller' => true],
-            ['name' => 'Kemeja Pria Lengan Panjang', 'price' => 220000, 'is_new_arrival' => true],
-            ['name' => 'Gaun Pesta Malam', 'price' => 350000, 'is_hot_sale' => true],
-        ];
+            // --- SEMUA DATA SPESIFIK TENANT DIBUAT DI SINI ---
 
-        foreach ($products as $productData) {
-            $product = Product::updateOrCreate(
-                ['user_id' => $mitra->id, 'name' => $productData['name']],
-                [
-                    'slug' => Str::slug($productData['name']) . '-' . uniqid(),
-                    'short_description' => 'Deskripsi singkat untuk ' . $productData['name'],
-                    'price' => $productData['price'],
-                    'sub_category_id' => $subCategory->id,
-                    'main_image' => 'seeders/product.jpg',
-                    'is_best_seller' => $productData['is_best_seller'] ?? false,
-                    'is_new_arrival' => $productData['is_new_arrival'] ?? false,
-                    'is_hot_sale' => $productData['is_hot_sale'] ?? false,
-                ]
-            );
-            // Buat varian untuk setiap produk
-            $product->variants()->delete(); // Hapus varian lama jika ada
-            $product->variants()->create(['color' => 'Merah', 'size' => 'M', 'stock' => 10]);
-            $product->variants()->create(['color' => 'Biru', 'size' => 'L', 'stock' => 15]);
+            Contact::updateOrCreate(['id' => 1], ['address_line1' => 'Jl. Pahlawan No. 123', 'city' => 'Jakarta', 'email' => 'support@tokomajujaya.com']);
+            
+            // PERBAIKAN: Menambahkan 'user_id'
+            Hero::updateOrCreate(['order' => 1], ['user_id' => $mitra->id, 'title' => 'Koleksi Musim Panas', 'subtitle' => 'Diskon Hingga 30%', 'image' => 'seeders/hero1.jpg', 'is_active' => true]);
+            Hero::updateOrCreate(['order' => 2], ['user_id' => $mitra->id, 'title' => 'Gaya Kasual Terbaik', 'subtitle' => 'Tampil Beda Setiap Hari', 'image' => 'seeders/hero2.jpg', 'is_active' => true]);
+
+            // PERBAIKAN: Menambahkan 'user_id'
+            Banner::updateOrCreate(['order' => 1], ['user_id' => $mitra->id, 'title' => 'Aksesoris Wajib Punya', 'image' => 'seeders/banner1.jpg', 'is_active' => true]);
+            Banner::updateOrCreate(['order' => 2], ['user_id' => $mitra->id, 'title' => 'Tas & Dompet Terbaru', 'image' => 'seeders/banner2.jpg', 'is_active' => true]);
+
+            $products = [
+                ['name' => 'Blouse Wanita Elegan', 'price' => 185000, 'is_best_seller' => true],
+                ['name' => 'Kemeja Pria Lengan Panjang', 'price' => 220000, 'is_new_arrival' => true],
+                ['name' => 'Gaun Pesta Malam', 'price' => 350000, 'is_hot_sale' => true],
+            ];
+
+            foreach ($products as $productData) {
+                // PERBAIKAN: Menambahkan 'user_id'
+                $product = Product::updateOrCreate(
+                    ['name' => $productData['name']],
+                    [
+                        'user_id' => $mitra->id,
+                        'slug' => Str::slug($productData['name']) . '-' . uniqid(),
+                        'price' => $productData['price'],
+                        'sub_category_id' => $subCategory->id,
+                        'main_image' => 'seeders/product.jpg',
+                    ]
+                );
+                $product->variants()->create(['color' => 'Merah', 'size' => 'M', 'stock' => 10]);
+                $product->variants()->create(['color' => 'Biru', 'size' => 'L', 'stock' => 15]);
+            }
+            
+            $this->command->info("Data untuk '{$dbName}' berhasil diisi.");
+
+        } finally {
+            // KEMBALI KE KONEKSI DATABASE PUSAT
+            config(['database.connections.mysql.database' => $originalDbName]);
+            DB::purge('mysql');
+            DB::reconnect('mysql');
+            $this->command->info("Kembali ke database pusat '{$originalDbName}'.");
         }
 
         $this->command->info('Seeder untuk Toko Mitra Demo berhasil dijalankan!');

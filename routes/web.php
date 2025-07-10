@@ -54,7 +54,7 @@ use App\Http\Controllers\Customer\CustomerNotificationController;
 // RUTE SUBDOMAIN (HARUS DI ATAS RUTE UMUM)
 // ===================================================================
 Route::prefix('tenant/{subdomain}')
-    ->middleware(['web', 'tenant.exists']) // Middleware 'web' menangani session
+    ->middleware(['web', 'tenant.exist']) // Middleware 'web' menangani session
     ->name('tenant.') // Memberi nama prefix "tenant." untuk semua rute di dalam grup
     ->group(function () {
         Route::get('/ping', function () {
@@ -287,13 +287,20 @@ Route::middleware(['auth'])->group(function () {
     });
 
     //== MITRA ROUTES ==//
-    Route::middleware(['role:mitra'])->prefix('mitra')->name('mitra.')->group(function () {
+    Route::middleware(['auth', 'set-tenant'])->prefix('mitra')->name('mitra.')->group(function () {
         // Rute dashboard utama
         // Route::get('/dashboard', [MitraController::class, 'index'])->name('dashboard');
         Route::get('/dashboard', [DashboardMitraController::class, 'index'])->name('dashboard');
 
         Route::get('/produk', [ProductController::class, 'index'])->name('produk');
+        
         Route::get('/hero', [HeroController::class, 'index'])->name('hero');
+        Route::get('/heroes/create', [HeroController::class, 'create'])->name('heroes.create');
+        Route::post('/heroes', [HeroController::class, 'store'])->name('heroes.store');
+        Route::get('/heroes/{hero}/edit', [HeroController::class, 'edit'])->name('heroes.edit');
+        Route::put('/heroes/{hero}', [HeroController::class, 'update'])->name('mitra.heroes.update');
+        Route::delete('/heroes/{hero}', [HeroController::class, 'destroy'])->name('mitra.heroes.destroy');
+
         Route::get('/banner', [BannerController::class, 'index'])->name('banner');
 
         Route::resource('heroes', HeroController::class);
@@ -307,7 +314,7 @@ Route::middleware(['auth'])->group(function () {
 
         Route::get('/orders', [OrderController::class, 'index'])->name('orders');
         Route::get('/orders', [OrderController::class, 'show'])->name('orders.show');
-        
+
         Route::resource('products', ProductController::class)->names([
             'index' => 'products.index',    // Ini akan menjadi 'mitra.products.index'
             'create' => 'products.create',   // Ini akan menjadi 'mitra.products.create'

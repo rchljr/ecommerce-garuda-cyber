@@ -35,7 +35,7 @@ class EnsureTenantExists
         // --- DEBUGGING: Tampilkan hasil pencarian tenant ---
         // Jika ini menampilkan null, berarti nama subdomain di URL salah.
         // Jika ini menampilkan data tenant, berarti masalahnya ada di status atau db_name.
-        dd($tenant);
+        // dd($tenant);
         // ---------------------------------------------------
 
 

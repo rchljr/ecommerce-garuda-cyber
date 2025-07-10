@@ -5,9 +5,12 @@ namespace App\Models;
 use App\Models\User;
 use Illuminate\Support\Str;
 use Illuminate\Database\Eloquent\Model;
+use Spatie\Multitenancy\Models\Concerns\UsesTenantConnection;
 
 class CustomBanner extends Model
 {
+    use UsesTenantConnection;
+    
     protected $primaryKey = 'id';
     public $incrementing = false;
     protected $keyType = 'string';

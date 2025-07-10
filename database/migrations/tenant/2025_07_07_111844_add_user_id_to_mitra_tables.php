@@ -11,11 +11,15 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::table('heroes', function (Blueprint $table) {
-            $table->foreignUuid('user_id')->nullable()->after('id')->constrained()->onDelete('cascade');
+            // $table->foreignUuid('user_id')->nullable()->after('id')->constrained()->onDelete('cascade');
+            $table->uuid('user_id');
+            $table->index('user_id');
         });
 
         Schema::table('banners', function (Blueprint $table) {
-            $table->foreignUuid('user_id')->nullable()->after('id')->constrained()->onDelete('cascade');
+            // $table->foreignUuid('user_id')->nullable()->after('id')->constrained()->onDelete('cascade');
+            $table->uuid('user_id');
+            $table->index('user_id');
         });
     }
 

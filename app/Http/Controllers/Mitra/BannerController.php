@@ -3,20 +3,31 @@
 namespace App\Http\Controllers\Mitra;
 
 use App\Http\Controllers\Controller;
-use App\Models\Banner;
+use App\Models\Banner; // Pastikan mengarah ke model tenant
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Illuminate\Validation\Rule;
 
 class BannerController extends Controller
 {
     /**
-     * Menampilkan daftar semua item banner.
+     * Menampilkan daftar semua item banner milik tenant.
      */
     public function index()
     {
-        $banners = Banner::orderBy('order')->latest()->paginate(10);
+        $user = Auth::user();
+        $tenant = $user->tenant;
+
+        if (!$tenant) {
+            abort(403, 'Tenant tidak ditemukan.');
+        }
+
+        // Jalankan query untuk mengambil banner di dalam database tenant
+        $banners = $tenant->execute(function () {
+            return Banner::orderBy('order')->latest()->paginate(10);
+        });
+
         return view('dashboard-mitra.banners.index', compact('banners'));
     }
 
@@ -29,95 +40,125 @@ class BannerController extends Controller
     }
 
     /**
-     * Menyimpan item banner baru ke database.
+     * Menyimpan item banner baru ke database tenant.
      */
     public function store(Request $request)
     {
         $validatedData = $request->validate([
             'title' => 'nullable|string|max:255',
             'subtitle' => 'nullable|string|max:255',
-            'image' => 'required|image|mimes:jpg,jpeg,png,gif|max:5048', // Gambar wajib
+            'image' => 'required|image|mimes:jpg,jpeg,png,gif,webp|max:5048',
             'link_url' => 'nullable|url|max:255',
             'button_text' => 'nullable|string|max:100',
-            'is_active' => 'boolean', // Akan ditangani oleh hidden input + cast
+            'is_active' => 'nullable',
             'order' => 'required|integer|min:0',
         ]);
 
-        if ($request->hasFile('image')) {
-            $imageName = time() . '_' . Str::random(10) . '.' . $request->file('image')->getClientOriginalExtension();
-            $validatedData['image'] = $request->file('image')->storeAs('banner_images', $imageName, 'public');
+        $user = Auth::user();
+        $tenant = $user->tenant;
+
+        if (!$tenant) {
+            return back()->with('error', 'Tenant tidak ditemukan.');
         }
 
-        Banner::create($validatedData);
+        // Jalankan operasi pembuatan banner di dalam database tenant
+        $tenant->execute(function () use ($validatedData, $request, $user) {
+            
+            $bannerData = $validatedData;
 
-        return redirect()->route('mitra.banners.index')->with('success', 'Banner item berhasil ditambahkan!');
-    }
+            if ($request->hasFile('image')) {
+                $imageName = time() . '_' . Str::random(10) . '.' . $request->file('image')->getClientOriginalExtension();
+                $bannerData['image'] = $request->file('image')->storeAs('banner_images', $imageName, 'public');
+            }
+            
+            $banner = new Banner($bannerData);
+            $banner->user_id = $user->id;
+            $banner->is_active = $request->has('is_active');
+            $banner->save();
+        });
 
-    /**
-     * Menampilkan detail item banner (opsional, bisa diabaikan).
-     */
-    public function show(Banner $banner)
-    {
-        return view('dashboard-mitra.banners.show', compact('banner'));
+        return redirect()->route('mitra.banners.index')->with('success', 'Banner berhasil ditambahkan!');
     }
 
     /**
      * Menampilkan form untuk mengedit item banner.
      */
-    public function edit(Banner $banner)
+    public function edit($bannerId) // Terima ID sebagai string
     {
+        $tenant = Auth::user()->tenant;
+        if (!$tenant) {
+            abort(404);
+        }
+
+        // Cari banner di dalam database tenant
+        $banner = $tenant->execute(function () use ($bannerId) {
+            return Banner::findOrFail($bannerId);
+        });
+
         return view('dashboard-mitra.banners.edit', compact('banner'));
     }
 
     /**
-     * Memperbarui item banner di database.
+     * Memperbarui item banner di database tenant.
      */
-    public function update(Request $request, Banner $banner)
+    public function update(Request $request, $bannerId) // Terima ID sebagai string
     {
         $validatedData = $request->validate([
             'title' => 'nullable|string|max:255',
             'subtitle' => 'nullable|string|max:255',
-            'image' => 'nullable|image|mimes:jpg,jpeg,png,gif|max:5048', // Bisa nullable saat update (jika tidak diganti)
+            'image' => 'nullable|image|mimes:jpg,jpeg,png,gif,webp|max:5048',
             'link_url' => 'nullable|url|max:255',
             'button_text' => 'nullable|string|max:100',
-            'is_active' => 'boolean',
+            'is_active' => 'nullable',
             'order' => 'required|integer|min:0',
         ]);
-
-        if ($request->hasFile('image')) {
-            // Hapus gambar lama jika ada
-            if ($banner->image && Storage::disk('public')->exists($banner->image)) {
-                Storage::disk('public')->delete($banner->image);
-            }
-            $imageName = time() . '_' . Str::random(10) . '.' . $request->file('image')->getClientOriginalExtension();
-            $validatedData['image'] = $request->file('image')->storeAs('banner_images', $imageName, 'public');
-        } elseif ($request->input('remove_image')) { // Jika ada input hidden untuk menghapus gambar
-            if ($banner->image && Storage::disk('public')->exists($banner->image)) {
-                Storage::disk('public')->delete($banner->image);
-            }
-            $validatedData['image'] = null;
-        } else {
-            // Jika tidak ada gambar baru diupload dan tidak diminta untuk dihapus, pertahankan yang lama
-            $validatedData['image'] = $banner->image;
+        
+        $tenant = Auth::user()->tenant;
+        if (!$tenant) {
+            return back()->with('error', 'Tenant tidak ditemukan.');
         }
 
-        $banner->update($validatedData);
+        // Jalankan operasi update di dalam database tenant
+        $tenant->execute(function () use ($validatedData, $request, $bannerId) {
+            $banner = Banner::findOrFail($bannerId);
 
-        return redirect()->route('mitra.banners.index')->with('success', 'Banner item berhasil diperbarui!');
+            $dataToUpdate = $validatedData;
+            $dataToUpdate['is_active'] = $request->has('is_active');
+
+            if ($request->hasFile('image')) {
+                if ($banner->image && Storage::disk('public')->exists($banner->image)) {
+                    Storage::disk('public')->delete($banner->image);
+                }
+                $imageName = time() . '_' . Str::random(10) . '.' . $request->file('image')->getClientOriginalExtension();
+                $dataToUpdate['image'] = $request->file('image')->storeAs('banner_images', $imageName, 'public');
+            }
+
+            $banner->update($dataToUpdate);
+        });
+
+        return redirect()->route('mitra.banners.index')->with('success', 'Banner berhasil diperbarui!');
     }
 
     /**
-     * Menghapus item banner dari database.
+     * Menghapus item banner dari database tenant.
      */
-    public function destroy(Banner $banner)
+    public function destroy($bannerId) // Terima ID sebagai string
     {
-        // Hapus gambar dari storage jika ada
-        if ($banner->image && Storage::disk('public')->exists($banner->image)) {
-            Storage::disk('public')->delete($banner->image);
+        $tenant = Auth::user()->tenant;
+        if (!$tenant) {
+            return back()->with('error', 'Tenant tidak ditemukan.');
         }
 
-        $banner->delete();
+        // Jalankan operasi penghapusan di dalam database tenant
+        $tenant->execute(function () use ($bannerId) {
+            $banner = Banner::findOrFail($bannerId);
 
-        return redirect()->route('mitra.banners.index')->with('success', 'Banner item berhasil dihapus!');
+            if ($banner->image && Storage::disk('public')->exists($banner->image)) {
+                Storage::disk('public')->delete($banner->image);
+            }
+            $banner->delete();
+        });
+
+        return redirect()->route('mitra.banners.index')->with('success', 'Banner berhasil dihapus!');
     }
 }

@@ -11,7 +11,9 @@ return new class extends Migration {
             $table->uuid('id')->primary();
             $table->foreignUuid('subdomain_id')->constrained('subdomains')->onDelete('cascade');
             $table->foreignId('template_id')->nullable()->constrained('templates')->onDelete('set null');
-            $table->foreignUuid('user_id')->nullable()->constrained('users')->onDelete('cascade');
+            // $table->foreignUuid('user_id')->nullable()->constrained('users')->onDelete('cascade');
+            $table->uuid('user_id');
+            $table->index('user_id');
             $table->timestamps();
         });
     }
