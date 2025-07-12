@@ -6,14 +6,14 @@
     <style>
         /* Gaya untuk voucher yang tidak bisa dipilih */
         .voucher-item.disabled {
-            opacity: 0.5;
+            opacity: 0.6;
             cursor: not-allowed;
-            background-color: #f8f9fa;
+            filter: grayscale(80%);
+            transform: none !important;
         }
 
         .voucher-item.disabled:hover {
-            background-color: #f8f9fa;
-            /* Mencegah perubahan warna saat hover */
+            /* Tidak ada efek hover khusus untuk item yang dinonaktifkan */
         }
 
         /* Gaya untuk pilihan pembayaran */
@@ -23,9 +23,7 @@
 
         .payment-option-label.selected {
             border-color: #ef4444;
-            /* red-500 */
             background-color: #fef2f2;
-            /* red-50 */
         }
     </style>
 @endpush
@@ -36,20 +34,18 @@
     @endphp
     <div class="bg-gray-100 py-12">
         <div class="container mx-auto px-4">
-
-            {{-- Kontainer utama yang akan disembunyikan setelah pembayaran berhasil --}}
             <div id="checkout-container">
                 <h1 class="text-3xl font-bold text-gray-800 mb-8">Checkout</h1>
+
                 <form id="checkout-form" onsubmit="return false;">
                     @csrf
                     @foreach ($checkoutItems as $item)
                         <input type="hidden" name="items[]" value="{{ $item->id ?? $item['id'] }}">
                     @endforeach
 
-                    {{-- Input tersembunyi untuk menyimpan data penting --}}
-                    <input type="hidden" name="origin_id" id="origin_id" value="{{ $originId }}">
-                    <input type="hidden" name="destination_id" id="destination_id">
-                    <input type="hidden" name="total_weight_kg" id="total_weight_kg" value="{{ $totalWeightInKg }}">
+                    <input type="hidden" name="origin_postal_code" id="origin_postal_code" value="{{ $originPostalCode }}">
+                    <input type="hidden" name="destination_postal_code" id="destination_postal_code">
+
                     <input type="hidden" name="shipping_service" id="shipping_service_input">
                     <input type="hidden" name="shipping_cost" id="shipping_cost_input">
                     <input type="hidden" name="voucher_id" id="voucher_id_input">
@@ -86,16 +82,17 @@
                                     <h2 class="text-xl font-bold mb-4">Alamat Pengiriman</h2>
                                     <div class="relative">
                                         <label for="destination_search" class="block text-sm font-medium text-gray-700">Cari
-                                            Kecamatan Tujuan</label>
+                                            Kecamatan/Kelurahan Tujuan</label>
                                         <input type="text" id="destination_search"
                                             class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500"
-                                            placeholder="Ketik nama kecamatan">
+                                            placeholder="Ketik nama area, misal: Menteng, Jakarta">
                                         <div id="destination-results"
                                             class="absolute z-20 w-full mt-1 border rounded-md bg-white max-h-48 overflow-y-auto shadow-lg hidden">
                                         </div>
                                     </div>
                                     <div class="mt-4">
-                                        <label for="alamat" class="block text-sm font-medium">Alamat Lengkap</label>
+                                        <label for="alamat" class="block text-sm font-medium">Alamat Lengkap (Jalan, No.
+                                            Rumah, RT/RW)</label>
                                         <textarea name="alamat" id="alamat" rows="3"
                                             class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500">{{ $customer->alamat ?? '' }}</textarea>
                                     </div>
@@ -112,8 +109,8 @@
                             <div id="pickup-details-container" class="space-y-8">
                                 <div class="bg-white rounded-lg shadow-md p-6">
                                     <h2 class="text-xl font-bold mb-4">Lokasi Pengambilan</h2>
-                                    <div class="space-y-2 text-gray-700 text-sm">
-                                        <p class="font-semibold text-base">{{ $shop->shop_name ?? 'Nama Toko Mitra' }}</p>
+                                    <div class="space-y-2 text-gray-700">
+                                        <p class="font-semibold text-lg">{{ $shop->shop_name ?? 'Nama Toko Mitra' }}</p>
                                         @if($contact)
                                             <div class="mt-2 border-t pt-2">
                                                 <p>{{ $contact->address_line1 }}</p>
@@ -201,29 +198,55 @@
                     </div>
                 </form>
             </div>
-
             <div id="payment-instructions" class="mt-6 hidden w-full max-w-2xl mx-auto"></div>
         </div>
     </div>
 
-    <div id="voucher-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-md m-4">
-            <div class="p-4 border-b flex justify-between items-center">
+    <div id="voucher-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md max-h-full flex flex-col">
+            <div class="flex justify-between items-center p-4 border-b">
                 <h3 class="text-lg font-bold">Pilih Voucher</h3>
-                <button type="button" id="btn-close-modal" class="text-2xl">&times;</button>
+                <button class="modal-close text-gray-500 hover:text-gray-800 text-2xl font-bold">&times;</button>
             </div>
-            <div id="voucher-list-container" class="p-4 max-h-96 overflow-y-auto space-y-3">
-                @forelse($vouchers as $voucher)
-                    <div class="voucher-item border rounded-lg p-3 cursor-pointer hover:bg-gray-50" data-id="{{ $voucher->id }}"
-                        data-code="{{ $voucher->voucher_code }}" data-discount-percent="{{ $voucher->discount }}"
-                        data-min-spending="{{ $voucher->min_spending }}">
-                        <p class="font-bold text-red-600">{{ $voucher->voucher_code }} (Diskon {{ $voucher->discount }}%)</p>
-                        <p class="text-sm">{{ $voucher->description }}</p>
-                        <p class="text-xs text-gray-500 mt-1">Min. belanja {{ format_rupiah($voucher->min_spending) }}</p>
-                    </div>
-                @empty
-                    <p class="text-center text-gray-500 py-8">Tidak ada voucher yang tersedia.</p>
-                @endforelse
+            <div class="p-4 space-y-4 overflow-y-auto bg-gray-50">
+                @if($vouchers->isEmpty())
+                    <p class="text-center text-gray-500 py-8">Tidak ada voucher yang tersedia saat ini.</p>
+                @else
+                    @foreach ($vouchers as $voucher)
+                        <div class="voucher-item relative flex bg-white rounded-lg shadow-sm overflow-hidden cursor-pointer transition-transform transform hover:scale-105"
+                             data-id="{{ $voucher->id }}"
+                             data-code="{{ $voucher->code }}"
+                             data-min-spending="{{ $voucher->min_spending }}"
+                             data-discount-percent="{{ $voucher->discount }}">
+                            
+                            <!-- Bagian Kiri - Info Diskon -->
+                            <div class="flex-none w-24 bg-red-500 text-white flex flex-col items-center justify-center p-2">
+                                <p class="font-bold text-2xl">{{ (int)$voucher->discount }}<span class="text-lg">%</span></p>
+                                <p class="text-xs uppercase tracking-wider">Diskon</p>
+                            </div>
+
+                            <!-- Garis putus-putus pemisah -->
+                            <div class="absolute top-0 bottom-0 left-24 w-px bg-gray-50" style="background-image: linear-gradient(to bottom, #e5e7eb 5px, transparent 5px); background-size: 100% 10px;"></div>
+                            <div class="absolute top-0 bottom-0 left-24 flex items-center">
+                                <div class="w-4 h-4 rounded-full bg-gray-50 transform -translate-x-1/2"></div>
+                            </div>
+                             <div class="absolute top-0 bottom-0 right-auto left-24 flex items-center">
+                                <div class="w-4 h-4 rounded-full bg-gray-50 transform -translate-x-1/2" style="top: -0.5rem"></div>
+                                <div class="w-4 h-4 rounded-full bg-gray-50 transform -translate-x-1/2" style="bottom: -0.5rem"></div>
+                            </div>
+                            
+                            <!-- Bagian Kanan - Detail -->
+                            <div class="flex-grow p-3 pl-6">
+                                <p class="font-bold text-gray-800">{{ $voucher->name }}</p>
+                                <p class="text-xs text-gray-500 mt-1">Gunakan kode: <span class="font-semibold text-red-600">{{ $voucher->code }}</span></p>
+                                <div class="mt-2 pt-2 border-t border-dashed text-xs text-gray-600 space-y-1">
+                                    <p>• Min. belanja: {{ format_rupiah($voucher->min_spending) }}</p>
+                                    <p>• Berlaku hingga: {{ \Carbon\Carbon::parse($voucher->expired_date)->format('d M Y') }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    @endforeach
+                @endif
             </div>
         </div>
     </div>
@@ -257,11 +280,16 @@
             const totalAmountDisplay = document.getElementById('total-amount');
             const voucherModal = document.getElementById('voucher-modal');
             const btnSelectVoucher = document.getElementById('btn-select-voucher');
-            const btnCloseModal = document.getElementById('btn-close-modal');
+            const btnCloseModal = document.querySelector('#voucher-modal .modal-close');
             const selectedVoucherInfo = document.getElementById('selected-voucher-info');
             const selectedVoucherText = document.getElementById('selected-voucher-text');
             const btnRemoveVoucher = document.getElementById('btn-remove-voucher');
             const paymentOptionLabels = document.querySelectorAll('.payment-option-label');
+
+            // --- URLs ---
+            const SEARCH_URL = "{{ route('tenant.checkout.search_destination', ['subdomain' => $currentSubdomain]) }}";
+            const CALCULATE_URL = "{{ route('tenant.checkout.calculate_shipping', ['subdomain' => $currentSubdomain]) }}";
+            const CHARGE_URL = "{{ route('tenant.checkout.charge', ['subdomain' => $currentSubdomain]) }}";
 
             // --- HELPER FUNCTIONS ---
             const formatRupiah = (number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(number);
@@ -275,59 +303,44 @@
 
             function updateTotals() {
                 const totalBelanja = subtotal + shippingCost;
-
                 if (selectedVoucher) {
                     const discountPercent = parseFloat(selectedVoucher.dataset.discountPercent);
                     voucherDiscount = (totalBelanja * discountPercent) / 100;
                 } else {
                     voucherDiscount = 0;
                 }
-
                 const finalTotal = totalBelanja - voucherDiscount;
 
                 shippingCostDisplay.textContent = formatRupiah(shippingCost);
-
-                if (voucherDiscount > 0) {
-                    voucherDiscountDisplay.textContent = `- ${formatRupiah(voucherDiscount)}`;
-                    voucherDiscountRow.classList.remove('hidden');
-                } else {
-                    voucherDiscountRow.classList.add('hidden');
-                }
-
+                voucherDiscountDisplay.textContent = `- ${formatRupiah(voucherDiscount)}`;
+                voucherDiscountRow.classList.toggle('hidden', voucherDiscount <= 0);
                 totalAmountDisplay.textContent = formatRupiah(finalTotal > 0 ? finalTotal : 0);
+
                 document.getElementById('shipping_cost_input').value = shippingCost;
                 document.getElementById('discount_amount_input').value = voucherDiscount;
                 updateVoucherEligibility();
             }
 
-            // --- DELIVERY LOGIC ---
-            deliveryMethodOptions.addEventListener('change', (e) => {
-                const method = e.target.value;
-                document.getElementById('delivery_method_input').value = method;
+            // --- DELIVERY & ADDRESS LOGIC ---
+            if (deliveryMethodOptions) {
+                deliveryMethodOptions.addEventListener('change', (e) => {
+                    const selectedMethod = document.querySelector('input[name="delivery_method_option"]:checked').value;
+                    document.getElementById('delivery_method_input').value = selectedMethod;
 
-                if (method === 'ship') {
-                    shippingDetailsContainer.classList.remove('hidden');
-                    pickupDetailsContainer.classList.add('hidden');
-                    shippingCostSummaryRow.classList.remove('hidden');
-                } else {
-                    shippingDetailsContainer.classList.add('hidden');
-                    pickupDetailsContainer.classList.remove('hidden');
-                    shippingCostSummaryRow.classList.add('hidden');
-                    shippingCost = 0;
-                    shippingOptionsContainer.innerHTML = '<p class="text-gray-500 text-sm">Silakan cari dan pilih alamat tujuan terlebih dahulu.</p>';
-                    searchInput.value = '';
-                    document.getElementById('destination_id').value = '';
-                }
-                updateTotals();
-            });
-
-            shippingOptionsContainer.addEventListener('change', (e) => {
-                if (e.target.name === 'shipping_option') {
-                    shippingCost = parseFloat(e.target.value);
-                    document.getElementById('shipping_service_input').value = e.target.dataset.serviceName;
-                    updateTotals();
-                }
-            });
+                    if (selectedMethod === 'ship') {
+                        shippingDetailsContainer.classList.remove('hidden');
+                        pickupDetailsContainer.classList.add('hidden');
+                        shippingCostSummaryRow.classList.remove('hidden');
+                    } else {
+                        shippingDetailsContainer.classList.add('hidden');
+                        pickupDetailsContainer.classList.remove('hidden');
+                        shippingCostSummaryRow.classList.add('hidden');
+                        shippingCost = 0; // Reset ongkir jika pilih pickup
+                        document.getElementById('shipping_service_input').value = '';
+                        updateTotals();
+                    }
+                });
+            }
 
             searchInput.addEventListener('keyup', () => {
                 clearTimeout(searchTimeout);
@@ -341,69 +354,100 @@
                 resultsContainer.innerHTML = '<div class="p-3 text-sm text-gray-500">Mencari...</div>';
 
                 searchTimeout = setTimeout(() => {
-                    axios.post("{{ route('tenant.checkout.search_destination', ['subdomain' => $currentSubdomain]) }}", { keyword: keyword })
+                    axios.post(SEARCH_URL, { keyword: keyword })
                         .then(response => {
                             resultsContainer.innerHTML = '';
-                            if (response.data && Array.isArray(response.data) && response.data.length > 0) {
-                                response.data.forEach(location => {
+                            const areas = response.data;
+                            if (areas && Array.isArray(areas) && areas.length > 0) {
+                                areas.forEach(area => {
+                                    const nameParts = area.name.split('. ');
+                                    const postalCode = nameParts.length > 1 ? nameParts[1] : '';
+                                    
                                     const item = document.createElement('div');
                                     item.className = 'p-3 text-sm cursor-pointer hover:bg-gray-100 border-b';
-                                    item.textContent = `${location.subdistrict_name}, ${location.city_name}, ${location.province_name}`;
-                                    item.addEventListener('click', () => selectDestination(location.id, item.textContent));
+                                    const displayName = `${area.administrative_division_level_3_name}, ${area.administrative_division_level_2_name}, ${area.administrative_division_level_1_name} (${postalCode})`;
+                                    item.textContent = displayName;
+                                    item.addEventListener('click', () => selectDestination(postalCode, displayName));
                                     resultsContainer.appendChild(item);
                                 });
                             } else {
                                 resultsContainer.innerHTML = '<div class="p-3 text-sm text-gray-500">Lokasi tidak ditemukan.</div>';
                             }
                         })
-                        .catch(() => resultsContainer.innerHTML = '<div class="p-3 text-sm text-red-500">Gagal mencari lokasi.</div>');
+                        .catch(err => {
+                            console.error("Search Error:", err);
+                            resultsContainer.innerHTML = `<div class="p-3 text-sm text-red-500">Gagal mencari lokasi.</div>`;
+                        });
                 }, 500);
             });
 
-            function selectDestination(id, name) {
-                document.getElementById('destination_id').value = id;
+            function selectDestination(postalCode, name) {
+                document.getElementById('destination_postal_code').value = postalCode;
                 searchInput.value = name;
                 resultsContainer.innerHTML = '';
                 resultsContainer.classList.add('hidden');
-                calculateShippingCost(id);
+                calculateShippingCost(postalCode);
             }
 
-            function calculateShippingCost(destinationId) {
+            // --- SHIPPING CALCULATION ---
+            function calculateShippingCost(destinationPostalCode) {
                 shippingOptionsContainer.innerHTML = '<p class="text-sm text-gray-500">Menghitung ongkos kirim...</p>';
-                const originId = document.getElementById('origin_id').value;
-                const weight = document.getElementById('total_weight_kg').value;
+                const originPostalCode = document.getElementById('origin_postal_code').value;
+                const itemInputs = document.querySelectorAll('input[name="items[]"]');
+                const itemIds = Array.from(itemInputs).map(input => input.value);
 
-                axios.post("{{ route('tenant.checkout.calculate_shipping', ['subdomain' => $currentSubdomain]) }}", {
-                    origin_id: parseInt(originId),
-                    destination_id: parseInt(destinationId),
-                    weight: parseFloat(weight)
-                })
+                const payload = {
+                    origin_postal_code: originPostalCode,
+                    destination_postal_code: destinationPostalCode,
+                    items: itemIds
+                };
+
+                axios.post(CALCULATE_URL, payload)
                     .then(response => {
                         shippingOptionsContainer.innerHTML = '';
-                        const data = response.data;
-                        if (data && Array.isArray(data) && data.length > 0) {
-                            data.forEach(courier => {
-                                if (courier.costs && Array.isArray(courier.costs)) {
-                                    courier.costs.forEach(cost => {
-                                        const id = `${courier.code}-${cost.service}`.replace(/\s+/g, '-');
-                                        shippingOptionsContainer.innerHTML += `
-                                <label class="block border rounded-lg p-3 cursor-pointer has-[:checked]:bg-red-50 has-[:checked]:border-red-500">
-                                    <input type="radio" id="${id}" name="shipping_option" value="${cost.cost[0].value}" class="hidden" data-service-name="${courier.name} - ${cost.service}">
-                                    <div class="flex justify-between items-center text-sm">
-                                        <div><p class="font-bold">${courier.name} (${cost.service})</p><p class="text-xs text-gray-500">Estimasi ${cost.cost[0].etd}</p></div>
-                                        <p class="font-semibold">${formatRupiah(cost.cost[0].value)}</p>
+                        const pricing = response.data;
+                        if (pricing && Array.isArray(pricing) && pricing.length > 0) {
+                            pricing.forEach(rate => {
+                                const id = `${rate.courier_code}-${rate.courier_service_code}`;
+                                shippingOptionsContainer.innerHTML += `
+                                <label for="${id}" class="block border rounded-lg p-4 cursor-pointer has-[:checked]:bg-red-50 has-[:checked]:border-red-500">
+                                    <input type="radio" id="${id}" name="shipping_option" value="${rate.price}" class="hidden" data-service-name="${rate.courier_name} - ${rate.courier_service_name}">
+                                    <div class="flex justify-between items-center">
+                                        <div><p class="font-bold">${rate.courier_name} (${rate.courier_service_name})</p><p class="text-sm text-gray-500">Estimasi ${rate.duration}</p></div>
+                                        <p class="font-semibold">${formatRupiah(rate.price)}</p>
                                     </div>
                                 </label>`;
-                                    });
-                                }
                             });
                         } else {
-                            shippingOptionsContainer.innerHTML = '<p class="text-sm text-red-500">Tidak ada layanan pengiriman yang tersedia.</p>';
+                            shippingOptionsContainer.innerHTML = '<p class="text-sm text-red-500">Tidak ada layanan pengiriman yang tersedia untuk tujuan ini.</p>';
                         }
                     })
-                    .catch(() => shippingOptionsContainer.innerHTML = '<p class="text-sm text-red-500">Gagal menghitung ongkir.</p>');
+                    .catch(err => {
+                        console.error("Shipping Rate Error:", err);
+                        const errorMessage = err.response?.data?.error || 'Gagal menghitung ongkir.';
+                        shippingOptionsContainer.innerHTML = `<p class="text-sm text-red-500">${errorMessage}</p>`;
+                    });
             }
 
+            // --- EVENT LISTENER FOR SHIPPING OPTIONS ---
+            shippingOptionsContainer.addEventListener('change', function(e) {
+                // Pastikan yang diklik adalah radio button pengiriman
+                if (e.target && e.target.matches('input[name="shipping_option"]')) {
+                    const selectedOption = e.target;
+                    
+                    // Update state ongkos kirim
+                    shippingCost = parseFloat(selectedOption.value);
+                    
+                    // Simpan nama layanan pengiriman ke input tersembunyi
+                    const serviceName = selectedOption.dataset.serviceName;
+                    document.getElementById('shipping_service_input').value = serviceName;
+
+                    // Update total ringkasan pesanan
+                    updateTotals();
+                }
+            });
+
+            // --- VOUCHER LOGIC ---
             function updateVoucherEligibility() {
                 const currentTotal = subtotal + shippingCost;
                 document.querySelectorAll('.voucher-item').forEach(item => {
@@ -418,10 +462,12 @@
                 voucherModal.classList.add('flex');
             });
 
-            btnCloseModal.addEventListener('click', () => {
-                voucherModal.classList.add('hidden');
-                voucherModal.classList.remove('flex');
-            });
+            if (btnCloseModal) {
+                btnCloseModal.addEventListener('click', () => {
+                    voucherModal.classList.add('hidden');
+                    voucherModal.classList.remove('flex');
+                });
+            }
 
             document.querySelectorAll('.voucher-item').forEach(item => {
                 item.addEventListener('click', function () {
@@ -448,6 +494,7 @@
                 updateTotals();
             });
 
+            // --- PAYMENT LOGIC ---
             paymentOptionLabels.forEach(label => {
                 label.addEventListener('click', () => {
                     paymentOptionLabels.forEach(l => l.classList.remove('selected'));
@@ -461,20 +508,15 @@
                 payButton.disabled = true;
                 payButton.innerHTML = '<span class="animate-pulse">Memproses...</span>';
 
-                // --- VALIDATION LOGIC ---
                 const deliveryMethod = document.querySelector('input[name="delivery_method_option"]:checked').value;
                 if (deliveryMethod === 'ship') {
-                    const alamatLengkap = document.getElementById('alamat').value.trim();
-                    const destinasiDipilih = document.getElementById('destination_id').value;
-                    const pengirimanDipilih = document.querySelector('input[name="shipping_option"]:checked');
-
-                    if (alamatLengkap === '' || destinasiDipilih === '') {
-                        Swal.fire('Alamat Tidak Lengkap', 'Silakan cari kecamatan tujuan dan isi alamat lengkap Anda.', 'warning');
+                    if (!document.getElementById('alamat').value.trim() || !document.getElementById('destination_postal_code').value) {
+                        Swal.fire('Alamat Tidak Lengkap', 'Silakan lengkapi alamat pengiriman Anda.', 'warning');
                         payButton.disabled = false;
                         payButton.innerHTML = 'Bayar Sekarang';
                         return;
                     }
-                    if (!pengirimanDipilih) {
+                    if (shippingCost <= 0) {
                         Swal.fire('Pengiriman Belum Dipilih', 'Silakan pilih layanan pengiriman yang tersedia.', 'warning');
                         payButton.disabled = false;
                         payButton.innerHTML = 'Bayar Sekarang';
@@ -490,7 +532,6 @@
                     return;
                 }
 
-                // --- DATA GATHERING ---
                 const items = Array.from(document.querySelectorAll('input[name="items[]"]')).map(input => input.value);
                 const dataToSend = {
                     _token: this.querySelector('input[name="_token"]').value,
@@ -504,18 +545,10 @@
                     payment_method: selectedPaymentMethod.value
                 };
 
-                axios.post("{{ route('tenant.checkout.charge', ['subdomain' => $currentSubdomain]) }}", dataToSend)
+                axios.post(CHARGE_URL, dataToSend)
                     .then(response => handlePaymentResponse(response.data))
                     .catch(error => {
-                        console.error('Payment Error:', error.response);
-                        let message = 'Terjadi kesalahan.';
-                        if (error.response && error.response.data) {
-                            if (error.response.data.errors) {
-                                message = Object.values(error.response.data.errors)[0][0];
-                            } else if (error.response.data.error) {
-                                message = error.response.data.error;
-                            }
-                        }
+                        const message = error.response?.data?.error || 'Terjadi kesalahan.';
                         Swal.fire('Error', message, 'error');
                         payButton.disabled = false;
                         payButton.innerHTML = 'Bayar Sekarang';
@@ -544,6 +577,7 @@
                 }
             }
 
+            // Inisialisasi total saat halaman dimuat
             updateTotals();
         });
     </script>

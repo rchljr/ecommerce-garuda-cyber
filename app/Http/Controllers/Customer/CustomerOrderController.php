@@ -10,26 +10,30 @@ use Illuminate\Support\Facades\Auth;
 class CustomerOrderController extends Controller
 {
     /**
-     * Menampilkan daftar pesanan milik pengguna yang sedang login.
+     * Menampilkan daftar pesanan milik pengguna yang sedang login dengan fitur pencarian.
      */
     public function index(Request $request)
     {
         $search = $request->input('search');
         $user = Auth::user();
 
-        // Ambil semua pesanan dari pengguna i ni, dengan relasi ke produk
+        // Ambil semua pesanan dari pengguna ini, dengan relasi yang diperlukan
         $orders = Order::where('user_id', $user->id)
-            ->with(['subdomain.user.shop', 'items.product', 'items.variant', 'testimonials'])
+            ->with(['subdomain.user.shop', 'items.product', 'items.variant', 'shipping', 'voucher', 'testimonials'])
             ->when($search, function ($query, $search) {
-                return $query->whereHas('subdomain', function ($q) use ($search) {
-                    $q->where('subdomain_name', 'like', '%' . $search . '%');
-                })->orWhereHas('items.product', function ($q) use ($search) {
-                    $q->where('name', 'like', '%' . $search . '%');
+                // Pencarian berdasarkan nama toko atau nama produk
+                return $query->where(function ($q) use ($search) {
+                    $q->whereHas('subdomain.user.shop', function ($subQuery) use ($search) {
+                        $subQuery->where('shop_name', 'like', '%' . $search . '%');
+                    })->orWhereHas('items.product', function ($subQuery) use ($search) {
+                        $subQuery->where('name', 'like', '%' . $search . '%');
+                    });
                 });
             })
-            ->latest()
+            ->latest() // Urutkan dari yang terbaru
             ->paginate(10);
 
+        // Mengembalikan view dengan data pesanan dan query pencarian
         return view('customer.orders', compact('orders', 'search'));
     }
 }
