@@ -16,6 +16,39 @@
             padding-top: 0.75rem;
             padding-bottom: 0.25rem;
         }
+
+        /* Gaya untuk efek sobek pada voucher */
+        .voucher-card {
+            display: flex;
+            background-color: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .voucher-card::before,
+        .voucher-card::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: #f9fafb;
+            /* bg-gray-50 */
+            border-radius: 50%;
+        }
+
+        .voucher-card::before {
+            top: -10px;
+            left: 86px;
+            /* Sesuaikan dengan w-24 (96px) - 10px */
+        }
+
+        .voucher-card::after {
+            bottom: -10px;
+            left: 86px;
+            /* Sesuaikan dengan w-24 (96px) - 10px */
+        }
     </style>
 @endpush
 
@@ -59,31 +92,40 @@
                             {{-- Tampilan untuk Voucher Toko Lain --}}
                             <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
                                 @forelse ($otherStoreVouchers as $voucher)
-                                    <div class="bg-white border border-gray-200 rounded-lg shadow-sm flex flex-col">
-                                        <div class="p-4">
-                                            <p class="text-sm text-gray-500">Dari: <span
-                                                    class="font-semibold">{{ optional($voucher->user->shop)->shop_name ?? 'Toko' }}</span>
-                                            </p>
-                                            <h3 class="font-bold text-gray-800 text-lg my-2">Diskon {{ $voucher->discount }}%</h3>
-                                            <p class="text-sm text-gray-600 mt-1">Minimal Transaksi
-                                                {{ format_rupiah($voucher->min_spending) }}</p>
-                                            <p class="text-xs text-gray-400 mt-2">Berlaku hingga:
-                                                {{ format_tanggal($voucher->expired_date) }}</p>
+                                    <div class="flex flex-col">
+                                        <div class="voucher-card">
+                                            <div class="w-24 bg-red-500 text-white flex flex-col items-center justify-center p-2">
+                                                <p class="font-bold text-2xl">{{ (int) $voucher->discount }}<span
+                                                        class="text-lg">%</span></p>
+                                                <p class="text-xs uppercase tracking-wider">Diskon</p>
+                                            </div>
+                                            <div class="w-px border-l border-dashed border-gray-300"></div>
+                                            <div class="flex-grow p-4">
+                                                <p class="font-bold text-gray-800">{{ $voucher->name }}</p>
+                                                <p class="text-xs text-gray-500 mt-1">Dari: <span
+                                                        class="font-semibold">{{ optional($voucher->user->shop)->shop_name ?? 'Toko' }}</span>
+                                                </p>
+                                                <div class="mt-2 pt-2 border-t border-dashed text-xs text-gray-600 space-y-1">
+                                                    <p>• Min. belanja: {{ format_rupiah($voucher->min_spending) }}</p>
+                                                    <p>• Berlaku hingga: {{ format_tanggal($voucher->expired_date) }}</p>
+                                                </div>
+                                            </div>
                                         </div>
-                                        {{-- PERBAIKAN: Menambahkan atribut ID yang hilang --}}
-                                        <div class="sk-panel bg-gray-50 text-xs text-gray-600" id="sk-panel-other-{{$voucher->id}}">
-                                            {{ $voucher->description }}
-                                        </div>
-                                        <div
-                                            class="mt-auto pt-3 px-4 pb-4 border-t border-dashed flex justify-between items-center">
-                                            <button class="sk-toggle-button text-sm text-gray-500 hover:text-red-600"
-                                                data-target="sk-panel-other-{{$voucher->id}}">S&K</button>
-                                            @if(optional($voucher->subdomain)->subdomain_name)
-                                                <a href="{{ route('tenant.home', ['subdomain' => $voucher->subdomain->subdomain_name]) }}"
-                                                    class="bg-red-600 text-white font-semibold px-4 py-1.5 text-sm rounded-md hover:bg-red-700 transition">
-                                                    Kunjungi Toko
-                                                </a>
-                                            @endif
+                                        <div class="bg-white rounded-b-lg border border-t-0 border-gray-200">
+                                            <div class="sk-panel bg-gray-50 text-xs text-gray-600"
+                                                id="sk-panel-other-{{$voucher->id}}">
+                                                {{ $voucher->description }}
+                                            </div>
+                                            <div class="px-4 pb-3 pt-2 flex justify-between items-center">
+                                                <button class="sk-toggle-button text-sm text-gray-500 hover:text-red-600"
+                                                    data-target="sk-panel-other-{{$voucher->id}}">S&K</button>
+                                                @if(optional($voucher->subdomain)->subdomain_name)
+                                                    <a href="{{ route('tenant.home', ['subdomain' => $voucher->subdomain->subdomain_name]) }}"
+                                                        class="bg-red-600 text-white font-semibold px-4 py-1.5 text-sm rounded-md hover:bg-red-700 transition">
+                                                        Kunjungi Toko
+                                                    </a>
+                                                @endif
+                                            </div>
                                         </div>
                                     </div>
                                 @empty
@@ -96,30 +138,37 @@
                             {{-- Tampilan untuk Voucher Toko Saat Ini --}}
                             <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
                                 @forelse ($currentStoreVouchers as $voucher)
-                                    <div class="bg-white border border-gray-200 rounded-lg shadow-sm flex flex-col">
-                                        <div class="p-4">
-                                            <p class="text-sm text-gray-500">Dari: <span
-                                                    class="font-semibold">{{ optional($voucher->user->shop)->shop_name ?? 'Toko Ini' }}</span>
-                                            </p>
-                                            <h3 class="font-bold text-gray-800 text-lg my-2">Diskon {{ $voucher->discount }}%</h3>
-                                            <p class="text-sm text-gray-600 mt-1">Minimal Transaksi
-                                                {{ format_rupiah($voucher->min_spending) }}</p>
-                                            <p class="text-xs text-gray-400 mt-2">Berlaku hingga:
-                                                {{ format_tanggal($voucher->expired_date) }}</p>
+                                    <div class="flex flex-col">
+                                        <div class="voucher-card">
+                                            <div class="w-24 bg-green-500 text-white flex flex-col items-center justify-center p-2">
+                                                <p class="font-bold text-2xl">{{ (int) $voucher->discount }}<span
+                                                        class="text-lg">%</span></p>
+                                                <p class="text-xs uppercase tracking-wider">Diskon</p>
+                                            </div>
+                                            <div class="w-px border-l border-dashed border-gray-300"></div>
+                                            <div class="flex-grow p-4">
+                                                <p class="font-bold text-gray-800">{{ $voucher->name }}</p>
+                                                <p class="text-xs text-gray-500 mt-1">Gunakan kode: <span
+                                                        class="font-semibold text-green-600">{{ $voucher->code }}</span></p>
+                                                <div class="mt-2 pt-2 border-t border-dashed text-xs text-gray-600 space-y-1">
+                                                    <p>• Min. belanja: {{ format_rupiah($voucher->min_spending) }}</p>
+                                                    <p>• Berlaku hingga: {{ format_tanggal($voucher->expired_date) }}</p>
+                                                </div>
+                                            </div>
                                         </div>
-                                        {{--  Menambahkan ID unik ke panel S&K --}}
-                                        <div class="sk-panel bg-gray-50 text-xs text-gray-600" id="sk-panel-current-{{$voucher->id}}">
-                                            {{ $voucher->description }}
-                                        </div>
-                                        <div
-                                            class="mt-auto pt-3 px-4 pb-4 border-t border-dashed flex justify-between items-center">
-                                            {{-- Menyesuaikan data-target agar unik --}}
-                                            <button class="sk-toggle-button text-sm text-gray-500 hover:text-red-600"
-                                                data-target="sk-panel-current-{{$voucher->id}}">S&K</button>
-                                            <a href="{{ route('tenant.shop', ['subdomain' => request()->route('subdomain')]) }}"
-                                                class="bg-red-600 text-white font-semibold px-4 py-1.5 text-sm rounded-md hover:bg-red-700 transition">
-                                                Gunakan
-                                            </a>
+                                        <div class="bg-white rounded-b-lg border border-t-0 border-gray-200">
+                                            <div class="sk-panel bg-gray-50 text-xs text-gray-600"
+                                                id="sk-panel-current-{{$voucher->id}}">
+                                                {{ $voucher->description }}
+                                            </div>
+                                            <div class="px-4 pb-3 pt-2 flex justify-between items-center">
+                                                <button class="sk-toggle-button text-sm text-gray-500 hover:text-green-600"
+                                                    data-target="sk-panel-current-{{$voucher->id}}">S&K</button>
+                                                <a href="{{ route('tenant.shop', ['subdomain' => request()->route('subdomain')]) }}"
+                                                    class="bg-green-600 text-white font-semibold px-4 py-1.5 text-sm rounded-md hover:bg-green-700 transition">
+                                                    Gunakan
+                                                </a>
+                                            </div>
                                         </div>
                                     </div>
                                 @empty
@@ -144,24 +193,18 @@
 
             allSkToggleButtons.forEach(button => {
                 button.addEventListener('click', function () {
-                    // Dapatkan panel target dari atribut data-target
-                    // Menggunakan getElementById lebih efisien untuk ID
                     const targetPanel = document.getElementById(this.dataset.target);
 
                     if (!targetPanel) {
-                        return; // Jika panel tidak ditemukan, hentikan eksekusi
+                        return;
                     }
 
-                    // Cek apakah panel yang diklik saat ini sudah terbuka
                     const isCurrentlyOpen = targetPanel.classList.contains('show');
 
-                    // 1. Tutup semua panel yang sedang terbuka
                     document.querySelectorAll('.sk-panel.show').forEach(openPanel => {
                         openPanel.classList.remove('show');
                     });
 
-                    // 2. Jika panel yang diklik tadi dalam keadaan tertutup, buka panel tersebut.
-                    //    Jika sudah terbuka, langkah sebelumnya (nomor 1) sudah menutupnya.
                     if (!isCurrentlyOpen) {
                         targetPanel.classList.add('show');
                     }

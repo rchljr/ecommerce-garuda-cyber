@@ -58,7 +58,10 @@ class CheckoutController extends Controller
         $shopOwner = $firstItem->product->shopOwner;
         $shop = $shopOwner->shop;
         $contact = $shopOwner->contact;
-        $originId = $shop->komerce_destination_id;
+        // $originId = $shop->komerce_destination_id;
+        // Asumsi Anda memiliki kolom 'postal_code' di tabel 'shops' atau 'contacts'
+        $originPostalCode = optional($shop->contact)->postal_code ?? '12190'; // Ganti dengan kode pos default jika perlu
+
         // Mengambil voucher yang sesuai dengan dua kriteria:
         // 1. Dimiliki oleh toko yang sedang dikunjungi (user_id cocok).
         // 2. Masih aktif (tanggal kedaluwarsa belum lewat).
@@ -72,7 +75,7 @@ class CheckoutController extends Controller
             'subtotal',
             'customer',
             'vouchers',
-            'originId',
+            'originPostalCode',
             'totalWeightInKg',
             'shop',
             'contact'
@@ -80,72 +83,93 @@ class CheckoutController extends Controller
     }
 
     /**
-     * Mencari tujuan pengiriman berdasarkan keyword menggunakan metode POST.
+     * PERBAIKAN: Kembali ke fungsi pencarian berdasarkan keyword.
      */
     public function searchDestination(Request $request)
     {
-        $validated = $request->validate(['keyword' => 'required|string|min:3']);
-        $keyword = $validated['keyword'];
-
+        $keyword = $request->input('keyword');
+        if (!$keyword) {
+            return response()->json(['areas' => []]);
+        }
         try {
-            $apiKey = Config::get('rajaongkir.api_key');
-            $baseUrl = Config::get('rajaongkir.base_url');
+            $apiKey = Config::get('biteship.api_key');
+            $baseUrl = Config::get('biteship.base_url');
 
-            $response = Http::withHeaders(['x-api-key' => $apiKey])
-                ->post($baseUrl . '/api/v1/destination/search', [
-                    'keyword' => $keyword
-                ]);
-
-            Log::info('Komerce API Search Response (POST): ' . $response->body());
-            $responseData = $response->json();
-
-            if ($response->successful() && isset($responseData['data']) && is_array($responseData['data'])) {
-                return response()->json($responseData['data']);
+            if (empty($apiKey)) {
+                Log::error('Biteship API Key is not configured.');
+                return response()->json(['error' => 'Konfigurasi API pengiriman tidak ditemukan.'], 500);
             }
 
-            Log::error('Gagal mencari lokasi.', ['response' => $response->body()]);
-            return response()->json(['error' => 'Gagal mencari lokasi dari API.'], $response->status());
+            $response = Http::withToken($apiKey)
+                ->get($baseUrl . '/v1/maps/areas', [
+                    'countries' => 'ID',
+                    'input' => $keyword,
+                    'type' => 'subdistrict'
+                ]);
 
+            $responseData = $response->json();
+            Log::info('Biteship Area Search Response:', ['status' => $response->status(), 'body' => $responseData]);
+
+            if ($response->successful() && !empty($responseData['areas'])) {
+                return response()->json($responseData['areas']);
+            }
+
+            return response()->json(['error' => 'Lokasi tidak ditemukan.'], 404);
         } catch (Exception $e) {
-            Log::error('Komerce Search Exception: ' . $e->getMessage());
-            return response()->json(['error' => 'Terjadi kesalahan pada server.'], 500);
+            Log::error('Biteship Area Search Exception: ' . $e->getMessage());
+            return response()->json(['error' => 'Terjadi kesalahan pada server pencarian.'], 500);
         }
     }
 
-    /**
-     * Menghitung ongkos kirim berdasarkan ID asal dan tujuan menggunakan metode POST.
-     */
     public function calculateShipping(Request $request)
     {
         $validated = $request->validate([
-            'origin_id' => 'required|integer',
-            'destination_id' => 'required|integer',
-            'weight' => 'required|numeric',
+            'origin_postal_code' => 'required|string',
+            'destination_postal_code' => 'required|string',
+            'items' => 'required|array'
         ]);
 
         try {
-            $apiKey = Config::get('rajaongkir.api_key');
-            $baseUrl = Config::get('rajaongkir.base_url');
+            $apiKey = Config::get('biteship.api_key');
+            $baseUrl = Config::get('biteship.base_url');
 
-            $response = Http::withHeaders(['x-api-key' => $apiKey])
-                ->post($baseUrl . '/api/v1/calculate', [
-                    'shipper_destination_id' => $validated['origin_id'],
-                    'receiver_destination_id' => $validated['destination_id'],
-                    'weight' => $validated['weight'],
+            $cartItems = $this->cartService->getItemsByIds($validated['items']);
+            $itemsPayload = $cartItems->map(function ($item) {
+                return [
+                    'name' => $item->product->name,
+                    'description' => 'Varian ' . optional($item->variant)->size . ' / ' . optional($item->variant)->color,
+                    'value' => $item->product->price,
+                    'length' => $item->product->length ?? 10,
+                    'width' => $item->product->width ?? 10,
+                    'height' => $item->product->height ?? 10,
+                    'weight' => $item->product->weight ?? 500,
+                    'quantity' => $item->quantity,
+                ];
+            })->toArray();
+
+            $response = Http::withToken($apiKey)
+                ->post($baseUrl . '/v1/rates/couriers', [
+                    'origin_postal_code' => $validated['origin_postal_code'],
+                    'destination_postal_code' => $validated['destination_postal_code'],
+                    'couriers' => 'jne,jnt,sicepat,anteraja,gojek,grab',
+                    'items' => $itemsPayload,
                 ]);
 
-            Log::info('Komerce API Calculate Response (POST): ' . $response->body());
             $responseData = $response->json();
 
-            if ($response->successful() && isset($responseData['data'])) {
-                return response()->json($responseData['data']);
+            if ($response->successful() && !empty($responseData['pricing'])) {
+                return response()->json($responseData['pricing']);
             }
-            return response()->json(['error' => 'Gagal menghitung ongkir dari API.'], $response->status());
+
+            Log::error('Biteship Rates Error', ['response' => $responseData]);
+            return response()->json(['error' => $responseData['error'] ?? 'Gagal menghitung ongkir.'], $response->status());
+
         } catch (Exception $e) {
-            Log::error('Komerce Calculate Exception: ' . $e->getMessage());
-            return response()->json(['error' => 'Terjadi kesalahan pada server.'], 500);
+            Log::error('Biteship Rates Exception: ' . $e->getMessage());
+            return response()->json(['error' => 'Terjadi kesalahan pada server kalkulasi.'], 500);
         }
     }
+
     /**
      * Memproses pembayaran dengan Midtrans.
      * Metode ini membuat atau memperbarui Order dan Payment, lalu memanggil Midtrans.
@@ -157,9 +181,11 @@ class CheckoutController extends Controller
             'delivery_method' => 'required|string|in:ship,pickup',
             'shipping_cost' => 'nullable|numeric',
             'shipping_service' => 'nullable|string',
+            'estimated_delivery' => 'nullable|string',
             'alamat' => 'required_if:delivery_method,ship|nullable|string|max:500',
             'payment_method' => 'required|string|in:bca_va,bni_va,gopay,qris',
-            // Tambahkan validasi lain jika perlu (voucher, dll)
+            'voucher_id' => 'nullable|exists:vouchers,id',
+            'discount_amount' => 'nullable|numeric',
         ]);
 
         $customer = Auth::guard('customers')->user();
@@ -200,15 +226,17 @@ class CheckoutController extends Controller
                 ]);
             }
 
-            // Buat atau update data pengiriman
             if ($validated['delivery_method'] === 'ship') {
+                $shippingAddress = !empty(trim($validated['alamat'])) ? $validated['alamat'] : $customer->alamat;
+
                 Shipping::updateOrCreate(
                     ['order_id' => $order->id],
                     [
                         'delivery_service' => $validated['shipping_service'],
                         'shipping_cost' => $shippingCost,
                         'status' => 'pending',
-                        'shipping_address' => $validated['alamat'],
+                        'shipping_address' => $shippingAddress,
+                        'estimated_delivery' => $validated['estimated_delivery'] ?? null,
                     ]
                 );
             }

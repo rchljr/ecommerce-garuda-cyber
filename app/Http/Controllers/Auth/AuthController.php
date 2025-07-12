@@ -178,7 +178,7 @@ class AuthController extends BaseController
     }
 
     /**
-     * Method BARU untuk menangani pengecekan ketersediaan via AJAX.
+     * Method untuk menangani pengecekan ketersediaan via AJAX.
      */
     public function checkSubdomain(Request $request)
     {
