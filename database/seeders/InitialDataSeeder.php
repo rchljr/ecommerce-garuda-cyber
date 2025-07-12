@@ -46,7 +46,7 @@ class InitialDataSeeder extends Seeder
         $admin = User::create([
             'id' => (string) Str::uuid(),
             'name' => 'Admin GCI',
-            'email' => 'rachellfazaa@gmail.com',
+            'email' => 'admin@gmail.com',
             'password' => Hash::make('admin123'),
             'status' => 'active',
         ]);

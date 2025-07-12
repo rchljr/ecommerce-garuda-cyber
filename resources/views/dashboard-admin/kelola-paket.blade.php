@@ -2,81 +2,79 @@
 @section('title', 'Kelola Paket Berlangganan')
 
 @section('content')
-    <div class="flex flex-col h-full">
-        <div class="flex-shrink-0 flex justify-between items-center mb-6">
-            <div>
-                <h1 class="text-4xl font-bold text-gray-800">Kelola Paket Berlangganan</h1>
-                <p class="text-lg text-gray-500 mt-6">Daftar-Daftar Paket Berlangganan</p>
-            </div>
-            <div class="flex items-center gap-4">
-                <button id="add-package-btn"
-                    class="bg-red-700 text-white font-semibold px-4 py-2 rounded-lg hover:bg-red-800 flex items-center gap-2 transition-colors">
-                    <img src="{{ asset('images/tambah-db.png') }}" alt="Tambah" class="w-5 h-5">
-                    <span>Tambah Paket</span>
-                </button>
-            </div>
+    <div class="flex-shrink-0 flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-4xl font-bold text-gray-800">Kelola Paket Berlangganan</h1>
+            <p class="text-lg text-gray-500 mt-6">Daftar-Daftar Paket Berlangganan</p>
         </div>
+        <div class="flex items-center gap-4">
+            <button id="add-package-btn"
+                class="bg-red-700 text-white font-semibold px-4 py-2 rounded-lg hover:bg-red-800 flex items-center gap-2 transition-colors">
+                <img src="{{ asset('images/tambah-db.png') }}" alt="Tambah" class="w-5 h-5">
+                <span>Tambah Paket</span>
+            </button>
+        </div>
+    </div>
 
-        <div class="flex-grow overflow-auto bg-white rounded-lg shadow border border-gray-200">
-            <table class="w-full whitespace-no-wrap min-w-[1200px]">
-                <thead class="bg-gray-200">
-                    <tr class="text-left font-semibold text-sm uppercase text-gray-700 tracking-wider">
-                        <th class="px-6 py-3 border-b-2 border-gray-300">Nama Paket</th>
-                        <th class="px-6 py-3 border-b-2 border-gray-300">Fitur</th>
-                        <th class="px-6 py-3 border-b-2 border-gray-300">Deskripsi</th>
-                        <th class="px-6 py-3 border-b-2 border-gray-300">Harga</th>
-                        <th class="px-6 py-3 border-b-2 border-gray-300">Diskon Tahunan</th>
-                        <th class="px-6 py-3 border-b-2 border-gray-300 text-center">Aksi</th>
-                    </tr>
-                </thead>
-                <tbody id="packages-table-body" data-fetch-url="{{ route('admin.paket.showJson', ['id' => 'PACKAGE_ID']) }}"
-                    class="divide-y divide-gray-200">
-                    @forelse($packages as $package)
-                        <tr class="text-gray-700 text-left align-top">
-                            <td class="px-6 py-4 font-bold text-base">{{ $package->package_name }}</td>
-                            <td class="px-6 py-4 text-sm">
-                                <ul class="list-disc list-inside space-y-1">
-                                    @foreach($package->features as $feature)
-                                        <li>{{ $feature->feature }}</li>
-                                    @endforeach
-                                </ul>
-                            </td>
-                            <td class="px-6 py-4 max-w-sm whitespace-normal">{{ $package->description }}</td>
-                            <td class="px-6 py-4">
-                                @if(is_null($package->monthly_price))
-                                    <span class="font-semibold text-green-600">Gratis</span>
-                                @else
-                                    {{ format_rupiah($package->monthly_price) }} /bln<br>
-                                    {{ format_rupiah($package->yearly_price) }} /thn
-                                @endif
-                            </td>
-                            <td class="px-6 py-4 text-center">{{ $package->discount_year ?? 0 }}%</td>
-                            <td class="px-6 py-4 text-center">
-                                <div class="flex items-center justify-center gap-2">
-                                    <button class="edit-btn p-1 text-gray-600 hover:text-blue-600" data-id="{{ $package->id }}"
-                                        title="Edit">
-                                        <img src="{{ asset('images/edit.png') }}" alt="Edit" class="w-6 h-6">
+    <div class="bg-white rounded-lg shadow border border-gray-200 overflow-x-auto">
+        <table class="w-full whitespace-no-wrap min-w-[1200px]">
+            <thead class="bg-gray-200">
+                <tr class="text-left font-semibold text-sm uppercase text-gray-700 tracking-wider">
+                    <th class="px-6 py-3 border-b-2 border-gray-300">Nama Paket</th>
+                    <th class="px-6 py-3 border-b-2 border-gray-300">Fitur</th>
+                    <th class="px-6 py-3 border-b-2 border-gray-300">Deskripsi</th>
+                    <th class="px-6 py-3 border-b-2 border-gray-300">Harga</th>
+                    <th class="px-6 py-3 border-b-2 border-gray-300">Diskon Tahunan</th>
+                    <th class="px-6 py-3 border-b-2 border-gray-300 text-center">Aksi</th>
+                </tr>
+            </thead>
+            <tbody id="packages-table-body" data-fetch-url="{{ route('admin.paket.showJson', ['id' => 'PACKAGE_ID']) }}"
+                class="divide-y divide-gray-200">
+                @forelse($packages as $package)
+                    <tr class="text-gray-700 text-left align-top">
+                        <td class="px-6 py-4 font-bold text-base">{{ $package->package_name }}</td>
+                        <td class="px-6 py-4 text-sm">
+                            <ul class="list-disc list-inside space-y-1">
+                                @foreach($package->features as $feature)
+                                    <li>{{ $feature->feature }}</li>
+                                @endforeach
+                            </ul>
+                        </td>
+                        <td class="px-6 py-4 max-w-sm whitespace-normal">{{ $package->description }}</td>
+                        <td class="px-6 py-4">
+                            @if(is_null($package->monthly_price))
+                                <span class="font-semibold text-green-600">Hubungi Admin</span>
+                            @else
+                                {{ format_rupiah($package->monthly_price) }} /bln<br>
+                                {{ format_rupiah($package->yearly_price) }} /thn
+                            @endif
+                        </td>
+                        <td class="px-6 py-4 text-center">{{ $package->discount_year ?? 0 }}%</td>
+                        <td class="px-6 py-4 text-center">
+                            <div class="flex items-center justify-center gap-2">
+                                <button class="edit-btn p-1 text-gray-600 hover:text-blue-600" data-id="{{ $package->id }}"
+                                    title="Edit">
+                                    <img src="{{ asset('images/edit.png') }}" alt="Edit" class="w-6 h-6">
+                                </button>
+                                <form action="{{ route('admin.paket.destroy', $package->id) }}" method="POST"
+                                    class="inline delete-form">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="delete-confirm p-1 text-gray-600 hover:text-red-600"
+                                        title="DELETE">
+                                        <img src="{{ asset('images/delete.png') }}" alt="Delete" class="w-6 h-6">
                                     </button>
-                                    <form action="{{ route('admin.paket.destroy', $package->id) }}" method="POST"
-                                        class="inline delete-form">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="delete-confirm p-1 text-gray-600 hover:text-red-600"
-                                            title="DELETE">
-                                            <img src="{{ asset('images/delete.png') }}" alt="Delete" class="w-6 h-6">
-                                        </button>
-                                    </form>
-                                </div>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="6" class="text-center text-gray-500 py-8">Belum ada paket berlangganan.</td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="6" class="text-center text-gray-500 py-8">Belum ada paket berlangganan.</td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
     </div>
 
     <!-- Modal Tambah/Edit Paket -->
@@ -112,7 +110,7 @@
                             Bulanan</label>
                         <input type="number" id="monthly_price" name="monthly_price"
                             class="block w-full h-12 px-4 border-2 border-gray-300 rounded-lg focus:border-red-600 focus:ring-0 transition"
-                            min="0" placeholder="Kosongkan jika gratis">
+                            min="0" placeholder="Kosongkan jika Harga Harus Disesuaikan">
                     </div>
                     <div class="flex items-center pt-8">
                         <input type="hidden" name="is_trial" value="0">
@@ -201,11 +199,11 @@
                 const div = document.createElement('div');
                 div.className = 'flex items-center gap-2';
                 div.innerHTML = `
-                        <input type="text" name="features[]" class="block w-full h-11 px-3 border-2 border-gray-300 rounded-lg focus:border-red-600 focus:ring-0 transition" value="${value}" placeholder="Tuliskan fitur...">
-                        <button type="button" class="remove-feature-btn text-red-500 hover:text-red-700 p-1">
-                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                        </button>
-                    `;
+                            <input type="text" name="features[]" class="block w-full h-11 px-3 border-2 border-gray-300 rounded-lg focus:border-red-600 focus:ring-0 transition" value="${value}" placeholder="Tuliskan fitur...">
+                            <button type="button" class="remove-feature-btn text-red-500 hover:text-red-700 p-1">
+                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                            </button>
+                        `;
                 featuresContainer.appendChild(div);
                 div.querySelector('.remove-feature-btn').addEventListener('click', () => div.remove());
             };

@@ -2,76 +2,67 @@
 @section('title', 'Kelola Kategori')
 
 @section('content')
-    <div class="flex flex-col h-full">
-        <!-- Header -->
-        <div class="flex-shrink-0 flex justify-between items-center mb-6">
-            <div>
-                <h1 class="text-4xl font-bold text-gray-800">Kelola Kategori Produk</h1>
-                <p class="text-lg text-gray-500 mt-6">Daftar Kategori dan Sub-kategori Produk</p>
-            </div>
-            <div class="flex items-center gap-4">
-                <button class="p-2 rounded-full hover:bg-gray-100" title="Cari">
-                    <svg width="20" height="20" fill="none">
-                        <path d="M19 19l-4.35-4.35M9 16a7 7 0 1 0 0-14 7 7 0 0 0 0 14Z" stroke="#232323" stroke-width="2"
-                            stroke-linecap="round" stroke-linejoin="round" />
-                    </svg>
-                </button>
-                <button id="add-category-btn"
-                    class="bg-red-700 text-white font-semibold px-4 py-2 rounded-lg hover:bg-red-800 flex items-center gap-2 transition-colors">
-                    <img src="{{ asset('images/tambah-db.png') }}" alt="Tambah" class="w-5 h-5">
-                    <span>Tambah Kategori</span>
-                </button>
-            </div>
+    <!-- Header -->
+    <div class="flex-shrink-0 flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-4xl font-bold text-gray-800">Kelola Kategori Produk</h1>
+            <p class="text-lg text-gray-500 mt-6">Daftar Kategori dan Sub-kategori Produk</p>
         </div>
+        <div class="flex items-center gap-4">
+            <button id="add-category-btn"
+                class="bg-red-700 text-white font-semibold px-4 py-2 rounded-lg hover:bg-red-800 flex items-center gap-2 transition-colors">
+                <img src="{{ asset('images/tambah-db.png') }}" alt="Tambah" class="w-5 h-5">
+                <span>Tambah Kategori</span>
+            </button>
+        </div>
+    </div>
 
-        <!-- Tabel Kategori -->
-        <div class="flex-grow overflow-auto bg-white rounded-lg shadow border border-gray-200">
-            <table class="w-full whitespace-no-wrap min-w-[800px]">
-                <thead class="bg-gray-200">
-                    <tr class="text-left font-semibold text-sm uppercase text-gray-700 tracking-wider">
-                        <th class="px-6 py-3 border-b-2 border-gray-300">Kategori</th>
-                        <th class="px-6 py-3 border-b-2 border-gray-300">Sub-Kategori</th>
-                        <th class="px-6 py-3 border-b-2 border-gray-300 text-center">Aksi</th>
-                    </tr>
-                </thead>
-                <tbody id="categories-table-body"
-                    data-fetch-url="{{ route('admin.kategori.showJson', ['id' => 'CATEGORY_ID']) }}"
-                    class="divide-y divide-gray-200">
-                    @forelse($categories as $category)
-                        <tr class="text-gray-700 text-left align-top">
-                            <td class="px-6 py-4 font-bold text-base">{{ $category->name }}</td>
-                            <td class="px-6 py-4">
-                                <div class="flex flex-wrap gap-2">
-                                    @foreach ($category->subcategories as $subcategory)
-                                        <span
-                                            class="bg-gray-100 text-gray-700 text-sm font-medium px-3 py-1 rounded-full">{{ $subcategory->name }}</span>
-                                    @endforeach
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 flex justify-center gap-3">
-                                <button class="edit-btn p-1 text-gray-600 hover:text-blue-600" data-id="{{ $category->id }}"
-                                    title="Edit">
-                                    <img src="{{ asset('images/edit.png') }}" alt="Edit" class="w-6 h-6">
+    <!-- Tabel Kategori -->
+    <div class="bg-white rounded-lg shadow border border-gray-200 overflow-x-auto">
+        <table class="w-full whitespace-no-wrap min-w-[800px]">
+            <thead class="bg-gray-200">
+                <tr class="text-left font-semibold text-sm uppercase text-gray-700 tracking-wider">
+                    <th class="px-6 py-3 border-b-2 border-gray-300">Kategori</th>
+                    <th class="px-6 py-3 border-b-2 border-gray-300">Sub-Kategori</th>
+                    <th class="px-6 py-3 border-b-2 border-gray-300 text-center">Aksi</th>
+                </tr>
+            </thead>
+            <tbody id="categories-table-body"
+                data-fetch-url="{{ route('admin.kategori.showJson', ['id' => 'CATEGORY_ID']) }}"
+                class="divide-y divide-gray-200">
+                @forelse($categories as $category)
+                    <tr class="text-gray-700 text-left align-top">
+                        <td class="px-6 py-4 font-bold text-base">{{ $category->name }}</td>
+                        <td class="px-6 py-4">
+                            <div class="flex flex-wrap gap-2">
+                                @foreach ($category->subcategories as $subcategory)
+                                    <span
+                                        class="bg-gray-100 text-gray-700 text-sm font-medium px-3 py-1 rounded-full">{{ $subcategory->name }}</span>
+                                @endforeach
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 flex justify-center gap-3">
+                            <button class="edit-btn p-1 text-gray-600 hover:text-blue-600" data-id="{{ $category->id }}"
+                                title="Edit">
+                                <img src="{{ asset('images/edit.png') }}" alt="Edit" class="w-6 h-6">
+                            </button>
+                            <form action="{{ route('admin.kategori.destroy', $category->id) }}" method="POST"
+                                class="inline delete-form">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="delete-btn p-1 text-gray-600 hover:text-red-600" title="Delete">
+                                    <img src="{{ asset('images/delete.png') }}" alt="Delete" class="w-6 h-6">
                                 </button>
-                                <form action="{{ route('admin.kategori.destroy', $category->id) }}" method="POST"
-                                    class="inline delete-form">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="delete-btn p-1 text-gray-600 hover:text-red-600"
-                                        title="Delete">
-                                        <img src="{{ asset('images/delete.png') }}" alt="Delete" class="w-6 h-6">
-                                    </button>
-                                </form>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="3" class="text-center text-gray-500 py-8">Belum ada kategori yang ditambahkan.</td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
+                            </form>
+                        </td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="3" class="text-center text-gray-500 py-8">Belum ada kategori yang ditambahkan.</td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
     </div>
 
     <!-- Modal Tambah/Edit Kategori -->
@@ -138,11 +129,11 @@
                 const div = document.createElement('div');
                 div.className = 'flex items-center gap-2';
                 div.innerHTML = `
-                    <input type="text" name="subcategories[]" class="block w-full h-11 px-3 border-2 border-gray-300 rounded-lg focus:border-red-600 focus:ring-0 transition" value="${value}" placeholder="Nama Sub-Kategori">
-                    <button type="button" class="remove-subcategory-btn text-red-500 hover:text-red-700 p-1">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                    </button>
-                `;
+                                <input type="text" name="subcategories[]" class="block w-full h-11 px-3 border-2 border-gray-300 rounded-lg focus:border-red-600 focus:ring-0 transition" value="${value}" placeholder="Nama Sub-Kategori">
+                                <button type="button" class="remove-subcategory-btn text-red-500 hover:text-red-700 p-1">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                </button>
+                            `;
                 subcategoriesContainer.appendChild(div);
                 div.querySelector('.remove-subcategory-btn').addEventListener('click', () => div.remove());
             };

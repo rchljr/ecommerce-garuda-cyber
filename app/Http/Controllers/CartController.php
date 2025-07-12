@@ -73,7 +73,7 @@ class CartController extends Controller
     /**
      * Memperbarui kuantitas item di keranjang.
      */
-    public function update(Request $request, $productCartId)
+    public function update(Request $request, $subdomain, $productCartId)
     {
         $validated = $request->validate(['quantity' => 'required|integer|min:1']);
 

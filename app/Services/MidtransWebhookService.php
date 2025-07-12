@@ -2,15 +2,17 @@
 
 namespace App\Services;
 
+use App\Models\User;
 use App\Models\Order;
 use App\Models\Payment;
-use App\Models\User;
-use App\Notifications\PartnerActivatedNotification;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use App\Notifications\NewOrderNotification;
 use Illuminate\Support\Facades\Notification;
 use Midtrans\Notification as MidtransNotification;
+use App\Notifications\PartnerActivatedNotification;
+use App\Notifications\CustomerPaymentSuccessNotification;
 
 class MidtransWebhookService
 {
@@ -94,11 +96,16 @@ class MidtransWebhookService
                 // Langkah B: Update Status Order terkait
                 $order = $payment->order;
                 if ($order) {
-                    $order->update(['status' => 'completed']);
-                    Log::info('MidtransWebhookService: Status order berhasil diupdate.', ['order_id' => $order->id]);
-
-                    // Langkah C: Aktivasi Akun
-                    $this->activateSubscription($order->user);
+                    // Cek tipe order: Langganan atau Produk
+                    if ($payment->subs_package_id) {
+                        // Ini adalah pembayaran langganan
+                        $order->update(['status' => 'completed']);
+                        $this->activateSubscription($order->user);
+                    } else {
+                        // Ini adalah pembayaran produk
+                        $order->update(['status' => 'completed']); // Status baru untuk pesanan yang dibayar
+                        $this->finalizeProductOrder($order);
+                    }
                 } else {
                     Log::error('MidtransWebhookService: Relasi Order pada Payment tidak ditemukan.', ['payment_id' => $payment->id]);
                 }
@@ -111,6 +118,27 @@ class MidtransWebhookService
                 throw $e;
             }
         });
+    }
+    /**
+     *  Menyelesaikan pesanan produk dan mengirim notifikasi.
+     */
+    protected function finalizeProductOrder(Order $order)
+    {
+        // Update status pengiriman jika ada
+        if ($order->shipping) {
+            $order->shipping->update(['status' => 'preparing_shipment']);
+        }
+
+        // Kirim notifikasi ke pelanggan
+        $customer = $order->user;
+        
+        Notification::send($customer, new CustomerPaymentSuccessNotification($order));
+        Log::info('Notifikasi sukses pembayaran dikirim ke pelanggan.', ['order_id' => $order->id, 'customer_id' => $customer->id]);
+
+        // Kirim notifikasi ke mitra (pemilik toko)
+        $shopOwner = $order->subdomain->user;
+        Notification::send($shopOwner, new NewOrderNotification($order));
+        Log::info('Notifikasi pesanan baru dikirim ke mitra.', ['order_id' => $order->id, 'partner_id' => $shopOwner->id]);
     }
 
     /**

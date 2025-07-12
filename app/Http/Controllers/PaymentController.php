@@ -49,6 +49,9 @@ class PaymentController extends Controller
             return redirect()->route('mitra.dashboard')->with('info', 'Anda tidak memiliki tagihan yang perlu dibayar.');
         }
 
+        // Jalankan kalkulasi harga setiap kali halaman dimuat
+        $this->recalculatePrices($order);
+        
         // Jika order gagal/batal, reset statusnya ke pending agar bisa coba bayar lagi
         if (in_array($order->status, ['failed', 'cancelled'])) {
             $order->update(['status' => 'pending']);
@@ -141,15 +144,13 @@ class PaymentController extends Controller
                     'user_id' => $order->user_id,
                     'subs_package_id' => $order->user->userPackage->subs_package_id,
                     'midtrans_order_id' => $response->order_id,
-                    'midtrans_transaction_id' => $response->transaction_id,
+                    // 'midtrans_transaction_id' => $response->transaction_id,
                     'midtrans_transaction_status' => $response->transaction_status,
                     'midtrans_payment_type' => $response->payment_type,
                     'total_payment' => $response->gross_amount,
                     'midtrans_response' => json_encode($response),
                 ]
             );
-
-            $order->update(['status' => 'waiting_payment']);
 
             return response()->json($response);
         } catch (Exception $e) {
@@ -194,23 +195,17 @@ class PaymentController extends Controller
             return response()->json(['error' => 'Total belanja tidak memenuhi syarat minimum untuk voucher ini.'], 422);
         }
 
-        // Cek minimum pembelanjaan
-        $percentage = $voucher->discount;
-        $discountAmount = ($originalPrice * $percentage) / 100;
-        $finalPrice = $originalPrice - $discountAmount;
-        if ($finalPrice < 0)
-            $finalPrice = 0;
-
         $order->voucher_id = $voucher->id;
-        $order->total_price = $finalPrice;
         $order->save();
+
+        // Hitung ulang harga setelah voucher diterapkan
+        $recalculatedData = $this->recalculatePrices($order);
 
         return response()->json([
             'success' => true,
             'message' => 'Voucher berhasil diterapkan!',
-            'final_price' => $finalPrice,
-            'discount_amount' => $discountAmount,
-            'original_price' => $originalPrice,
+            'final_price' => $recalculatedData['final_price'],
+            'discount_amount' => $recalculatedData['voucher_discount_amount'],
             'voucher_code' => $voucher->voucher_code
         ]);
     }
@@ -231,18 +226,64 @@ class PaymentController extends Controller
             return response()->json(['error' => 'Tidak ada voucher yang diterapkan.'], 400);
         }
 
-        $originalPrice = $order->user->userPackage->price_paid;
-
-        // Hapus voucher dan kembalikan harga ke semula
         $order->voucher_id = null;
-        $order->total_price = $originalPrice;
         $order->save();
+
+        // Hitung ulang harga setelah voucher dihapus
+        $recalculatedData = $this->recalculatePrices($order);
 
         return response()->json([
             'success' => true,
             'message' => 'Voucher berhasil dihapus.',
-            'final_price' => $originalPrice
+            'final_price' => $recalculatedData['final_price']
         ]);
+    }
+
+    /**
+     * Fungsi privat untuk sentralisasi kalkulasi harga.
+     */
+    private function recalculatePrices(Order $order): array
+    {
+        $userPackage = $order->userPackage;
+        $subscriptionPackage = $userPackage->subscriptionPackage;
+
+        $originalPrice = ($userPackage->plan_type === 'yearly')
+            ? $subscriptionPackage->yearly_price
+            : $subscriptionPackage->monthly_price;
+        
+        $yearlyDiscountAmount = 0;
+        if ($userPackage->plan_type === 'yearly') {
+            $discountPercentage = $subscriptionPackage->discount_year ?? 0;
+            $yearlyDiscountAmount = ($originalPrice * $discountPercentage) / 100;
+        }
+
+        $priceAfterYearlyDiscount = $originalPrice - $yearlyDiscountAmount;
+
+        $voucherDiscountAmount = 0;
+        if ($order->voucher_id) {
+            $voucher = Voucher::find($order->voucher_id);
+            if ($voucher) {
+                // Pastikan voucher memenuhi syarat belanja (dihitung dari harga setelah diskon tahunan)
+                if ($priceAfterYearlyDiscount >= $voucher->min_spending) {
+                    $voucherDiscountPercentage = $voucher->discount ?? 0;
+                    $voucherDiscountAmount = ($priceAfterYearlyDiscount * $voucherDiscountPercentage) / 100;
+                } else {
+                    // Jika tidak memenuhi syarat, hapus voucher dari order
+                    $order->voucher_id = null;
+                }
+            }
+        }
+
+        $finalPrice = $priceAfterYearlyDiscount - $voucherDiscountAmount;
+        
+        // Update order dengan harga terbaru
+        $order->total_price = round($finalPrice);
+        $order->save();
+
+        return [
+            'final_price' => $order->total_price,
+            'voucher_discount_amount' => $voucherDiscountAmount,
+        ];
     }
 
     /**

@@ -2,7 +2,6 @@
 @extends('layouts.admin')
 @section('title', 'Kelola Mitra')
 @section('content')
-    <div class="flex flex-col h-full">
         {{-- Header --}}
         <div class="flex-shrink-0 flex justify-between items-center mb-6">
             <div>
@@ -22,7 +21,7 @@
         </div>
 
         {{-- Tabel Mitra --}}
-        <div class="flex-grow overflow-auto bg-white rounded-lg shadow border border-gray-200">
+        <div class="bg-white rounded-lg shadow border border-gray-200 overflow-x-auto">
             <table class="w-full whitespace-no-wrap min-w-[1000px]">
                 <thead class="bg-gray-200">
                     <tr class="text-center font-semibold text-sm uppercase text-gray-700 tracking-wider">
@@ -149,5 +148,4 @@
         <div class="mt-4">
             {{ $mitras->links() }}
         </div>
-    </div>
 @endsection

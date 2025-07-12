@@ -1,6 +1,6 @@
 
 <!-- Hero Section -->
-<section class="relative container bg-white mx-auto px-6 py-16 md:py-24 overflow-hidden">
+<section id="beranda" class="relative container bg-white mx-auto px-6 py-16 md:py-24 overflow-hidden">
     <div class="relative z-10 grid md:grid-cols-2 gap-12 items-center">
         <!-- Kolom Teks -->
         <div class="text-center md:text-left">

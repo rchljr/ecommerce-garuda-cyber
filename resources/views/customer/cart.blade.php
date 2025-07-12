@@ -175,24 +175,43 @@
                 if (subtotalPriceEl) subtotalPriceEl.textContent = formatRupiah(subtotal);
                 if (selectedItemsCountEl) selectedItemsCountEl.textContent = selectedCount;
 
-                // PERBAIKAN: Logika untuk mengaktifkan tombol checkout
-                // Tombol akan aktif jika ada pelanggan yang login DAN jumlah item yang dipilih lebih dari 0.
                 if (checkoutBtn) {
                     checkoutBtn.disabled = (selectedCount === 0);
                 }
             }
 
-            // ... (fungsi updateCartItem dan handleRemove tetap sama seperti sebelumnya) ...
             let updateTimeout;
             function updateCartItem(itemId, quantity) {
                 clearTimeout(updateTimeout);
                 updateTimeout = setTimeout(() => {
                     if (!csrfToken) return;
-                    fetch(`{{ route('tenant.cart.update', ['subdomain' => $currentSubdomain, 'productCartId' => '__ID__']) }}`.replace('__ID__', itemId), {
+
+                    // DEBUGGING: Tampilkan ID dan kuantitas yang akan dikirim
+                    console.log(`[DEBUG] Mengirim update untuk Item ID: ${itemId}, Kuantitas: ${quantity}`);
+
+                    const updateUrl = `{{ route('tenant.cart.update', ['subdomain' => $currentSubdomain, 'productCartId' => '__ID__']) }}`.replace('__ID__', itemId);
+
+                    fetch(updateUrl, {
                         method: 'PATCH',
-                        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken
+                        },
                         body: JSON.stringify({ quantity: quantity })
-                    }).catch(console.error);
+                    })
+                        .then(response => {
+                            if (!response.ok) {
+                                console.error(`[DEBUG] Gagal update. Status: ${response.status}`);
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            console.log('[DEBUG] Respons dari server:', data);
+                        })
+                        .catch(error => {
+                            console.error('[DEBUG] Terjadi error saat fetch:', error)
+                        });
                 }, 500);
             }
 
@@ -216,7 +235,8 @@
                                         document.querySelector(`.cart-item[data-id="${id}"]`)?.remove();
                                     });
                                     updateSummary();
-                                    document.getElementById('cart-count').textContent = data.cart_count;
+                                    const cartCountEl = document.getElementById('cart-count');
+                                    if (cartCountEl) cartCountEl.textContent = data.cart_count;
                                     Swal.fire('Dihapus!', data.message, 'success');
                                     if (document.querySelectorAll('.cart-item').length === 0) {
                                         window.location.reload();
@@ -247,7 +267,11 @@
 
             document.querySelectorAll('.cart-item').forEach(cartItem => {
                 const quantityInput = cartItem.querySelector('.quantity-input');
+                // PERBAIKAN KUNCI: Ambil itemId dari elemen cart-item yang benar
                 const itemId = cartItem.dataset.id;
+
+                // DEBUGGING: Pastikan itemId yang diambil benar saat halaman dimuat
+                console.log(`[DEBUG] Listener terpasang untuk Item ID: ${itemId}`);
 
                 cartItem.querySelector('.quantity-btn[data-action="increase"]')?.addEventListener('click', () => {
                     quantityInput.stepUp();

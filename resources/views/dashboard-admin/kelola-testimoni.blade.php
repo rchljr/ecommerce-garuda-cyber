@@ -2,7 +2,6 @@
 @section('title', 'Kelola Testimoni')
 
 @section('content')
-    <div class="flex flex-col h-full">
         <!-- Header -->
         <div class="flex-shrink-0 flex justify-between items-center mb-6">
             <div id="header-container" class="flex-grow">
@@ -31,7 +30,7 @@
         </div>
 
         <!-- Tabel Testimoni -->
-        <div class="flex-grow overflow-auto bg-white rounded-lg shadow border border-gray-200">
+        <div class="bg-white rounded-lg shadow border border-gray-200 overflow-x-auto">
             <table class="w-full whitespace-no-wrap min-w-[1200px]">
                 <thead class="bg-gray-200">
                     <tr class="text-center font-semibold text-sm uppercase text-gray-700 tracking-wider">
@@ -104,7 +103,6 @@
         <div class="mt-4">
             {{ $testimonials->links() }}
         </div>
-    </div>
 
     <!-- Modal Tambah/Edit Testimoni -->
     <div id="testimonial-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
@@ -114,7 +112,7 @@
                 <button id="close-modal-btn" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
             </div>
             <form id="testimonial-form" method="POST" action="{{ route('admin.testimoni.store') }}" 
-                  data-update-url="{{ route('admin.testimoni.update', ['id' => 'TESTIMONIAL_ID']) }}" class="mt-4 space-y-4">
+                data-update-url="{{ route('admin.testimoni.update', ['id' => 'TESTIMONIAL_ID']) }}" class="mt-4 space-y-4">
                 @csrf
                 {{-- Method PUT akan disisipkan oleh JS --}}
                 <div>

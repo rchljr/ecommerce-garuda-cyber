@@ -26,10 +26,15 @@ class PartnerRejectedNotification extends Notification
 
     public function toMail($notifiable): MailMessage
     {
+        $url = route('register.form');
+
         return (new MailMessage)
             ->subject('Informasi Verifikasi Pendaftaran Mitra')
             ->greeting('Halo, ' . $this->user->name . '.')
             ->line('Setelah melakukan peninjauan, dengan berat hati kami sampaikan bahwa pengajuan pendaftaran mitra Anda saat ini belum dapat kami setujui.')
+            ->line('Silahkan lengkapi persyaratan yang diperlukan atau perbaiki informasi yang kurang tepat pada profil Anda.')
+            ->line('Dan silahkan ajukan kembali pendaftaran mitra Anda setelah melakukan perbaikan.')
+            ->action( 'Ajukan Ulang Pendaftaran', $url)
             ->line('Jika Anda memiliki pertanyaan lebih lanjut, silakan hubungi tim support kami.')
             ->line('Terima kasih atas pengertian Anda.');
     }

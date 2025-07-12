@@ -12,6 +12,7 @@ class TestimonialService
         $search = $request->input('search');
 
         return Testimoni::with('user')
+            ->whereNull('product_id')
             ->when($search, function ($query, $search) {
                 // Cari berdasarkan nama atau isi testimoni
                 return $query->where('name', 'like', "%{$search}%")
@@ -41,11 +42,22 @@ class TestimonialService
         return Testimoni::create($data);
     }
 
+    /**
+     * Untuk ulasan produk dari halaman pesanan.
+     */
+    public function createFromReview(array $data)
+    {
+        $data['status'] = 'published';
+        return Testimoni::create($data);
+    }
+
     public function update(string $id, array $data)
     {
         $testimonial = $this->getTestimonialById($id);
-        unset($data['status']);
-        $testimonial->update($data);
+        $testimonial->update([
+            'rating' => $data['rating'],
+            'content' => $data['content'],
+        ]);
         return $testimonial;
     }
 

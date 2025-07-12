@@ -58,7 +58,7 @@ class User extends Authenticatable
 
     public function shop()
     {
-        return $this->hasOne(Shop::class);
+        return $this->hasOne(Shop::class, 'user_id', 'id');
     }
     public function tenant()
     {
@@ -84,7 +84,11 @@ class User extends Authenticatable
         return $this->hasOne(Cart::class);
     }
     public function contact()
-{
-    return $this->hasOne(Contact::class);
-}
+    {
+        return $this->hasOne(Contact::class);
+    }
+    public function orders()
+    {
+        return $this->hasMany(Order::class, 'user_id', 'id');
+    }
 }

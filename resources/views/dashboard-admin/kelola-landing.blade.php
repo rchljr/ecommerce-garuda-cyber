@@ -6,48 +6,46 @@
     {!! session('success') ? showAlert('success', session('success')) : '' !!}
     {!! session('error') ? showAlert('error', session('error')) : '' !!}
 
-    <div class="flex flex-col h-full">
-        <div class="flex-shrink-0 flex justify-between items-center mb-6">
-            <div>
-                <h1 class="text-4xl font-bold text-gray-800">Kelola Statistik Landing Page</h1>
-                <p class="text-lg text-gray-500 mt-2">Edit data statistik yang tampil di halaman depan</p>
-            </div>
+    <div class="flex-shrink-0 flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-4xl font-bold text-gray-800">Kelola Statistik Landing Page</h1>
+            <p class="text-lg text-gray-500 mt-2">Edit data statistik yang tampil di halaman depan</p>
         </div>
-        <div class="flex-grow overflow-auto max-w-4xl">
-            <div class="bg-white rounded-lg shadow border border-gray-200">
-                <table class="w-full whitespace-no-wrap">
-                    <thead class="bg-gray-200">
-                        <tr class="text-left font-semibold text-sm uppercase text-gray-700 tracking-wider">
-                            <th class="px-6 py-3 border-b-2 border-gray-300">Nama Statistik</th>
-                            <th class="px-6 py-3 border-b-2 border-gray-300">Nilai</th>
-                            <th class="px-6 py-3 border-b-2 border-gray-300 text-center">Aksi</th>
+    </div>
+    <div class="max-w-4xl">
+        <div class="bg-white rounded-lg shadow border border-gray-200 overflow-x-auto">
+            <table class="w-full whitespace-no-wrap">
+                <thead class="bg-gray-200">
+                    <tr class="text-left font-semibold text-sm uppercase text-gray-700 tracking-wider">
+                        <th class="px-6 py-3 border-b-2 border-gray-300">Nama Statistik</th>
+                        <th class="px-6 py-3 border-b-2 border-gray-300">Nilai</th>
+                        <th class="px-6 py-3 border-b-2 border-gray-300 text-center">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="stats-table-body" class="divide-y divide-gray-200">
+                    @php
+                        $statsMap = [
+                            'Total Pengguna' => ['value' => $stats->total_users ?? 0, 'key' => 'total_users'],
+                            'Total Toko' => ['value' => $stats->total_shops ?? 0, 'key' => 'total_shops'],
+                            'Total Pengunjung' => ['value' => $stats->total_visitors ?? 0, 'key' => 'total_visitors'],
+                            'Total Transaksi' => ['value' => $stats->total_transactions ?? 0, 'key' => 'total_transactions'],
+                        ];
+                    @endphp
+                    @foreach ($statsMap as $name => $data)
+                        <tr class="text-gray-700">
+                            <td class="px-6 py-4">{{ $name }}</td>
+                            <td class="px-6 py-4 font-bold">{{ number_format($data['value']) }}</td>
+                            <td class="px-6 py-4 text-center">
+                                <button class="edit-stat-btn p-1 text-gray-600 hover:text-blue-600"
+                                    data-stat-key="{{ $data['key'] }}" data-stat-name="{{ $name }}"
+                                    data-stat-value="{{ $data['value'] }}" title="Edit">
+                                    <img src="{{ asset('images/edit.png') }}" alt="Edit" class="w-6 h-6">
+                                </button>
+                            </td>
                         </tr>
-                    </thead>
-                    <tbody id="stats-table-body" class="divide-y divide-gray-200">
-                        @php
-                            $statsMap = [
-                                'Total Pengguna' => ['value' => $stats->total_users ?? 0, 'key' => 'total_users'],
-                                'Total Toko' => ['value' => $stats->total_shops ?? 0, 'key' => 'total_shops'],
-                                'Total Pengunjung' => ['value' => $stats->total_visitors ?? 0, 'key' => 'total_visitors'],
-                                'Total Transaksi' => ['value' => $stats->total_transactions ?? 0, 'key' => 'total_transactions'],
-                            ];
-                        @endphp
-                        @foreach ($statsMap as $name => $data)
-                            <tr class="text-gray-700">
-                                <td class="px-6 py-4">{{ $name }}</td>
-                                <td class="px-6 py-4 font-bold">{{ number_format($data['value']) }}</td>
-                                <td class="px-6 py-4 text-center">
-                                    <button class="edit-stat-btn p-1 text-gray-600 hover:text-blue-600"
-                                        data-stat-key="{{ $data['key'] }}" data-stat-name="{{ $name }}"
-                                        data-stat-value="{{ $data['value'] }}" title="Edit">
-                                        <img src="{{ asset('images/edit.png') }}" alt="Edit" class="w-6 h-6">
-                                    </button>
-                                </td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
+                    @endforeach
+                </tbody>
+            </table>
         </div>
     </div>
     <!-- Modal Edit Nilai Statistik -->
@@ -120,6 +118,6 @@
 
             closeModalBtn.addEventListener('click', closeModal);
             cancelModalBtn.addEventListener('click', closeModal);
-});
+        });
     </script>
 @endpush

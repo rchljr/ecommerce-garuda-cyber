@@ -14,6 +14,7 @@ class VoucherService
         $search = $request->input('search');
 
         return Voucher::query()
+            ->whereNull('subdomain_id')
             ->select('*')
             ->selectRaw("
                 CASE
@@ -22,6 +23,7 @@ class VoucherService
                     ELSE 3
                 END AS status_order
             ")
+
             ->when($search, function ($query, $search) {
                 return $query->where(function ($q) use ($search) {
                     // Cari berdasarkan kode voucher atau deskripsi
@@ -31,7 +33,7 @@ class VoucherService
             })
             ->orderBy('status_order', 'asc')
             ->orderBy('created_at', 'desc')
-            ->paginate(10)->appends($request->query());
+            ->paginate(5)->appends($request->query());
     }
 
     public function getVoucherById($id)
@@ -51,7 +53,7 @@ class VoucherService
         return Voucher::where('start_date', '<=', now())
             ->where('expired_date', '>=', now())
             ->where('min_spending', '<=', $subtotal)
-            ->where('user_id', $shopOwnerId) 
+            ->where('user_id', $shopOwnerId)
             ->orderBy('min_spending', 'desc')
             ->get();
     }

@@ -41,7 +41,7 @@ class RenewalReminderNotification extends Notification implements ShouldQueue
         $expiredDate = optional($userPackage)->expired_date ? \Carbon\Carbon::parse($userPackage->expired_date)->isoFormat('D MMMM YYYY') : 'segera';
 
         // Arahkan pengguna ke halaman login. Setelah login, sistem akan mengarahkannya ke halaman pembayaran.
-        $renewalUrl = route('login');
+        $renewalUrl = route('register.form');
 
         return (new MailMessage)
             ->subject('Penting: Paket Langganan Anda Akan Segera Berakhir!')

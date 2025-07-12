@@ -33,7 +33,7 @@ class OrderController extends Controller
     }
 
     /**
-     * [BARU] Menampilkan halaman detail untuk satu pesanan.
+     *
      * @param  \App\Models\Order  $order
      * @return \Illuminate\View\View
      */

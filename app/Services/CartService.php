@@ -140,36 +140,57 @@ class CartService
      */
     public function getItems(Request $request): Collection
     {
+        $tenant = $request->get('tenant');
+        if (!$tenant) {
+            return collect(); // Jika tidak ada tenant, kembalikan koleksi kosong
+        }
+        $shopOwnerId = $tenant->user_id;
+
         if (Auth::guard('customers')->check()) {
             $cart = Cart::where('user_id', Auth::guard('customers')->id())->first();
-            if (!$cart)
+            if (!$cart) {
                 return collect();
+            }
 
-            // Eager load relasi untuk efisiensi
-            return $cart->items()->with(['product', 'variant'])->get();
+            // PERBAIKAN: Filter item berdasarkan user_id produk yang sama dengan user_id tenant
+            return $cart->items()
+                ->whereHas('product', function ($query) use ($shopOwnerId) {
+                    $query->where('user_id', $shopOwnerId);
+                })
+                ->with(['product', 'variant'])
+                ->get();
         }
 
-        // Untuk tamu, optimalkan pengambilan data untuk menghindari N+1 query
+        // --- Logika untuk Tamu (Guest) ---
         $sessionCart = Session::get('cart', []);
-        if (empty($sessionCart))
+        if (empty($sessionCart)) {
             return collect();
+        }
 
         $variantIds = array_keys($sessionCart);
-        $variants = ProductVariant::with('product')->whereIn('id', $variantIds)->get()->keyBy('id');
+
+        // PERBAIKAN: Filter varian berdasarkan user_id produk yang sama dengan user_id tenant
+        $variants = ProductVariant::with('product')
+            ->whereIn('id', $variantIds)
+            ->whereHas('product', function ($query) use ($shopOwnerId) {
+                $query->where('user_id', $shopOwnerId);
+            })
+            ->get()
+            ->keyBy('id');
 
         return collect($sessionCart)->map(function ($item) use ($variants) {
             $variant = $variants->get($item['product_variant_id']);
-            if (!$variant)
+            if (!$variant) {
                 return null;
+            }
 
-            // Buat struktur data yang identik dengan versi database
             return (object) [
-                'id' => $item['id'], // Ini adalah variant_id
+                'id' => $item['id'],
                 'cart_id' => 'session',
                 'product_id' => $item['product_id'],
                 'product_variant_id' => $item['product_variant_id'],
                 'quantity' => $item['quantity'],
-                'product' => $variant->product, // Relasi yang sudah di-load
+                'product' => $variant->product,
                 'variant' => $variant,
             ];
         })->filter();
@@ -181,12 +202,23 @@ class CartService
     public function update(string $itemId, int $quantity): void
     {
         if (Auth::guard('customers')->check()) {
-            // Untuk pengguna login, $itemId adalah UUID dari product_carts
-            ProductCart::where('id', $itemId)
-                ->whereHas('cart', fn($q) => $q->where('user_id', Auth::guard('customers')->id()))
-                ->update(['quantity' => $quantity]);
+            $userId = Auth::guard('customers')->id();
+            $item = ProductCart::with('cart')->find($itemId);
+
+            if (!$item) {
+                Log::warning("Cart update failed: ProductCart item with ID {$itemId} not found.");
+                return;
+            }
+            // Verifikasi bahwa item ini benar-benar milik user yang sedang login
+            if ($item->cart && $item->cart->user_id === $userId) {
+                $item->quantity = $quantity;
+                $item->save(); // Simpan perubahan
+                Log::info("Successfully updated quantity for ProductCart ID: {$itemId}");
+            } else {
+                Log::warning("Cart update authorization failed for ProductCart ID: {$itemId}. User {$userId} does not own this item or item has no cart.");
+            }
         } else {
-            // Untuk tamu, $itemId adalah variant_id
+            // Logika untuk tamu (session)
             $cart = Session::get('cart', []);
             if (isset($cart[$itemId])) {
                 $cart[$itemId]['quantity'] = $quantity;

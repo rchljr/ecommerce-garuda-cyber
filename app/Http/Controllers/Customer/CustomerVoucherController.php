@@ -14,16 +14,32 @@ use Illuminate\Support\Facades\Auth;
 class CustomerVoucherController extends Controller
 {
     /**
-     * Menampilkan halaman voucher yang tersedia dari SEMUA toko.
+     * Menampilkan halaman voucher yang tersedia dari SEMUA toko,
+     * dipisahkan berdasarkan toko saat ini dan toko lainnya.
      */
     public function index(Request $request)
     {
-        $vouchers = Voucher::where('expired_date', '>=', now())
-            ->whereNotNull('subdomain_id')
-            ->with('subdomain.user.shop')
-            ->paginate(9);
+        // Ambil tenant yang sedang aktif dari middleware
+        $tenant = $request->get('tenant');
 
-        return view('customer.vouchers', compact('vouchers'));
+        // Ambil semua voucher yang masih berlaku dan memiliki subdomain (subdomain_id)
+        $allVouchers = Voucher::where('expired_date', '>=', now())
+            ->whereNotNull('subdomain_id') // Hanya ambil voucher milik mitra, bukan admin
+            ->with(['user.shop', 'subdomain']) // Eager load untuk efisiensi
+            ->latest('created_at')
+            ->get();
+
+        // Pisahkan voucher menjadi dua koleksi: untuk toko saat ini dan toko lain
+        list($currentStoreVouchers, $otherStoreVouchers) = $allVouchers->partition(function ($voucher) use ($tenant) {
+            // Jika tidak ada tenant (misal, dalam mode preview), anggap semua voucher adalah "toko lain"
+            if (!$tenant) {
+                return false;
+            }
+            // Jika user_id voucher sama dengan user_id pemilik tenant, masukkan ke grup "toko saat ini"
+            return $voucher->user_id === $tenant->user_id;
+        });
+
+        return view('customer.vouchers', compact('currentStoreVouchers', 'otherStoreVouchers'));
     }
 
     /**

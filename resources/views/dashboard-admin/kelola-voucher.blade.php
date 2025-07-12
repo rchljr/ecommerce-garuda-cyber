@@ -2,7 +2,6 @@
 @section('title', 'Kelola Voucher')
 
 @section('content')
-    <div class="flex flex-col h-full">
         <!-- Header -->
         <div class="flex-shrink-0 flex justify-between items-center mb-6">
             <div>
@@ -31,7 +30,7 @@
         {!! showAlert() !!}
 
         <!-- Tabel Voucher -->
-        <div class="flex-grow overflow-auto bg-white rounded-lg shadow border border-gray-200">
+        <div class="bg-white rounded-lg shadow border border-gray-200 overflow-x-auto">
             <table class="w-full whitespace-no-wrap min-w-[1200px]">
                 <thead class="bg-gray-200">
                     <tr class="text-center font-semibold text-sm uppercase text-gray-700 tracking-wider">
@@ -64,7 +63,7 @@
                                 @if ($now->isAfter($expiredDate))
                                     <span class="px-3 py-1 text-sm font-semibold rounded-full bg-gray-200 text-gray-700">Kedaluwarsa</span>
                                 @elseif ($now->isBefore($startDate))
-                                     <span class="px-3 py-1 text-sm font-semibold rounded-full bg-blue-100 text-blue-700">Akan Datang</span>
+                                    <span class="px-3 py-1 text-sm font-semibold rounded-full bg-blue-100 text-blue-700">Akan Datang</span>
                                 @else
                                     <span class="px-3 py-1 text-sm font-semibold rounded-full bg-green-100 text-green-700">Aktif</span>
                                 @endif
@@ -90,7 +89,6 @@
                 </tbody>
             </table>
         </div>
-    </div>
 
     <!-- Modal Tambah/Edit Voucher -->
     <div id="voucher-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
@@ -100,8 +98,8 @@
                 <button id="close-voucher-modal-btn" class="text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
             </div>
             <form id="voucher-form" class="mt-4 space-y-4" 
-                  data-store-url="{{ route('admin.voucher.store') }}"
-                  data-update-url-template="{{ route('admin.voucher.update', ['id' => 'VOUCHER_ID']) }}">
+                data-store-url="{{ route('admin.voucher.store') }}"
+                data-update-url-template="{{ route('admin.voucher.update', ['id' => 'VOUCHER_ID']) }}">
                 @csrf
                 <div>
                     <label for="voucher_code" class="block text-base font-semibold text-gray-800 mb-1">Kode Voucher<span class="text-red-600">*</span></label>

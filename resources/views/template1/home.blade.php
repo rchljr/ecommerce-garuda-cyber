@@ -2,8 +2,8 @@
 
 @section('content')
     @php
-        // Ambil subdomain saat ini sekali saja dari parameter rute agar lebih efisien.
-        $currentSubdomain = request()->route('subdomain');
+        $isPreview = $isPreview ?? false;
+        $currentSubdomain = $currentSubdomain ?? (!$isPreview ? request()->route('subdomain') : 'preview');
     @endphp
 
     <!-- Hero Section Begin -->
@@ -173,16 +173,15 @@
                                 @endif
                                 <ul class="product__hover">
                                     <li><a href="#"><img src="{{ asset('template1/img/icon/heart.png') }}" alt=""></a></li>
-                                    {{-- PERBAIKAN: Tambahkan parameter subdomain ke rute tenant.product.details --}}
                                     <li><a
-                                            href="{{ route('tenant.product.details', ['subdomain' => $currentSubdomain, 'product' => $product->slug]) }}"><img
+                                            href="{{ !$isPreview ? route('tenant.product.details', ['subdomain' => $currentSubdomain, 'product' => $product->slug]) : '#' }}"><img
                                                 src="{{ asset('template1/img/icon/search.png') }}" alt=""></a></li>
                                 </ul>
                             </div>
                             <div class="product__item__text">
                                 <h6>{{ $product->name }}</h6>
                                 {{-- PERBAIKAN: Tambahkan parameter subdomain ke rute tenant.cart.add --}}
-                                <a href="{{ route('tenant.cart.add', ['subdomain' => $currentSubdomain]) }}" class="add-cart">+
+                                <a href="{{ !$isPreview ? route('tenant.cart.add', ['subdomain' => $currentSubdomain]) : '#'}}" class="add-cart">+
                                     Add To Cart</a>
                                 <div class="rating">
                                     @for ($i = 1; $i <= 5; $i++)
