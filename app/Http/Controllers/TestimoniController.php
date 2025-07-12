@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Testimoni;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use App\Services\TestimonialService;
@@ -100,5 +101,72 @@ class TestimoniController extends Controller
         $this->testimonialService->create($data);
 
         return redirect()->route('landing');
+    }
+
+    public function submitReview(Request $request)
+    {
+        $validated = $request->validate([
+            'order_id' => 'required|exists:orders,id',
+            'product_id' => 'required|exists:products,id',
+            'rating' => 'required|integer|min:1|max:5',
+            'content' => 'required|string|min:5',
+        ]);
+
+        $user = Auth::guard('customers')->user();
+
+        // Cek apakah order ini milik user yang sedang login
+        $order = $user->orders()->find($validated['order_id']);
+        if (!$order) {
+            return response()->json(['message' => 'Anda tidak berhak memberi ulasan untuk pesanan ini.'], 403);
+        }
+
+        $data = [
+            'user_id' => $user->id,
+            'name' => $user->name,
+            'product_id' => $validated['product_id'],
+            'order_id' => $validated['order_id'],
+            'rating' => $validated['rating'],
+            'content' => $validated['content'],
+        ];
+
+        $this->testimonialService->createFromReview($data);
+
+        return response()->json(['success' => true, 'message' => 'Ulasan Anda telah berhasil dikirim!']);
+    }
+
+    /**
+     * PERUBAHAN: Metode baru untuk mengambil data ulasan spesifik sebagai JSON.
+     */
+    public function getReviewJson(Testimoni $testimonial)
+    {
+        // Pastikan user yang meminta adalah pemilik ulasan
+        if ($testimonial->user_id !== Auth::guard('customers')->id()) {
+            return response()->json(['message' => 'Tidak diizinkan.'], 403);
+        }
+
+        // Muat relasi produk sebelum mengirimkan respons
+        $testimonial->load('product');
+
+        return response()->json($testimonial);
+    }
+
+    /**
+     *  Metode baru untuk memperbarui ulasan yang sudah ada.
+     */
+    public function updateReview(Request $request, Testimoni $testimonial)
+    {
+        // Pastikan user yang mengupdate adalah pemilik ulasan
+        if ($testimonial->user_id !== Auth::guard('customers')->id()) {
+            return response()->json(['message' => 'Tidak diizinkan.'], 403);
+        }
+
+        $validated = $request->validate([
+            'rating' => 'required|integer|min:1|max:5',
+            'content' => 'required|string|min:5',
+        ]);
+
+        $this->testimonialService->update($testimonial->id, $validated);
+
+        return response()->json(['success' => true, 'message' => 'Ulasan Anda telah berhasil diperbarui!']);
     }
 }

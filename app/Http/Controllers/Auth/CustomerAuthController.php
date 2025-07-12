@@ -74,6 +74,10 @@ class CustomerAuthController extends Controller
             'status' => 'active',
         ]);
         $user->assignRole('customer');
+
+        // Buat cart baru untuk customer yang baru mendaftar
+        $user->cart()->create();
+        
         Auth::guard('customers')->login($user);
 
         // Arahkan kembali ke halaman utama tenant

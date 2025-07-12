@@ -53,4 +53,12 @@ class Order extends Model
     {
         return $this->hasMany(OrderHistory::class);
     }
+    public function shipping()
+    {
+        return $this->hasOne(Shipping::class, 'order_id', 'id');
+    }
+    public function testimonials()
+    {
+        return $this->hasMany(Testimoni::class, 'order_id', 'id');
+    }
 }

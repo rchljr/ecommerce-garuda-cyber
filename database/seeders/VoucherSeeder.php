@@ -17,7 +17,7 @@ class VoucherSeeder extends Seeder
     public function run(): void
     {
         // Cari user admin untuk dijadikan pemilik voucher. Ganti email jika perlu.
-        $admin = User::where('email', 'rachellfazaa@gmail.com')->first();
+        $admin = User::role('admin')->first();
 
         // Jika admin tidak ditemukan, hentikan seeder.
         if (!$admin) {
@@ -28,8 +28,8 @@ class VoucherSeeder extends Seeder
         $vouchers = [
             [
                 'user_id' => $admin->id,
-                'voucher_code' => 'HEMAT50K',
-                'description' => 'Diskon spesial sebesar Rp 50.000 untuk semua paket.',
+                'voucher_code' => 'HEMAT50PERSEN',
+                'description' => 'Diskon spesial sebesar 50% untuk semua paket.',
                 'discount' => 50,
                 'start_date' => Carbon::now()->startOfMonth(),
                 'expired_date' => Carbon::now()->endOfMonth(),
@@ -38,7 +38,7 @@ class VoucherSeeder extends Seeder
             [
                 'user_id' => $admin->id,
                 'voucher_code' => 'SUPERDEAL',
-                'description' => 'Potongan harga Rp 100.000 untuk paket tahunan.',
+                'description' => 'Potongan harga sebesar 10% untuk paket tahunan.',
                 'discount' => 10,
                 'start_date' => Carbon::now()->addMonth()->startOfMonth(), // Akan aktif bulan depan
                 'expired_date' => Carbon::now()->addMonth()->endOfMonth(),
@@ -55,10 +55,15 @@ class VoucherSeeder extends Seeder
             ],
         ];
 
-        // Masukkan data ke dalam database
-        foreach ($vouchers as $voucher) {
-            Voucher::create($voucher);
+        // Masukkan atau memperbarui data ke dalam database
+        foreach ($vouchers as $voucherData) {
+            Voucher::updateOrCreate(
+                ['voucher_code' => $voucherData['voucher_code']], // Kunci unik untuk mencari
+                $voucherData // Data untuk dibuat atau diperbarui
+            );
         }
+        
+        $this->command->info('Voucher seeder berhasil dijalankan.');
     }
 }
 

@@ -67,6 +67,9 @@ Route::prefix('tenant/{subdomain}')
         Route::get('/shop/{product:slug}', [ShopController::class, 'show'])->name('product.details');
         Route::get('/contact', [ContactController::class, 'showPublic'])->name('contact');
 
+        Route::post('/checkout/search-destination', [CheckoutController::class, 'searchDestination'])->name('checkout.search_destination');
+        Route::post('/checkout/calculate-shipping', [CheckoutController::class, 'calculateShipping'])->name('checkout.calculate_shipping');
+
         // Rute Wishlist
         Route::get('/wishlist', [WishlistController::class, 'index'])->name('wishlist');
         Route::post('/wishlist/toggle', [WishlistController::class, 'toggle'])->name('wishlist.toggle');
@@ -89,11 +92,11 @@ Route::prefix('tenant/{subdomain}')
         });
 
         // Rute Checkout
-        Route::prefix('checkout')->name('checkout.')->middleware('auth:customers')->group(function () {
+        Route::prefix('checkout')->middleware('auth:customers')->name('checkout.')->group(function () {
             Route::get('/', [CheckoutController::class, 'index'])->name('index');
             Route::post('/process', [CheckoutController::class, 'process'])->name('process');
-            Route::get('/search-destination', [CheckoutController::class, 'searchDestination'])->name('search_destination');
-            Route::get('/calculate-shipping', [CheckoutController::class, 'calculateShipping'])->name('calculate_shipping');
+            Route::post('/charge', [CheckoutController::class, 'charge'])->name('charge');
+
         });
 
         // Rute Dasbor Pelanggan
@@ -116,6 +119,12 @@ Route::prefix('tenant/{subdomain}')
 //== RUTE PUBLIK & AUTENTIKASI ==//
 Route::get('/', [LandingPageController::class, 'home'])->name('landing');
 Route::post('/testimonials', [TestimoniController::class, 'submitFromLandingPage'])->name('testimonials.store');
+Route::post('/review/submit', [TestimoniController::class, 'submitReview'])
+    ->name('review.submit')
+    ->middleware('auth:customers');
+
+Route::get('/review/{testimonial}', [TestimoniController::class, 'getReviewJson'])->name('review.get')->middleware('auth:customers');;
+Route::put('/review/{testimonial}', [TestimoniController::class, 'updateReview'])->name('review.update')->middleware('auth:customers');;
 
 // Auth (Proses Registrasi dan Login)
 // Rute untuk menampilkan form login & register admin dan mitra
@@ -218,12 +227,6 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/payment/remove-voucher', [PaymentController::class, 'removeVoucher'])->name('payment.removeVoucher');
     Route::post('/payment/generate-token', [PaymentController::class, 'generateSnapToken'])->name('payment.generateSnapToken');
 
-    //Checkout Customer
-    Route::prefix('checkout')->name('checkout.')->group(function () {
-        Route::get('/', [CheckoutController::class, 'index'])->name('index');
-        Route::post('/', [CheckoutController::class, 'process'])->name('process');
-        Route::post('/shipping-cost', [CheckoutController::class, 'getShippingCost'])->name('shipping');
-    });
     ///== ADMIN ROUTES ==//
     Route::middleware(['role:admin'])->prefix('admin')->name('admin.')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');

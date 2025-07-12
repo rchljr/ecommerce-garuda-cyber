@@ -36,7 +36,7 @@ class PackageDeactivatedNotification extends Notification implements ShouldQueue
     public function toMail(object $notifiable): MailMessage
     {
         $packageName = optional($this->user->userPackage->subscriptionPackage)->package_name ?? 'Anda';
-        $reactivateUrl = route('login');
+        $reactivateUrl = route('register.form');
 
         return (new MailMessage)
             ->subject('Paket Langganan Anda Telah Dinonaktifkan')

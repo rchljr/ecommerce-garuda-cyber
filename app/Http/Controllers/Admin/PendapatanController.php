@@ -18,18 +18,27 @@ class PendapatanController extends Controller
         $search = $request->input('search');
 
         $payments = Payment::with(['user.userPackage', 'subscriptionPackage'])
+            ->whereNotNull('subs_package_id')
             ->when($search, function ($query, $search) {
                 return $query->where(function ($q) use ($search) {
                     $q->orWhereHas('user', function ($subQuery) use ($search) {
                         $subQuery->where('name', 'like', "%{$search}%");
                     })
                         ->orWhereHas('subscriptionPackage', function ($subQuery) use ($search) {
-                        $subQuery->where('package_name', 'like', "%{$search}%");
-                    })
-                        ->orWhereHas('user.userPackage', function ($subQuery) use ($search) {
-                        $subQuery->where('plan_type', 'like', "%{$search}%");
-                    })
+                            $subQuery->where('package_name', 'like', "%{$search}%");
+                        })
                         ->orWhereDate('payments.created_at', 'like', "%{$search}%");
+
+                    $searchTerm = strtolower($search);
+                    if (str_contains($searchTerm, 'tahunan')) {
+                        $q->orWhereHas('user.userPackage', function ($subQuery) {
+                            $subQuery->where('plan_type', 'yearly');
+                        });
+                    } elseif (str_contains($searchTerm, 'bulanan')) {
+                        $q->orWhereHas('user.userPackage', function ($subQuery) {
+                            $subQuery->where('plan_type', 'monthly');
+                        });
+                    }
 
                     if (stripos('lunas', $search) !== false) {
                         $q->orWhereIn('midtrans_transaction_status', ['settlement', 'capture']);

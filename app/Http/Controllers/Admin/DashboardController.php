@@ -32,8 +32,9 @@ class DashboardController extends Controller
             ->where('status', 'pending')
             ->count();
 
-        // Total Pendapatan Per Bulan (hanya yang lunas)
-        $totalPendapatanPerBulan = Payment::whereIn('midtrans_transaction_status', ['settlement', 'capture'])
+        // Total Pendapatan Per Bulan (hanya dari paket langganan yang lunas)
+        $totalPendapatanPerBulan = Payment::whereNotNull('subs_package_id')
+            ->whereIn('midtrans_transaction_status', ['settlement', 'capture'])
             ->whereYear('created_at', $currentYear)
             ->whereMonth('created_at', $currentMonth)
             ->sum('total_payment');
@@ -41,13 +42,15 @@ class DashboardController extends Controller
         // Jumlah Seluruh Akun Mitra (total sepanjang waktu)
         $jumlahSeluruhAkunMitra = User::role('mitra')->count();
 
-        // Total Pendapatan Per Tahun (hanya yang lunas)
-        $totalPendapatanPerTahun = Payment::whereIn('midtrans_transaction_status', ['settlement', 'capture'])
+        // Total Pendapatan Per Tahun (hanya dari paket langganan yang lunas)
+        $totalPendapatanPerTahun = Payment::whereNotNull('subs_package_id')
+            ->whereIn('midtrans_transaction_status', ['settlement', 'capture'])
             ->whereYear('created_at', $currentYear)
             ->sum('total_payment');
 
-        // Jumlah Paket Terjual (transaksi lunas di tahun ini)
-        $jumlahPaketTerjual = Payment::whereIn('midtrans_transaction_status', ['settlement', 'capture'])
+        // Jumlah Paket Terjual (transaksi langganan lunas di tahun ini)
+        $jumlahPaketTerjual = Payment::whereNotNull('subs_package_id')
+            ->whereIn('midtrans_transaction_status', ['settlement', 'capture'])
             ->whereYear('created_at', $currentYear)
             ->count();
 
@@ -56,6 +59,7 @@ class DashboardController extends Controller
             DB::raw('MONTH(created_at) as month'),
             DB::raw('COUNT(*) as count')
         )
+            ->whereNotNull('subs_package_id')
             ->whereIn('midtrans_transaction_status', ['settlement', 'capture'])
             ->whereYear('created_at', $currentYear)
             ->groupBy('month')
@@ -71,8 +75,8 @@ class DashboardController extends Controller
 
 
         return view('dashboard-admin.dashboard', compact(
-            'jumlahMitraBaruBulanIni', 
-            'jumlahMitraPerluVerifikasi', // Mengirim variabel baru
+            'jumlahMitraBaruBulanIni',
+            'jumlahMitraPerluVerifikasi',
             'totalPendapatanPerBulan',
             'jumlahSeluruhAkunMitra',
             'totalPendapatanPerTahun',

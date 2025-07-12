@@ -17,6 +17,8 @@ class Testimoni extends Model
 
     protected $fillable = [
         'user_id',
+        'product_id',
+        'order_id',
         'name',
         'content',
         'rating',
@@ -34,5 +36,13 @@ class Testimoni extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+    public function product(): BelongsTo
+    {
+        return $this->belongsTo(Product::class);
+    }
+    public function order(): BelongsTo
+    {
+        return $this->belongsTo(Order::class);
     }
 }

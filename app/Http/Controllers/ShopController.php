@@ -67,6 +67,8 @@ class ShopController extends Controller
 
         $products = $query->paginate(9)->withQueryString();
 
+        // dd($products);
+
         // 9. Kirim data yang sudah difilter ke view yang benar
         return view($tenant->template->path . '.shop', [
             'tenant' => $tenant,

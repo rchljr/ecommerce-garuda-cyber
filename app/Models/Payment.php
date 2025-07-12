@@ -14,13 +14,13 @@ class Payment extends Model
      * Menonaktifkan auto-increment integer untuk primary key.
      * @var bool
      */
-    public $incrementing = false; // 3. TAMBAHKAN BARIS INI
+    public $incrementing = false; 
 
     /**
      * Mengubah tipe data primary key menjadi string untuk UUID.
      * @var string
      */
-    protected $keyType = 'string'; // 4. TAMBAHKAN BARIS INI
+    protected $keyType = 'string'; 
     /**
      * The attributes that are mass assignable.
      *

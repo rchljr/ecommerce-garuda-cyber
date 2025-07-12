@@ -4,9 +4,10 @@ namespace App\Notifications;
 
 use App\Models\User;
 use Illuminate\Bus\Queueable;
+use Illuminate\Support\HtmlString;
+use Illuminate\Notifications\Notification;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
-use Illuminate\Notifications\Notification;
 
 class PartnerActivatedNotification extends Notification implements ShouldQueue
 {
@@ -51,15 +52,17 @@ class PartnerActivatedNotification extends Notification implements ShouldQueue
         $loginUrl = route('login');
         $testimonialUrl = route('landing') . '#add-testimonial';
 
+        $testimonialButton = '<a href="' . $testimonialUrl . '" class="button button-primary" style="box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, Helvetica, Arial, sans-serif, \'Apple Color Emoji\', \'Segoe UI Emoji\', \'Segoe UI Symbol\'; position: relative; -webkit-text-size-adjust: none; border-radius: 4px; color: #fff; display: inline-block; overflow: hidden; text-decoration: none; background-color: #22BC66; border-bottom: 8px solid #22BC66; border-left: 18px solid #22BC66; border-right: 18px solid #22BC66; border-top: 8px solid #22BC66;">Isi Testimoni Sekarang</a>';
+
         return (new MailMessage)
             ->subject('Akun Mitra Anda Telah Aktif!')
             ->greeting('Selamat Datang, ' . $this->user->name . '!')
             ->line('Pembayaran Anda telah berhasil kami verifikasi. Akun mitra Anda sekarang sudah aktif sepenuhnya.')
-            ->line('Subdomain Anda: **' . $this->user->subdomain->subdomain_name . '.garuda.id**') // Ganti '.garuda.id' jika perlu
+            ->line('Subdomain Anda: **' . $this->user->subdomain->subdomain_name . '.ecommercegaruda.my.id**')
             ->line('Paket Anda akan aktif hingga: **' . $expiredDateFormatted . '**')
             ->action('Masuk ke Dashboard Anda', $loginUrl)
             ->line('Kami akan sangat senang mendengar pengalaman pertama Anda. Silakan bagikan testimoni Anda untuk membantu kami menjadi lebih baik.')
-            ->line('<a href="' . $testimonialUrl . '" class="button button-primary" style="text-decoration:none; color: #FFF; background-color: #22BC66; border-top: 10px solid #22BC66; border-right: 18px solid #22BC66; border-bottom: 10px solid #22BC66; border-left: 18px solid #22BC66;">Isi Testimoni Sekarang</a>')
+            ->line(new HtmlString($testimonialButton))
             ->line('Terima kasih telah bergabung bersama kami!');
     }
 

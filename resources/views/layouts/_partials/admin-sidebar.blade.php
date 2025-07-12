@@ -1,10 +1,10 @@
 <aside id="sidebar" class="sidebar w-64 bg-red-700 text-white flex flex-col" style="background-color: #B20000;">
-    <div class="p-6 flex items-center gap-4">
+    <div class="p-6 flex items-center gap-4 flex-shrink-0">
         <img src="{{ asset('images/gci.png') }}" alt="Logo" class="w-10 h-10 sidebar-logo">
         <span class="font-bold text-xl sidebar-text">E-COMMERCE GCI</span>
     </div>
 
-    <nav class="flex-1 px-4 space-y-2">
+    <nav class="flex-1 px-4 space-y-2 overflow-y-auto">
         <a href="{{ route('admin.dashboard') }}"
             class="sidebar-item flex items-center p-3 rounded-lg hover:bg-red-800 transition-colors">
             <span class="sidebar-icon">@include('dashboard-admin.icons.dashboard')</span>
@@ -30,7 +30,7 @@
                     class="sidebar-subitem block p-2 rounded-lg hover:bg-red-800 text-sm">Kelola Mitra</a>
             </div>
         </div>
-        
+
         <a href="{{ route('admin.paket.index') }}"
             class="sidebar-item flex items-center p-3 rounded-lg hover:bg-red-800 transition-colors">
             <span class="sidebar-icon">@include('dashboard-admin.icons.paket')</span>

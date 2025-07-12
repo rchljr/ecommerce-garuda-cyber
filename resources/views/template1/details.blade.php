@@ -77,9 +77,7 @@
                 <div class="row">
                     <div class="col-lg-12">
                         <div class="product__details__breadcrumb">
-                            {{-- PERBAIKAN: Tambahkan parameter subdomain ke rute tenant.home --}}
                             <a href="{{ !$isPreview ? route('tenant.home', ['subdomain' => $currentSubdomain]) : '#' }}">Home</a>
-                            {{-- PERBAIKAN: Tambahkan parameter subdomain ke rute tenant.shop --}}
                             <a href="{{ !$isPreview ? route('tenant.shop', ['subdomain' => $currentSubdomain]) : '#' }}">Shop</a>
                             <span>{{ $product->name ?? 'Detail Produk' }}</span>
                         </div>
@@ -144,7 +142,6 @@
                             <h3>Rp {{ number_format($product->price, 0, ',', '.') }}</h3>
                             <p>{{ $product->short_description ?? 'Deskripsi singkat produk akan muncul di sini.' }}</p>
 
-                            {{-- PERBAIKAN: Tambahkan parameter subdomain ke rute tenant.cart.add --}}
                             <form id="add-to-cart-form"
                                 action="{{ !$isPreview ? route('tenant.cart.add', ['subdomain' => $currentSubdomain]) : '#' }}" method="POST">
                                 @csrf

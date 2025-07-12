@@ -2,11 +2,15 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Order;
-use App\Models\Payment;
-use App\Models\Shipping;
+use Exception;
+use Midtrans\Snap;
 use App\Models\User;
-use App\Models\Contact; // <-- TAMBAHKAN: Import model Contact
+use App\Models\Order;
+use Midtrans\CoreApi;
+use App\Models\Contact;
+use App\Models\Payment;
+use App\Models\Voucher;
+use App\Models\Shipping;
 use Illuminate\Http\Request;
 use App\Services\CartService;
 use App\Services\VoucherService;
@@ -15,7 +19,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Config;
-use Midtrans\Snap;
+use Illuminate\Http\Client\ConnectionException;
 
 class CheckoutController extends Controller
 {
@@ -51,23 +55,18 @@ class CheckoutController extends Controller
 
         $customer = Auth::guard('customers')->user();
         $firstItem = $checkoutItems->first();
-
-        // Pastikan relasi ini ada dan benar untuk mendapatkan data mitra
         $shopOwner = $firstItem->product->shopOwner;
         $shop = $shopOwner->shop;
-
-        // --- Mengambil data kontak dari relasi ---
-        // Asumsi: Model User (ShopOwner) memiliki relasi hasOne ke Contact
-        // Jika tidak, gunakan: $contact = Contact::where('user_id', $shopOwner->id)->first();
         $contact = $shopOwner->contact;
-
-        // Asumsi mitra punya destination_id yang didapat dari API Komerce
         $originId = $shop->komerce_destination_id;
+        // Mengambil voucher yang sesuai dengan dua kriteria:
+        // 1. Dimiliki oleh toko yang sedang dikunjungi (user_id cocok).
+        // 2. Masih aktif (tanggal kedaluwarsa belum lewat).
+        $vouchers = Voucher::where('user_id', $shopOwner->id)
+            ->where('expired_date', '>=', now())
+            ->latest('created_at')
+            ->get();
 
-        // Filter voucher berdasarkan subtotal DAN pemilik toko (mitra)
-        $vouchers = $this->voucherService->getApplicableVouchers($subtotal, (int) $shopOwner->id);
-
-        // Kirim semua data yang diperlukan ke view
         return view('customer.checkout', compact(
             'checkoutItems',
             'subtotal',
@@ -75,47 +74,46 @@ class CheckoutController extends Controller
             'vouchers',
             'originId',
             'totalWeightInKg',
-            'shop',      // Untuk nama toko
-            'contact'    // <-- TAMBAHKAN: Untuk alamat, telepon, jam kerja
+            'shop',
+            'contact'
         ));
     }
 
     /**
-     * --- BARU: Mencari tujuan pengiriman berdasarkan keyword ---
+     * Mencari tujuan pengiriman berdasarkan keyword menggunakan metode POST.
      */
     public function searchDestination(Request $request)
     {
-        // CATATAN: Kode ini sementara akan gagal sampai masalah API Key terselesaikan.
-        $keyword = $request->query('keyword');
-        if (!$keyword) {
-            return response()->json(['data' => []]);
-        }
+        $validated = $request->validate(['keyword' => 'required|string|min:3']);
+        $keyword = $validated['keyword'];
+
         try {
             $apiKey = Config::get('rajaongkir.api_key');
             $baseUrl = Config::get('rajaongkir.base_url');
 
-            $response = Http::withHeaders(['key' => $apiKey])
-                ->get($baseUrl . '/tariff/api/v1/destination/search', ['keyword' => $keyword]);
+            $response = Http::withHeaders(['x-api-key' => $apiKey])
+                ->post($baseUrl . '/api/v1/destination/search', [
+                    'keyword' => $keyword
+                ]);
 
-            Log::info('Komerce API Response: ' . $response->body());
-
+            Log::info('Komerce API Search Response (POST): ' . $response->body());
             $responseData = $response->json();
 
             if ($response->successful() && isset($responseData['data']) && is_array($responseData['data'])) {
                 return response()->json($responseData['data']);
             }
 
-            Log::error('Gagal mencari lokasi atau respons API tidak valid.', ['response' => $response->body()]);
-            return response()->json(['error' => 'Gagal mencari lokasi.'], 502);
+            Log::error('Gagal mencari lokasi.', ['response' => $response->body()]);
+            return response()->json(['error' => 'Gagal mencari lokasi dari API.'], $response->status());
 
-        } catch (\Exception $e) {
-            Log::error('Komerce Search Destination Exception: ' . $e->getMessage());
+        } catch (Exception $e) {
+            Log::error('Komerce Search Exception: ' . $e->getMessage());
             return response()->json(['error' => 'Terjadi kesalahan pada server.'], 500);
         }
     }
 
     /**
-     * --- BARU: Menghitung ongkos kirim berdasarkan ID asal dan tujuan ---
+     * Menghitung ongkos kirim berdasarkan ID asal dan tujuan menggunakan metode POST.
      */
     public function calculateShipping(Request $request)
     {
@@ -124,40 +122,44 @@ class CheckoutController extends Controller
             'destination_id' => 'required|integer',
             'weight' => 'required|numeric',
         ]);
+
         try {
             $apiKey = Config::get('rajaongkir.api_key');
             $baseUrl = Config::get('rajaongkir.base_url');
 
-            $response = Http::withHeaders(['key' => $apiKey])
-                ->get($baseUrl . '/tariff/api/v1/calculate', [
-                    'origin_region_id' => $validated['origin_id'],
-                    'destination_region_id' => $validated['destination_id'],
+            $response = Http::withHeaders(['x-api-key' => $apiKey])
+                ->post($baseUrl . '/api/v1/calculate', [
+                    'shipper_destination_id' => $validated['origin_id'],
+                    'receiver_destination_id' => $validated['destination_id'],
                     'weight' => $validated['weight'],
                 ]);
 
-            if ($response->successful() && isset($response->json()['data'])) {
-                return response()->json($response->json()['data']);
+            Log::info('Komerce API Calculate Response (POST): ' . $response->body());
+            $responseData = $response->json();
+
+            if ($response->successful() && isset($responseData['data'])) {
+                return response()->json($responseData['data']);
             }
-            return response()->json(['error' => 'Gagal menghitung ongkir.'], 502);
-        } catch (\Exception $e) {
-            Log::error('Komerce Calculate Shipping Error: ' . $e->getMessage());
+            return response()->json(['error' => 'Gagal menghitung ongkir dari API.'], $response->status());
+        } catch (Exception $e) {
+            Log::error('Komerce Calculate Exception: ' . $e->getMessage());
             return response()->json(['error' => 'Terjadi kesalahan pada server.'], 500);
         }
     }
-
     /**
-     * Memproses pesanan dan memulai sesi pembayaran Midtrans.
+     * Memproses pembayaran dengan Midtrans.
+     * Metode ini membuat atau memperbarui Order dan Payment, lalu memanggil Midtrans.
      */
-    public function process(Request $request)
+    public function charge(Request $request)
     {
         $validated = $request->validate([
             'items' => 'required|array',
             'delivery_method' => 'required|string|in:ship,pickup',
             'shipping_cost' => 'nullable|numeric',
             'shipping_service' => 'nullable|string',
-            'voucher_id' => 'nullable|exists:vouchers,id',
-            'discount_amount' => 'nullable|numeric',
             'alamat' => 'required_if:delivery_method,ship|nullable|string|max:500',
+            'payment_method' => 'required|string|in:bca_va,bni_va,gopay,qris',
+            // Tambahkan validasi lain jika perlu (voucher, dll)
         ]);
 
         $customer = Auth::guard('customers')->user();
@@ -167,66 +169,123 @@ class CheckoutController extends Controller
             return response()->json(['error' => 'Item tidak ditemukan.'], 404);
         }
 
-        $firstItem = $checkoutItems->first();
-        if (!$firstItem?->product?->shopOwner?->subdomain) {
-            return response()->json(['error' => 'Informasi toko tidak lengkap.'], 500);
-        }
-        $subdomainId = $firstItem->product->shopOwner->subdomain->id;
-
+        $subdomainId = $checkoutItems->first()->product->shopOwner->subdomain->id;
         $subtotal = $checkoutItems->sum(fn($item) => $item->product->price * $item->quantity);
         $shippingCost = ($validated['delivery_method'] === 'ship') ? ($validated['shipping_cost'] ?? 0) : 0;
-        $discountAmount = $validated['discount_amount'] ?? 0;
-        $totalPrice = $subtotal + $shippingCost - $discountAmount;
+        $totalPrice = $subtotal + $shippingCost; // Kurangi diskon jika ada
 
-        $order = null;
         DB::beginTransaction();
         try {
-            $order = Order::create([
-                'user_id' => $customer->id,
-                'subdomain_id' => $subdomainId,
-                'voucher_id' => $validated['voucher_id'] ?? null,
-                'status' => 'pending',
-                'order_date' => now(),
-                'total_price' => $totalPrice,
-            ]);
+            // Gunakan updateOrCreate untuk menghindari duplikasi order jika user refresh halaman
+            $order = Order::updateOrCreate(
+                [
+                    'user_id' => $customer->id,
+                    'subdomain_id' => $subdomainId,
+                    'status' => 'pending',
+                ],
+                [
+                    'total_price' => $totalPrice,
+                    'order_date' => now(),
+                ]
+            );
 
+            // Sinkronisasi item order
+            $order->items()->delete(); // Hapus item lama untuk memastikan data baru
             foreach ($checkoutItems as $item) {
-                $order->items()->create(['product_id' => $item->product->id, 'quantity' => $item->quantity, 'unit_price' => $item->product->price]);
+                $order->items()->create([
+                    'product_id' => $item->product_id,
+                    'product_variant_id' => $item->product_variant_id,
+                    'quantity' => $item->quantity,
+                    'unit_price' => $item->product->price,
+                ]);
             }
 
+            // Buat atau update data pengiriman
             if ($validated['delivery_method'] === 'ship') {
-                Shipping::create(['order_id' => $order->id, 'delivery_service' => $validated['shipping_service'], 'status' => 'pending', 'shipping_cost' => $shippingCost]);
+                Shipping::updateOrCreate(
+                    ['order_id' => $order->id],
+                    [
+                        'delivery_service' => $validated['shipping_service'],
+                        'shipping_cost' => $shippingCost,
+                        'status' => 'pending',
+                        'shipping_address' => $validated['alamat'],
+                    ]
+                );
             }
 
-            Payment::create(['order_id' => $order->id, 'user_id' => $customer->id, 'midtrans_payment_type' => 'midtrans', 'total_payment' => $totalPrice, 'midtrans_transaction_status' => 'pending']);
-            $order->histories()->create(['user_id' => $customer->id]);
+            $transactionId = $order->id . '-' . uniqid();
 
-            if ($request->filled('alamat') && $request->alamat !== $customer->alamat) {
-                $customer->update(['alamat' => $request->alamat]);
+            // Siapkan parameter untuk Midtrans Core API
+            $itemDetails = $checkoutItems->map(function ($item) {
+                return [
+                    'id' => $item->product_variant_id,
+                    'price' => $item->product->price,
+                    'quantity' => $item->quantity,
+                    'name' => substr($item->product->name, 0, 50),
+                ];
+            });
+
+            if ($shippingCost > 0) {
+                $itemDetails->push([
+                    'id' => 'SHIPPING',
+                    'price' => $shippingCost,
+                    'quantity' => 1,
+                    'name' => 'Ongkos Kirim',
+                ]);
             }
 
-            $this->cartService->clearCartItems($validated['items']);
+            $params = [
+                'transaction_details' => [
+                    'order_id' => $transactionId,
+                    'gross_amount' => $totalPrice,
+                ],
+                'customer_details' => [
+                    'first_name' => $customer->name,
+                    'email' => $customer->email,
+                    'phone' => $customer->phone,
+                ],
+                'item_details' => $itemDetails->toArray(),
+            ];
+
+            // Set payment_type berdasarkan input
+            switch ($request->payment_method) {
+                case 'bca_va':
+                case 'bni_va':
+                    $params['payment_type'] = 'bank_transfer';
+                    $params['bank_transfer'] = ['bank' => str_replace('_va', '', $request->payment_method)];
+                    break;
+                case 'gopay':
+                    $params['payment_type'] = 'gopay';
+                    break;
+                case 'qris':
+                    $params['payment_type'] = 'qris';
+                    break;
+            }
+
+            $response = CoreApi::charge($params);
+
+            // Buat atau update catatan pembayaran
+            Payment::updateOrCreate(
+                ['order_id' => $order->id],
+                [
+                    'user_id' => $customer->id,
+                    'midtrans_order_id' => $response->order_id,
+                    'midtrans_transaction_status' => $response->transaction_status,
+                    'midtrans_payment_type' => $response->payment_type,
+                    'total_payment' => $response->gross_amount,
+                    'midtrans_response' => json_encode($response),
+                ]
+            );
+
+            $this->cartService->clearCartItems($validated['items']); // Kosongkan keranjang
+
             DB::commit();
-        } catch (\Exception $e) {
+            return response()->json($response);
+
+        } catch (Exception $e) {
             DB::rollBack();
-            Log::error('Order Creation Failed: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
-            return response()->json(['error' => 'Gagal membuat pesanan. Silakan coba lagi.'], 500);
-        }
-
-        $params = [
-            'transaction_details' => ['order_id' => $order->id, 'gross_amount' => $order->total_price],
-            'customer_details' => ['first_name' => $customer->name, 'email' => $customer->email, 'phone' => $customer->phone],
-        ];
-
-        try {
-            $snapToken = Snap::getSnapToken($params);
-            if ($order->payment) {
-                $order->payment->update(['snap_token' => $snapToken]);
-            }
-            return response()->json(['snapToken' => $snapToken]);
-        } catch (\Exception $e) {
-            Log::error('Midtrans Snap Token Failed: ' . $e->getMessage());
-            return response()->json(['error' => 'Gagal memulai sesi pembayaran.'], 500);
+            Log::error('Checkout Charge Error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            return response()->json(['error' => 'Gagal memproses pembayaran: ' . $e->getMessage()], 500);
         }
     }
 }

@@ -15,15 +15,41 @@
     // Pastikan file kustom di-upload ke 'storage/app/public/logos' atau path serupa.
     $logoUrl = $logoPath ? asset('storage/' . $logoPath) : asset('template1/img/logo.png');
 
-    // Logika untuk hitungan keranjang
+    // Ambil data tenant yang sedang aktif dari request (disediakan oleh middleware).
+    $tenant = $tenant ?? (!$isPreview ? request()->get('tenant') : null);
+
+    // Logika untuk menghitung item keranjang berdasarkan tenant yang aktif.
     $cartCount = 0;
-    if (Auth::guard('customers')->check()) {
-        // Jika pelanggan login, hitung dari database
-        $cart = Auth::guard('customers')->user()->cart;
-        $cartCount = $cart ? $cart->items->sum('quantity') : 0;
-    } elseif (session()->has('cart')) {
-        // Jika tamu, hitung dari session
-        $cartCount = array_sum(array_column(session('cart'), 'quantity'));
+    if (!$isPreview && $tenant) {
+        $shopOwnerId = $tenant->user_id;
+
+        if (Auth::guard('customers')->check()) {
+            // Jika pelanggan login, hitung dari database dengan filter.
+            $cart = Auth::guard('customers')->user()->cart;
+            if ($cart) {
+                $cartCount = $cart->items()
+                    ->whereHas('product', function ($query) use ($shopOwnerId) {
+                        $query->where('user_id', $shopOwnerId);
+                    })
+                    ->sum('quantity');
+            }
+        } elseif (session()->has('cart')) {
+            // Jika tamu, hitung dari session dengan filter.
+            $sessionCart = session('cart');
+            $productIdsInCart = array_column($sessionCart, 'product_id');
+
+            if (!empty($productIdsInCart)) {
+                // Ambil ID produk yang hanya milik tenant ini.
+                $tenantProductIds = \App\Models\Product::whereIn('id', $productIdsInCart)
+                    ->where('user_id', $shopOwnerId)
+                    ->pluck('id')->all();
+
+                // Jumlahkan kuantitas hanya untuk produk yang cocok.
+                $cartCount = collect($sessionCart)->filter(function ($item) use ($tenantProductIds) {
+                    return isset($item['product_id']) && in_array($item['product_id'], $tenantProductIds);
+                })->sum('quantity');
+            }
+        }
     }
 @endphp
 
@@ -161,5 +187,8 @@
 </header>
 
 <style>
-    .disabled-link { color: #b2b2b2 !important; cursor: not-allowed; }
+    .disabled-link {
+        color: #b2b2b2 !important;
+        cursor: not-allowed;
+    }
 </style>

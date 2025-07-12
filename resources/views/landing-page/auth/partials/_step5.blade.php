@@ -11,9 +11,35 @@
                 </div>
 
                 @if(isset($order) && $order->userPackage && $order->userPackage->subscriptionPackage)
+                    @php
+                        // PERBAIKAN: Hitung semua harga dan diskon di satu tempat.
+                        $userPackage = $order->userPackage;
+                        $subscriptionPackage = $userPackage->subscriptionPackage;
+
+                        // 1. Harga asli berdasarkan periode.
+                        $originalPrice = ($userPackage->plan_type === 'yearly')
+                            ? $subscriptionPackage->yearly_price
+                            : $subscriptionPackage->monthly_price;
+
+                        // 2. Diskon tahunan (jika ada).
+                        $yearlyDiscountAmount = 0;
+                        $yearlyDiscountPercentage = 0;
+                        if ($userPackage->plan_type === 'yearly' && $subscriptionPackage->discount_year > 0) {
+                            $yearlyDiscountPercentage = $subscriptionPackage->discount_year;
+                            $yearlyDiscountAmount = ($originalPrice * $yearlyDiscountPercentage) / 100;
+                        }
+
+                        // 3. Diskon voucher (dihitung dari harga setelah diskon tahunan).
+                        $priceAfterYearlyDiscount = $originalPrice - $yearlyDiscountAmount;
+                        $voucherDiscountAmount = 0;
+                        if ($order->voucher) {
+                            $voucherDiscountPercentage = $order->voucher->discount ?? 0;
+                            $voucherDiscountAmount = ($priceAfterYearlyDiscount * $voucherDiscountPercentage) / 100;
+                        }
+                    @endphp
+
                     {{-- Container Utama --}}
                     <div id="payment-container">
-
                         {{-- Bagian 1: Detail Pesanan & Harga --}}
                         <div class="mb-6">
                             <div class="space-y-2 text-sm p-4 bg-gray-50 rounded-lg border">
@@ -23,30 +49,31 @@
                                 </div>
                                 <div class="flex justify-between items-center">
                                     <span class="font-semibold text-gray-600">Paket Langganan:</span>
-                                    <span
-                                        class="text-gray-800">{{ $order->userPackage->subscriptionPackage->package_name }}</span>
+                                    <span class="text-gray-800">{{ $subscriptionPackage->package_name }}</span>
                                 </div>
                                 <div class="flex justify-between items-center">
                                     <span class="font-semibold text-gray-600">Periode Tagihan:</span>
-                                    <span class="capitalize text-gray-800">{{ $order->userPackage->plan_type }}</span>
+                                    <span class="capitalize text-gray-800">{{ $userPackage->plan_type }}</span>
                                 </div>
+
                                 <div class="pt-2 border-t flex justify-between items-center">
                                     <span class="font-semibold text-gray-600">Harga Asli:</span>
-                                    <span id="original-price">Rp
-                                        {{ number_format($order->userPackage->price_paid, 0, ',', '.') }}</span>
+                                    <span id="original-price">{{ format_rupiah($originalPrice) }}</span>
                                 </div>
+
+                                @if($yearlyDiscountAmount > 0)
+                                    <div id="yearly-discount-details"
+                                        class="flex justify-between items-center text-blue-600 font-semibold">
+                                        <span>Diskon Tahunan ({{ $yearlyDiscountPercentage }}%):</span>
+                                        <span>- {{ format_rupiah($yearlyDiscountAmount) }}</span>
+                                    </div>
+                                @endif
+
                                 <div id="discount-details"
                                     class="flex justify-between items-center text-green-600 font-semibold {{ $order->voucher ? '' : 'hidden' }}">
                                     <span id="discount-label">Diskon
                                         ("{{ strtoupper($order->voucher->voucher_code ?? '') }}"):</span>
-                                    <span id="discount-amount">
-                                        @php
-                                            $originalPrice = $order->userPackage->price_paid;
-                                            $discountPercentage = $order->voucher->discount ?? 0;
-                                            $discountAmountOnLoad = ($originalPrice * $discountPercentage) / 100;
-                                        @endphp
-                                        - Rp {{ number_format($discountAmountOnLoad, 0, ',', '.') }}
-                                    </span>
+                                    <span id="discount-amount">- {{ format_rupiah($voucherDiscountAmount) }}</span>
                                 </div>
                             </div>
                         </div>
@@ -76,8 +103,8 @@
                         <div class="my-6 py-4 border-t border-b">
                             <div class="flex justify-between items-center">
                                 <span class="text-base font-bold">Total Pembayaran:</span>
-                                <span id="final-price" class="text-2xl font-bold text-red-600">Rp
-                                    {{ number_format($order->total_price, 0, ',', '.') }}</span>
+                                <span id="final-price"
+                                    class="text-2xl font-bold text-red-600">{{ format_rupiah($order->total_price) }}</span>
                             </div>
                         </div>
 
@@ -294,38 +321,38 @@
                 if (data.va_numbers && data.va_numbers.length > 0) {
                     const va = data.va_numbers[0];
                     html = `
-                            <div class="p-4 border-l-4 border-blue-500 bg-blue-50">
-                                <h4 class="font-bold text-lg">Instruksi Pembayaran ${va.bank.toUpperCase()} VA</h4>
-                                <p class="mt-2 text-sm">Silakan selesaikan pembayaran Anda ke nomor Virtual Account berikut:</p>
-                                <div class="my-4 p-3 bg-white border rounded-lg text-center flex items-center justify-between">
-                                    <p class="text-2xl font-bold tracking-wider">${va.va_number}</p>
-                                    <button onclick="copyToClipboard('${va.va_number}')" class="ml-4 text-sm text-blue-600 hover:underline">Salin</button>
-                                </div>
-                                <p class="text-sm">Total Tagihan: <strong class="font-bold">${formatRupiah(data.gross_amount)}</strong></p>
-                                <p class="text-xs mt-2">Batas waktu pembayaran: ${new Date(data.expiry_time).toLocaleString('id-ID')}</p>
-                            </div>
-                        `;
+                                                <div class="p-4 border-l-4 border-blue-500 bg-blue-50">
+                                                    <h4 class="font-bold text-lg">Instruksi Pembayaran ${va.bank.toUpperCase()} VA</h4>
+                                                    <p class="mt-2 text-sm">Silakan selesaikan pembayaran Anda ke nomor Virtual Account berikut:</p>
+                                                    <div class="my-4 p-3 bg-white border rounded-lg text-center flex items-center justify-between">
+                                                        <p class="text-2xl font-bold tracking-wider">${va.va_number}</p>
+                                                        <button onclick="copyToClipboard('${va.va_number}')" class="ml-4 text-sm text-blue-600 hover:underline">Salin</button>
+                                                    </div>
+                                                    <p class="text-sm">Total Tagihan: <strong class="font-bold">${formatRupiah(data.gross_amount)}</strong></p>
+                                                    <p class="text-xs mt-2">Batas waktu pembayaran: ${new Date(data.expiry_time).toLocaleString('id-ID')}</p>
+                                                </div>
+                                            `;
                 } else if (data.actions && data.actions.some(action => action.name === 'generate-qr-code')) {
                     const qrCodeUrl = data.actions.find(action => action.name === 'generate-qr-code').url;
                     html = `
-                            <div class="p-4 border-l-4 border-green-500 bg-green-50 text-center">
-                                <h4 class="font-bold text-lg">Instruksi Pembayaran QRIS</h4>
-                                <p class="mt-2 text-sm">Pindai kode QR di bawah ini menggunakan aplikasi e-wallet Anda.</p>
-                                <div class="my-4 flex justify-center">
-                                    <img src="${qrCodeUrl}" alt="QR Code Pembayaran" class="w-56 h-56">
-                                </div>
-                                <p class="text-sm">Total Tagihan: <strong class="font-bold">${formatRupiah(data.gross_amount)}</strong></p>
-                            </div>
-                        `;
+                                                <div class="p-4 border-l-4 border-green-500 bg-green-50 text-center">
+                                                    <h4 class="font-bold text-lg">Instruksi Pembayaran QRIS</h4>
+                                                    <p class="mt-2 text-sm">Pindai kode QR di bawah ini menggunakan aplikasi e-wallet Anda.</p>
+                                                    <div class="my-4 flex justify-center">
+                                                        <img src="${qrCodeUrl}" alt="QR Code Pembayaran" class="w-56 h-56">
+                                                    </div>
+                                                    <p class="text-sm">Total Tagihan: <strong class="font-bold">${formatRupiah(data.gross_amount)}</strong></p>
+                                                </div>
+                                            `;
                 } else if (data.actions && data.actions.some(action => action.name === 'deeplink-redirect')) {
                     const deepLink = data.actions.find(action => action.name === 'deeplink-redirect').url;
                     html = `
-                            <div class="p-4 border-l-4 border-cyan-500 bg-cyan-50 text-center">
-                                <h4 class="font-bold text-lg">Instruksi Pembayaran GoPay</h4>
-                                <p class="mt-2 text-sm">Klik tombol di bawah untuk membuka aplikasi Gojek dan menyelesaikan pembayaran.</p>
-                                <a href="${deepLink}" class="inline-block mt-4 bg-cyan-500 text-white font-bold px-6 py-3 rounded-lg">Buka Aplikasi Gojek</a>
-                            </div>
-                        `;
+                                                <div class="p-4 border-l-4 border-cyan-500 bg-cyan-50 text-center">
+                                                    <h4 class="font-bold text-lg">Instruksi Pembayaran GoPay</h4>
+                                                    <p class="mt-2 text-sm">Klik tombol di bawah untuk membuka aplikasi Gojek dan menyelesaikan pembayaran.</p>
+                                                    <a href="${deepLink}" class="inline-block mt-4 bg-cyan-500 text-white font-bold px-6 py-3 rounded-lg">Buka Aplikasi Gojek</a>
+                                                </div>
+                                            `;
                 }
                 instructionsDiv.innerHTML = html;
             }
@@ -336,7 +363,7 @@
                 setVoucherUIState('VOUCHER_APPLIED', {
                     message: 'Voucher "' + initialVoucher.voucher_code.toUpperCase() + '" diterapkan.',
                     voucher_code: initialVoucher.voucher_code,
-                    discount_amount: {{ $discountAmountOnLoad }},
+                    discount_amount: {{ $voucherDiscountAmount }},
                     final_price: {{ $order->total_price }}
                     });
             }

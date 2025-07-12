@@ -18,44 +18,66 @@ class CustomerNotificationController extends Controller
     {
         $user = Auth::user();
 
-        // 1. Ambil data pembayaran yang sudah berhasil (Lunas)
+        // 1. Ambil data pembayaran yang berhasil (Lunas)
         $successfulPayments = Payment::where('user_id', $user->id)
             ->whereIn('midtrans_transaction_status', ['settlement', 'capture'])
-            ->latest()->get();
+            ->with('order.subdomain')
+            ->latest('updated_at')
+            ->get();
 
-        // 2. Ambil data pesanan yang statusnya berubah (misalnya, dibatalkan)
-        $otherOrders = Order::where('user_id', $user->id)
-            ->whereIn('status', ['cancelled', 'expired']) // Ganti/tambah status sesuai kebutuhan
-            ->latest()->get();
+        // 2. Ambil data pesanan yang statusnya gagal atau dibatalkan
+        $failedOrders = Order::where('user_id', $user->id)
+            ->whereIn('status', ['failed', 'cancelled', 'expired'])
+            ->with('subdomain')
+            ->latest('updated_at')
+            ->get();
 
-        // 3. Ubah setiap data menjadi format "notifikasi" yang seragam
+        // 3. Buat notifikasi untuk pembaruan profil
+        $profileUpdateActivity = collect();
+        // Cek apakah user pernah update profil (selain saat registrasi)
+        if ($user->updated_at > $user->created_at->addSeconds(10)) {
+            $profileUpdateActivity->push((object) [
+                'type' => 'Profil',
+                'title' => 'Profil Diperbarui',
+                'message' => 'Data profil Anda telah berhasil diperbarui.',
+                'date' => $user->updated_at,
+                'status' => 'profile', // Status kustom untuk styling
+                'link' => route('tenant.account.profile', ['subdomain' => request()->route('subdomain') ?? 'default']),
+            ]);
+        }
+
+        // 4. Ubah setiap data menjadi format "notifikasi" yang seragam
         $paymentActivities = $successfulPayments->map(function ($payment) {
             return (object) [
-                'type' => 'Pembayaran Berhasil',
-                'title' => 'Pembayaran Lunas',
-                'message' => 'Pembayaran untuk pesanan ' . $payment->order_id . ' telah berhasil.',
-                'date' => $payment->created_at,
-                'status' => 'success', // Untuk styling
+                'type' => 'Pembayaran',
+                'title' => 'Pembayaran Berhasil',
+                'message' => 'Pembayaran untuk pesanan #' . $payment->order_id . ' telah kami terima.',
+                'date' => $payment->updated_at,
+                'status' => 'success',
+                'link' => optional($payment->order->subdomain)->subdomain_name ? route('tenant.account.orders', ['subdomain' => $payment->order->subdomain->subdomain_name]) : '#',
             ];
         });
 
-        $orderActivities = $otherOrders->map(function ($order) {
+        $orderActivities = $failedOrders->map(function ($order) {
             return (object) [
-                'type' => 'Status Pesanan',
-                'title' => 'Pesanan Dibatalkan',
-                'message' => 'Pesanan Anda dengan ID ' . $order->id . ' telah dibatalkan.',
+                'type' => 'Pesanan',
+                'title' => 'Pesanan Dibatalkan/Gagal',
+                'message' => 'Pesanan Anda dengan ID #' . $order->id . ' telah dibatalkan atau gagal.',
                 'date' => $order->updated_at,
-                'status' => 'cancelled', // Untuk styling
+                'status' => 'cancelled',
+                'link' => optional($order->subdomain)->subdomain_name ? route('tenant.account.orders', ['subdomain' => $order->subdomain->subdomain_name]) : '#',
             ];
         });
 
-        // 4. Gabungkan semua aktivitas menjadi satu koleksi
-        $allActivities = $paymentActivities->merge($orderActivities);
+        // 5. Gabungkan semua aktivitas menjadi satu koleksi
+        $allActivities = $paymentActivities
+            ->merge($orderActivities)
+            ->merge($profileUpdateActivity);
 
-        // 5. Urutkan semua aktivitas berdasarkan tanggal, dari yang terbaru
+        // 6. Urutkan semua aktivitas berdasarkan tanggal, dari yang terbaru
         $sortedActivities = $allActivities->sortByDesc('date');
 
-        // 6. Buat paginasi secara manual dari koleksi yang sudah digabung
+        // 7. Buat paginasi secara manual
         $perPage = 10;
         $currentPage = LengthAwarePaginator::resolveCurrentPage();
         $currentItems = $sortedActivities->slice(($currentPage - 1) * $perPage, $perPage)->all();

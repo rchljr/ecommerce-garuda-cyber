@@ -19,7 +19,7 @@ class CustomerOrderController extends Controller
 
         // Ambil semua pesanan dari pengguna i ni, dengan relasi ke produk
         $orders = Order::where('user_id', $user->id)
-            ->with(['subdomain.user.shop', 'items.product'])
+            ->with(['subdomain.user.shop', 'items.product', 'items.variant', 'testimonials'])
             ->when($search, function ($query, $search) {
                 return $query->whereHas('subdomain', function ($q) use ($search) {
                     $q->where('subdomain_name', 'like', '%' . $search . '%');
