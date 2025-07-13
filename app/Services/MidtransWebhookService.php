@@ -84,8 +84,8 @@ class MidtransWebhookService
     {
         Log::info('Info Pembayaran Sukses Diterima', ['payment_id' => $payment->id]);
 
-        DB::transaction(function () use ($payment, $notification) {
-            try {
+        try {
+            DB::transaction(function () use ($payment, $notification) {
                 // Langkah A: Perbarui catatan pembayaran yang sudah ada
                 $payment->update([
                     'midtrans_transaction_status' => $notification->transaction_status,
@@ -96,31 +96,39 @@ class MidtransWebhookService
                 // Langkah B: Update Status Order terkait
                 $order = $payment->order;
                 if ($order) {
-                    // Cek tipe order: Langganan atau Produk
                     if ($payment->subs_package_id) {
-                        // Ini adalah pembayaran langganan
                         $order->update(['status' => 'completed']);
-                        $this->activateSubscription($order->user);
                     } else {
-                        // Ini adalah pembayaran produk
-                        $order->update(['status' => 'completed']); // Status baru untuk pesanan yang dibayar
-                        $this->finalizeProductOrder($order);
+                        $order->update(['status' => 'completed']);
                     }
+                    Log::info('MidtransWebhookService: Status order berhasil diupdate menjadi completed.', ['order_id' => $order->id]);
                 } else {
                     Log::error('MidtransWebhookService: Relasi Order pada Payment tidak ditemukan.', ['payment_id' => $payment->id]);
                 }
+            });
+        } catch (\Exception $e) {
+            Log::critical('MidtransWebhookService: GAGAL saat memproses transaksi database.', [
+                'payment_id' => $payment->id,
+                'error' => $e->getMessage()
+            ]);
+            // Hentikan proses jika update database gagal
+            return;
+        }
 
-            } catch (\Exception $e) {
-                Log::critical('MidtransWebhookService: GAGAL saat memproses transaksi database.', [
-                    'payment_id' => $payment->id,
-                    'error' => $e->getMessage()
-                ]);
-                throw $e;
+        // Langkah C: Lakukan side-effect (seperti notifikasi) SETELAH transaksi DB berhasil.
+        // Dengan cara ini, jika notifikasi gagal, status order tetap 'completed'.
+        $order = $payment->order()->first(); // Ambil ulang data order yang sudah di-update
+        if ($order && $order->status === 'completed') {
+            if ($payment->subs_package_id) {
+                $this->activateSubscription($order->user);
+            } else {
+                $this->finalizeProductOrder($order);
             }
-        });
+        }
     }
+
     /**
-     *  Menyelesaikan pesanan produk dan mengirim notifikasi.
+     * Menyelesaikan pesanan produk dan mengirim notifikasi.
      */
     protected function finalizeProductOrder(Order $order)
     {
@@ -129,16 +137,24 @@ class MidtransWebhookService
             $order->shipping->update(['status' => 'preparing_shipment']);
         }
 
-        // Kirim notifikasi ke pelanggan
-        $customer = $order->user;
-        
-        Notification::send($customer, new CustomerPaymentSuccessNotification($order));
-        Log::info('Notifikasi sukses pembayaran dikirim ke pelanggan.', ['order_id' => $order->id, 'customer_id' => $customer->id]);
+        // Bungkus pengiriman notifikasi dalam try-catch
+        try {
+            $customer = $order->user;
+            $shopOwner = $order->subdomain->user;
 
-        // Kirim notifikasi ke mitra (pemilik toko)
-        $shopOwner = $order->subdomain->user;
-        Notification::send($shopOwner, new NewOrderNotification($order));
-        Log::info('Notifikasi pesanan baru dikirim ke mitra.', ['order_id' => $order->id, 'partner_id' => $shopOwner->id]);
+            Notification::send($customer, new CustomerPaymentSuccessNotification($order));
+            Log::info('Notifikasi sukses pembayaran dikirim ke pelanggan.', ['order_id' => $order->id, 'customer_id' => $customer->id]);
+
+            Notification::send($shopOwner, new NewOrderNotification($order));
+            Log::info('Notifikasi pesanan baru dikirim ke mitra.', ['order_id' => $order->id, 'partner_id' => $shopOwner->id]);
+
+        } catch (\Exception $e) {
+            // Jika notifikasi gagal, cukup catat error-nya tanpa mengganggu alur utama.
+            Log::error('MidtransWebhookService: Gagal mengirim notifikasi pesanan.', [
+                'order_id' => $order->id,
+                'error' => $e->getMessage()
+            ]);
+        }
     }
 
     /**

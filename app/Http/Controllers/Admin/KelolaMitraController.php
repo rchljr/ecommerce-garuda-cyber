@@ -53,40 +53,42 @@ class KelolaMitraController extends Controller
     /**
      * Menonaktifkan paket langganan seorang mitra.
      */
-    public function deactivate(User $mitra)
+    public function deactivate(User $user) 
     {
-        $mitra->load('userPackage', 'subdomain');
+        try {
+            $user->load('userPackage', 'subdomain');
 
-        if ($mitra->hasRole('mitra') && $mitra->userPackage) {
-            try {
-                // Update status di userPackage menjadi 'pending' atau 'inactive'
-                $mitra->userPackage->update(['status' => 'pending']); 
+            if ($user->hasRole('mitra') && $user->userPackage) {
 
-                // Menonaktifkan subdomain
-                if ($mitra->subdomain) {
-                    $mitra->subdomain->update(['status' => 'pending']); 
+                $user->userPackage->update(['status' => 'pending']);
+
+                if ($user->subdomain) {
+                    $user->subdomain->update(['status' => 'pending']);
                 }
 
-                return back()->with('success', "Mitra '{$mitra->name}' berhasil dinonaktifkan.");
-            } catch (\Exception $e) {
-                // Tambahkan logging untuk debug di masa depan
-                Log::error('Deactivate Mitra Error: ' . $e->getMessage());
-                return back()->with('error', 'Terjadi kesalahan saat menonaktifkan mitra.');
+                return back()->with('success', "Mitra '{$user->name}' berhasil dinonaktifkan.");
             }
+
+            return back()->with('error', 'Gagal memproses. Data paket untuk mitra ini tidak ditemukan di database.');
+
+        } catch (\Exception $e) {
+            // Sekarang $user->id akan memiliki nilai yang benar untuk logging
+            Log::error('Deactivate Mitra Exception: ' . $e->getMessage(), ['mitra_id' => $user->id]);
+            return back()->with('error', 'Terjadi kesalahan pada server saat mencoba menonaktifkan mitra.');
         }
-        return back()->with('error', 'Gagal menemukan data paket untuk mitra ini.');
     }
 
     /**
      * Mengaktifkan kembali paket langganan seorang mitra.
      */
-    public function reactivate(Request $request, $mitraId)
+    public function reactivate(User $user) 
     {
-        $mitra = User::with('userPackage', 'subdomain')->findOrFail($mitraId);
+        try {
+            $user->load('userPackage', 'subdomain');
 
-        if ($mitra->hasRole('mitra') && $mitra->userPackage) {
-            try {
-                $userPackage = $mitra->userPackage;
+            if ($user->hasRole('mitra') && $user->userPackage) {
+
+                $userPackage = $user->userPackage;
 
                 $newExpiredDate = Carbon::now()->addMonth();
                 if ($userPackage->plan_type === 'yearly') {
@@ -99,15 +101,18 @@ class KelolaMitraController extends Controller
                     'active_date' => Carbon::now()
                 ]);
 
-                if ($mitra->subdomain) {
-                    $mitra->subdomain->update(['status' => 'active']);
+                if ($user->subdomain) {
+                    $user->subdomain->update(['status' => 'active']);
                 }
 
-                return back()->with('success', "Mitra '{$mitra->name}' berhasil diaktifkan kembali.");
-            } catch (\Exception $e) {
-                return back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+                return back()->with('success', "Mitra '{$user->name}' berhasil diaktifkan kembali.");
             }
+
+            return back()->with('error', 'Gagal memproses. Data paket untuk mitra ini tidak ditemukan.');
+
+        } catch (\Exception $e) {
+            Log::error('Reactivate Mitra Exception: ' . $e->getMessage(), ['mitra_id' => $user->id]);
+            return back()->with('error', 'Terjadi kesalahan pada server saat mencoba mengaktifkan kembali mitra.');
         }
-        return back()->with('error', 'Gagal menemukan data paket untuk mitra ini.');
     }
 }

@@ -57,10 +57,7 @@ class CheckoutController extends Controller
         $firstItem = $checkoutItems->first();
         $shopOwner = $firstItem->product->shopOwner;
         $shop = $shopOwner->shop;
-        $contact = $shopOwner->contact;
-        // $originId = $shop->komerce_destination_id;
-        // Asumsi Anda memiliki kolom 'postal_code' di tabel 'shops' atau 'contacts'
-        $originPostalCode = optional($shop->contact)->postal_code ?? '12190'; // Ganti dengan kode pos default jika perlu
+        $originPostalCode = $shop->postal_code ?? '28293';
 
         // Mengambil voucher yang sesuai dengan dua kriteria:
         // 1. Dimiliki oleh toko yang sedang dikunjungi (user_id cocok).
@@ -78,7 +75,6 @@ class CheckoutController extends Controller
             'originPostalCode',
             'totalWeightInKg',
             'shop',
-            'contact'
         ));
     }
 
