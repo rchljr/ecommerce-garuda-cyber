@@ -245,9 +245,7 @@
                         const estimate = order.shipping.estimated_delivery ?? 'Estimasi tidak tersedia';
                         shippingInfoEl.innerHTML = `
                                 <h4 class="font-semibold text-sm mb-1">Info Pengiriman</h4>
-                                <p class="text-xs">${address}</p>
                                 <p class="text-xs text-gray-500 mt-1">${order.shipping.delivery_service || ''}</p>
-                                <p class="text-xs text-gray-500 mt-1">Estimasi: ${estimate}</p>
                             `;
                     } else {
                         shippingInfoEl.innerHTML = `<h4 class="font-semibold text-sm">Metode Pengambilan: Ambil di Toko</h4>`;
