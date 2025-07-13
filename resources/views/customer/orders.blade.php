@@ -219,17 +219,10 @@
                     const subtotal = parseFloat(order.subtotal) > 0 ? parseFloat(order.subtotal) : calculatedSubtotal;
                     const shippingCost = parseFloat(order.shipping_cost) || 0;
                     const discountAmount = parseFloat(order.discount_amount) || 0;
-
-                    // === PERBAIKAN DIMULAI ===
-                    // Kalkulasi ulang total akhir di sisi klien untuk memastikan data yang ditampilkan akurat,
-                    // karena nilai order.total_price dari database mungkin tidak konsisten.
                     const correctFinalTotal = subtotal + shippingCost - discountAmount;
-                    // === PERBAIKAN SELESAI ===
 
                     document.getElementById('detail-subtotal').textContent = formatRupiah(subtotal);
                     document.getElementById('detail-shipping-cost').textContent = formatRupiah(shippingCost);
-
-                    // Gunakan total yang baru dihitung, bukan dari order.total_price
                     document.getElementById('detail-total').textContent = formatRupiah(correctFinalTotal);
 
                     const discountRow = document.getElementById('detail-discount-row');
@@ -246,6 +239,8 @@
 
                     const shippingInfoEl = document.getElementById('detail-shipping-info');
                     if (order.shipping) {
+                        // === PERUBAHAN 2: AMBIL ALAMAT DARI DATA PENGIRIMAN ===
+                        // Alamat ini adalah alamat yang digunakan saat checkout, bukan alamat terbaru customer.
                         const address = order.shipping.shipping_address || 'Alamat tidak diisi saat checkout.';
                         const estimate = order.shipping.estimated_delivery ?? 'Estimasi tidak tersedia';
                         shippingInfoEl.innerHTML = `

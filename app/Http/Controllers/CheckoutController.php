@@ -37,9 +37,7 @@ class CheckoutController extends Controller
         \Midtrans\Config::$is3ds = true;
     }
 
-    /**
-     * Menampilkan halaman checkout dengan data yang diperlukan.
-     */
+    // ... (fungsi index, searchDestination, calculateShipping tetap sama) ...
     public function index(Request $request)
     {
         $validated = $request->validate(['items' => 'required|array|min:1', 'items.*' => 'string']);
@@ -60,9 +58,6 @@ class CheckoutController extends Controller
         $contact = $shopOwner->contact;
         $originPostalCode = $shop->postal_code ?? '28293';
 
-        // Mengambil voucher yang sesuai dengan dua kriteria:
-        // 1. Dimiliki oleh toko yang sedang dikunjungi (user_id cocok).
-        // 2. Masih aktif (tanggal kedaluwarsa belum lewat).
         $vouchers = Voucher::where('user_id', $shopOwner->id)
             ->where('expired_date', '>=', now())
             ->latest('created_at')
@@ -80,9 +75,6 @@ class CheckoutController extends Controller
         ));
     }
 
-    /**
-     * PERBAIKAN: Kembali ke fungsi pencarian berdasarkan keyword.
-     */
     public function searchDestination(Request $request)
     {
         $keyword = $request->input('keyword');
@@ -168,9 +160,9 @@ class CheckoutController extends Controller
         }
     }
 
+
     /**
      * Memproses pembayaran dengan Midtrans.
-     * Metode ini membuat atau memperbarui Order dan Payment, lalu memanggil Midtrans.
      */
     public function charge(Request $request)
     {
@@ -179,7 +171,7 @@ class CheckoutController extends Controller
             'delivery_method' => 'required|string|in:ship,pickup',
             'shipping_cost' => 'nullable|numeric',
             'shipping_service' => 'nullable|string',
-            'estimated_delivery' => 'nullable|string', // Validasi untuk estimasi
+            'estimated_delivery' => 'nullable|string',
             'alamat' => 'required_if:delivery_method,ship|nullable|string|max:500',
             'payment_method' => 'required|string|in:bca_va,bni_va,gopay,qris',
             'voucher_id' => 'nullable|exists:vouchers,id',
@@ -237,6 +229,13 @@ class CheckoutController extends Controller
             }
 
             if ($validated['delivery_method'] === 'ship') {
+                // === PERUBAHAN 1: UPDATE ALAMAT PENGGUNA ===
+                // Jika alamat yang diinput berbeda dengan yang ada di database, update.
+                if ($customer->alamat !== $validated['alamat']) {
+                    $customer->update(['alamat' => $validated['alamat']]);
+                    Log::info('Alamat customer berhasil diupdate.', ['customer_id' => $customer->id]);
+                }
+
                 Shipping::updateOrCreate(
                     ['order_id' => $order->id],
                     [
