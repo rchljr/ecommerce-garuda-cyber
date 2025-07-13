@@ -82,48 +82,41 @@ class MidtransWebhookService
      */
     protected function processSuccessfulPayment(Payment $payment, MidtransNotification $notification)
     {
-        Log::info('Info Pembayaran Sukses Diterima', ['payment_id' => $payment->id]);
-
         try {
-            DB::transaction(function () use ($payment, $notification) {
-                // Langkah A: Perbarui catatan pembayaran yang sudah ada
+            $order = null;
+            DB::transaction(function () use ($payment, $notification, &$order) {
                 $payment->update([
                     'midtrans_transaction_status' => $notification->transaction_status,
                     'midtrans_response' => $notification->getResponse(),
                 ]);
-                Log::info('MidtransWebhookService: Catatan pembayaran berhasil diperbarui.', ['payment_id' => $payment->id]);
 
-                // Langkah B: Update Status Order terkait
                 $order = $payment->order;
                 if ($order) {
-                    if ($payment->subs_package_id) {
-                        $order->update(['status' => 'completed']);
-                    } else {
-                        $order->update(['status' => 'completed']);
-                    }
-                    Log::info('MidtransWebhookService: Status order berhasil diupdate menjadi completed.', ['order_id' => $order->id]);
+                    $order->update(['status' => 'completed']);
+                    Log::info('MidtransWebhookService: Status order dan payment berhasil diupdate.', ['order_id' => $order->id]);
                 } else {
                     Log::error('MidtransWebhookService: Relasi Order pada Payment tidak ditemukan.', ['payment_id' => $payment->id]);
                 }
             });
+
+            // Setelah transaksi DB berhasil, kirim tugas ke antrian
+            if ($order) {
+                if ($payment->subs_package_id) {
+                    // Ini adalah pembayaran langganan
+                    ProcessSuccessfulSubscriptionJob::dispatch($order->user);
+                    Log::info('MidtransWebhookService: Job aktivasi langganan dikirim ke antrian.', ['user_id' => $order->user_id]);
+                } else {
+                    // Ini adalah pembayaran produk
+                    ProcessSuccessfulOrderJob::dispatch($order);
+                    Log::info('MidtransWebhookService: Job proses pesanan produk dikirim ke antrian.', ['order_id' => $order->id]);
+                }
+            }
+
         } catch (\Exception $e) {
             Log::critical('MidtransWebhookService: GAGAL saat memproses transaksi database.', [
                 'payment_id' => $payment->id,
                 'error' => $e->getMessage()
             ]);
-            // Hentikan proses jika update database gagal
-            return;
-        }
-
-        // Langkah C: Lakukan side-effect (seperti notifikasi) SETELAH transaksi DB berhasil.
-        // Dengan cara ini, jika notifikasi gagal, status order tetap 'completed'.
-        $order = $payment->order()->first(); // Ambil ulang data order yang sudah di-update
-        if ($order && $order->status === 'completed') {
-            if ($payment->subs_package_id) {
-                $this->activateSubscription($order->user);
-            } else {
-                $this->finalizeProductOrder($order);
-            }
         }
     }
 
