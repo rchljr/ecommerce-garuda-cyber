@@ -48,45 +48,43 @@
                                     $slug = optional($product)->slug;
                                 @endphp
                                 {{-- Gunakan $itemId sebagai data-id dan value checkbox --}}
-                                <div class="flex items-start border-b py-4 cart-item" data-id="{{ $itemId }}">
-                                    <input type="checkbox" name="items[]" value="{{ $itemId }}"
-                                        class="item-checkbox h-5 w-5 rounded border-gray-300 text-red-600 focus:ring-red-500 mt-1"
-                                        data-price="{{ $product->price ?? 0 }}">
+                                <div class="cart-item flex flex-col sm:flex-row items-start border-b py-4 gap-4" data-id="{{ $itemId }}">
+                                    <div class="flex items-start w-full">
+                                        <input type="checkbox" name="items[]" value="{{ $itemId }}"
+                                            class="item-checkbox h-5 w-5 rounded border-gray-300 text-red-600 focus:ring-red-500 mt-1"
+                                            data-price="{{ $product->price ?? 0 }}">
 
-                                    <img src="{{ asset('storage/' . ($product->main_image ?? 'images/placeholder.png')) }}"
-                                        onerror="this.onerror=null;this.src='https://placehold.co/80x80/f1f5f9/cbd5e1?text=No+Image';"
-                                        alt="{{ $product->name ?? 'Produk tidak ditemukan' }}"
-                                        class="w-20 h-20 rounded-md object-cover mx-4">
+                                        <img src="{{ asset('storage/' . ($product->main_image ?? 'images/placeholder.png')) }}"
+                                            onerror="this.onerror=null;this.src='https://placehold.co/80x80/f1f5f9/cbd5e1?text=No+Image';"
+                                            alt="{{ $product->name ?? 'Produk tidak ditemukan' }}"
+                                            class="w-20 h-20 rounded-md object-cover mx-4">
 
-                                    <div class="flex-grow">
-                                        @if($slug)
-                                            <a href="{{ route('tenant.product.details', ['subdomain' => $currentSubdomain, 'product' => $slug]) }}"
-                                                class="font-semibold text-gray-800 hover:text-red-600">{{ $product->name ?? 'Nama Produk' }}</a>
-                                        @else
-                                            <span class="font-semibold text-gray-800">{{ $product->name ?? 'Nama Produk' }}</span>
-                                        @endif
+                                        <div class="flex-grow">
+                                            @if($slug)
+                                                <a href="{{ route('tenant.product.details', ['subdomain' => $currentSubdomain, 'product' => $slug]) }}"
+                                                    class="font-semibold text-gray-800 hover:text-red-600">{{ $product->name ?? 'Nama Produk' }}</a>
+                                            @else
+                                                <span class="font-semibold text-gray-800">{{ $product->name ?? 'Nama Produk' }}</span>
+                                            @endif
+                                            <p class="text-sm text-gray-500">
+                                                Varian: {{ $color }} / {{ $size }}
+                                            </p>
+                                            <p class="text-lg font-bold text-gray-800 mt-1 sm:hidden">
+                                                {{ format_rupiah($product->price ?? 0) }}
+                                            </p>
+                                        </div>
+                                    </div>
 
-                                        {{-- Tampilkan data dari relasi variant --}}
-                                        <p class="text-sm text-gray-500">
-                                            Varian: {{ $color }} / {{ $size }}
-                                        </p>
-
-                                        <p class="text-lg font-bold text-gray-800 mt-1">
+                                    <div class="w-full sm:w-auto flex justify-between items-center">
+                                        <p class="text-lg font-bold text-gray-800 mt-1 hidden sm:block">
                                             {{ format_rupiah($product->price ?? 0) }}
                                         </p>
-                                    </div>
-                                    <div class="flex flex-col items-end gap-3">
-                                        <div class="flex items-center border border-gray-300 rounded-md">
-                                            <button type="button" class="quantity-btn px-2 py-1"
-                                                data-action="decrease">-</button>
-                                            <input type="number"
-                                                class="w-12 text-center border-l border-r border-gray-300 quantity-input"
-                                                value="{{ $quantity }}" min="1">
-                                            <button type="button" class="quantity-btn px-2 py-1"
-                                                data-action="increase">+</button>
+                                        <div class="flex items-center border border-gray-300 rounded-md ml-auto">
+                                            <button type="button" class="quantity-btn px-3 py-1 text-lg" data-action="decrease">-</button>
+                                            <input type="number" class="w-12 text-center border-l border-r border-gray-300 quantity-input" value="{{ $quantity }}" min="1">
+                                            <button type="button" class="quantity-btn px-3 py-1 text-lg" data-action="increase">+</button>
                                         </div>
-                                        <button type="button"
-                                            class="remove-item-btn text-xs text-gray-500 hover:text-red-600 hover:underline">Hapus</button>
+                                        <button type="button" class="remove-item-btn text-xs text-gray-500 hover:text-red-600 hover:underline ml-4 sm:hidden">Hapus</button>
                                     </div>
                                 </div>
                             @empty
