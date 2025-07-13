@@ -23,6 +23,7 @@ class Shop extends Model
         'shop_name',
         'year_founded',
         'shop_address',
+        'postal_code',
         'product_categories',
         'shop_photo',
         'ktp',

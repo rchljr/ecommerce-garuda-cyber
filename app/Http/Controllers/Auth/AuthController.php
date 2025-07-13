@@ -263,7 +263,7 @@ class AuthController extends BaseController
     // Step 3: Data Toko 
     public function submitShop(Request $request)
     {
-        $validatedShop = $request->validate(['shop_name' => 'required|string|max:255', 'year_founded' => 'nullable|date', 'shop_address' => 'required|string', 'product_categories' => 'required|string', 'shop_photo' => 'required|image|max:2048', 'ktp' => 'required|image|max:2048', 'sku' => 'nullable|file|max:2048', 'npwp' => 'nullable|file|max:2048', 'nib' => 'nullable|file|max:2048', 'iumk' => 'nullable|file|max:2048',]);
+        $validatedShop = $request->validate(['shop_name' => 'required|string|max:255', 'year_founded' => 'nullable|date', 'shop_address' => 'required|string', 'postal_code' => 'required|string|digits:5','product_categories' => 'required|string', 'shop_photo' => 'required|image|max:2048', 'ktp' => 'required|image|max:2048', 'sku' => 'nullable|file|max:2048', 'npwp' => 'nullable|file|max:2048', 'nib' => 'nullable|file|max:2048', 'iumk' => 'nullable|file|max:2048',]);
         foreach (['shop_photo', 'ktp', 'sku', 'nib', 'npwp', 'iumk'] as $fileKey) {
             if ($request->hasFile($fileKey)) {
                 $validatedShop[$fileKey] = $this->uploadFile($request->file($fileKey), $fileKey);
