@@ -158,8 +158,8 @@ Route::prefix('register')->name('register.')->group(function () {
 //preview template
 Route::get('/{template:name}/beranda', [TemplateController::class, 'preview'])->name('template.preview');
 
-//== MIDTRANS WEBHOOK (TIDAK MEMERLUKAN AUTH/CSRF) ==//
-Route::post('/payment/webhook', [PaymentController::class, 'handleWebhook'])->name('midtrans.webhook');
+//== MIDTRANS WEBHOOK (PINDAH KE API) ==//
+// Route::post('/payment/webhook', [PaymentController::class, 'handleWebhook'])->name('midtrans.webhook');
 
 //Mitra Sementara
 // Route::prefix('dashboard-mitra')->name('mitra.')->group(function () {
@@ -204,20 +204,6 @@ Route::post('/payment/webhook', [PaymentController::class, 'handleWebhook'])->na
 // });
 
 //Template1
-// Route::get('/toko', function () {
-//     return view('template1.home'); // Mengarahkan ke resources/views/template1/home.blade.php
-// });
-
-// // Contoh rute untuk halaman lain di dalam template1
-// Route::get('/shop', function () {
-//     return view('template1.shop'); // Anda perlu membuat file template1/shop.blade.php
-// });
-
-// Route::get('/about', function () {
-//     return view('template1.about'); // Anda perlu membuat file template1/about.blade.php
-// });
-
-// routes/web.php
 Route::get('/template1/beranda', [HomeController::class, 'index'])->name('home');
 
 Route::get('/fruit', function () {
