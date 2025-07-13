@@ -22,7 +22,6 @@ return new class extends Migration
                 $table->decimal('shipping_cost', 15, 2)->default(0)->after('subtotal');
             }
             if (!Schema::hasColumn('orders', 'discount_amount')) {
-                // PERBAIKAN: Mengubah 'after' ke kolom yang benar ('shipping_cost')
                 $table->decimal('discount_amount', 15, 2)->default(0)->after('shipping_cost');
             }
         });
