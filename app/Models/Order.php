@@ -15,7 +15,17 @@ class Order extends Model
     use HasFactory, HasUuids;
     public $incrementing = false;
     protected $keyType = 'string';
-    protected $fillable = ['user_id', 'subdomain_id', 'voucher_id', 'status', 'order_date', 'total_price'];
+    protected $fillable = [
+        'user_id',
+        'subdomain_id',
+        'status',
+        'total_price',
+        'subtotal',
+        'shipping_cost',
+        'discount_amount',
+        'voucher_id',
+        'order_date',
+    ];
     protected $casts = ['order_date' => 'datetime'];
 
     public function user()

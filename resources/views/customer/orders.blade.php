@@ -63,7 +63,8 @@
                                 <div class="bg-gray-50 p-4 flex flex-wrap justify-between items-center rounded-t-lg border-b">
                                     <div class="flex items-center gap-3">
                                         @if($order->subdomain && optional($order->subdomain->user)->shop)
-                                            <a href="{{ route('tenant.home', ['subdomain' => $order->subdomain->subdomain_name]) }}" class="font-semibold text-gray-800 hover:text-red-600 transition">
+                                            <a href="{{ route('tenant.home', ['subdomain' => $order->subdomain->subdomain_name]) }}"
+                                                class="font-semibold text-gray-800 hover:text-red-600 transition">
                                                 {{ $order->subdomain->user->shop->shop_name }}
                                             </a>
                                         @else
@@ -90,11 +91,18 @@
                                     @foreach($order->items as $item)
                                         <div class="flex justify-between items-start">
                                             <div class="flex items-start gap-4">
-                                                <img src="{{ asset('storage/' . optional($item->product)->main_image) }}" onerror="this.onerror=null;this.src='https://placehold.co/64x64/f1f5f9/cbd5e1?text=No+Image';" alt="{{ optional($item->product)->name }}" class="w-16 h-16 bg-gray-200 rounded-md object-cover">
+                                                <img src="{{ asset('storage/' . optional($item->product)->main_image) }}"
+                                                    onerror="this.onerror=null;this.src='https://placehold.co/64x64/f1f5f9/cbd5e1?text=No+Image';"
+                                                    alt="{{ optional($item->product)->name }}"
+                                                    class="w-16 h-16 bg-gray-200 rounded-md object-cover">
                                                 <div>
-                                                    <p class="font-semibold text-gray-800">{{ optional($item->product)->name ?? 'Produk Dihapus' }}</p>
-                                                    <p class="text-xs text-gray-500">Varian: {{ optional($item->variant)->color ?? '-' }} / {{ optional($item->variant)->size ?? '-' }}</p>
-                                                    <p class="text-sm text-gray-600">{{ $item->quantity }} x {{ format_rupiah($item->unit_price) }}</p>
+                                                    <p class="font-semibold text-gray-800">
+                                                        {{ optional($item->product)->name ?? 'Produk Dihapus' }}</p>
+                                                    <p class="text-xs text-gray-500">Varian:
+                                                        {{ optional($item->variant)->color ?? '-' }} /
+                                                        {{ optional($item->variant)->size ?? '-' }}</p>
+                                                    <p class="text-sm text-gray-600">{{ $item->quantity }} x
+                                                        {{ format_rupiah($item->unit_price) }}</p>
                                                 </div>
                                             </div>
                                         </div>
@@ -104,9 +112,12 @@
                                 <div class="bg-gray-50 p-4 flex flex-wrap gap-4 justify-between items-center rounded-b-lg">
                                     <div>
                                         <span class="text-sm text-gray-600">Total Pesanan:</span>
-                                        <span class="font-bold text-lg text-red-600">{{ format_rupiah($order->total_price) }}</span>
+                                        <span
+                                            class="font-bold text-lg text-red-600">{{ format_rupiah($order->total_price) }}</span>
                                     </div>
-                                    <button class="detail-button text-white font-semibold bg-gray-800 rounded-lg px-5 py-2 text-sm hover:bg-black transition flex items-center gap-2" data-order-json="{{ json_encode($order) }}">
+                                    <button
+                                        class="detail-button text-white font-semibold bg-gray-800 rounded-lg px-5 py-2 text-sm hover:bg-black transition flex items-center gap-2"
+                                        data-order-json="{{ json_encode($order) }}">
                                         Lihat Detail
                                     </button>
                                 </div>
@@ -114,7 +125,8 @@
                         @empty
                             <div class="text-center py-16 text-gray-500 border-2 border-dashed rounded-lg">
                                 <h3 class="mt-2 text-sm font-medium text-gray-900">Belum ada pesanan</h3>
-                                <p class="mt-1 text-sm text-gray-500">Mulai belanja sekarang untuk melihat pesanan Anda di sini.</p>
+                                <p class="mt-1 text-sm text-gray-500">Mulai belanja sekarang untuk melihat pesanan Anda di sini.
+                                </p>
                             </div>
                         @endforelse
                     </div>
@@ -129,18 +141,26 @@
             <span class="modal-close" id="close-detail-modal">&times;</span>
             <h2 class="text-xl font-bold mb-4">Detail Pesanan</h2>
             <div class="text-sm space-y-2 mb-4 border-b pb-4">
-                <div class="flex justify-between"><span class="text-gray-500">ID Pesanan:</span><span id="detail-order-id" class="font-semibold font-mono"></span></div>
-                <div class="flex justify-between"><span class="text-gray-500">Tanggal:</span><span id="detail-order-date" class="font-semibold"></span></div>
-                <div class="flex justify-between"><span class="text-gray-500">Toko:</span><span id="detail-order-shop" class="font-semibold"></span></div>
-                <div class="flex justify-between"><span class="text-gray-500">Status:</span><span id="detail-order-status" class="font-semibold px-2 py-0.5 rounded-full"></span></div>
+                <div class="flex justify-between"><span class="text-gray-500">ID Pesanan:</span><span id="detail-order-id"
+                        class="font-semibold font-mono"></span></div>
+                <div class="flex justify-between"><span class="text-gray-500">Tanggal:</span><span id="detail-order-date"
+                        class="font-semibold"></span></div>
+                <div class="flex justify-between"><span class="text-gray-500">Toko:</span><span id="detail-order-shop"
+                        class="font-semibold"></span></div>
+                <div class="flex justify-between"><span class="text-gray-500">Status:</span><span id="detail-order-status"
+                        class="font-semibold px-2 py-0.5 rounded-full"></span></div>
             </div>
             <div id="detail-item-list" class="space-y-3 mb-4"></div>
 
             <div class="border-t pt-4 space-y-2 text-sm">
-                <div class="flex justify-between"><span class="text-gray-500">Subtotal Produk</span><span id="detail-subtotal"></span></div>
-                <div id="detail-shipping-row" class="flex justify-between"><span class="text-gray-500">Ongkos Kirim</span><span id="detail-shipping-cost"></span></div>
-                <div id="detail-discount-row" class="flex justify-between text-green-600" style="display: none;"><span class="text-gray-500">Potongan Voucher</span><span id="detail-discount"></span></div>
-                <div class="flex justify-between font-bold text-lg pt-2 mt-2 border-t"><span class="text-gray-800">Total Akhir</span><span id="detail-total" class="text-red-600"></span></div>
+                <div class="flex justify-between"><span class="text-gray-500">Subtotal Produk</span><span
+                        id="detail-subtotal"></span></div>
+                <div id="detail-shipping-row" class="flex justify-between"><span class="text-gray-500">Ongkos
+                        Kirim</span><span id="detail-shipping-cost"></span></div>
+                <div id="detail-discount-row" class="flex justify-between text-green-600" style="display: none;"><span
+                        class="text-gray-500">Potongan Voucher</span><span id="detail-discount"></span></div>
+                <div class="flex justify-between font-bold text-lg pt-2 mt-2 border-t"><span class="text-gray-800">Total
+                        Akhir</span><span id="detail-total" class="text-red-600"></span></div>
             </div>
 
             <div id="detail-shipping-info" class="mt-4 border-t pt-4"></div>
@@ -186,23 +206,31 @@
                         const itemTotal = (item.quantity || 0) * (item.unit_price || 0);
                         calculatedSubtotal += itemTotal;
                         itemListEl.innerHTML += `
-                            <div class="flex justify-between text-sm">
-                                <div>
-                                    <p>${item.product ? item.product.name : 'Produk Dihapus'}</p>
-                                    <p class="text-xs text-gray-500">${item.quantity} x ${formatRupiah(item.unit_price)}</p>
+                                <div class="flex justify-between text-sm">
+                                    <div>
+                                        <p>${item.product ? item.product.name : 'Produk Dihapus'}</p>
+                                        <p class="text-xs text-gray-500">${item.quantity} x ${formatRupiah(item.unit_price)}</p>
+                                    </div>
+                                    <p>${formatRupiah(itemTotal)}</p>
                                 </div>
-                                <p>${formatRupiah(itemTotal)}</p>
-                            </div>
-                        `;
+                            `;
                     });
 
                     const subtotal = parseFloat(order.subtotal) > 0 ? parseFloat(order.subtotal) : calculatedSubtotal;
                     const shippingCost = parseFloat(order.shipping_cost) || 0;
                     const discountAmount = parseFloat(order.discount_amount) || 0;
 
+                    // === PERBAIKAN DIMULAI ===
+                    // Kalkulasi ulang total akhir di sisi klien untuk memastikan data yang ditampilkan akurat,
+                    // karena nilai order.total_price dari database mungkin tidak konsisten.
+                    const correctFinalTotal = subtotal + shippingCost - discountAmount;
+                    // === PERBAIKAN SELESAI ===
+
                     document.getElementById('detail-subtotal').textContent = formatRupiah(subtotal);
                     document.getElementById('detail-shipping-cost').textContent = formatRupiah(shippingCost);
-                    document.getElementById('detail-total').textContent = formatRupiah(order.total_price);
+
+                    // Gunakan total yang baru dihitung, bukan dari order.total_price
+                    document.getElementById('detail-total').textContent = formatRupiah(correctFinalTotal);
 
                     const discountRow = document.getElementById('detail-discount-row');
                     const shippingRow = document.getElementById('detail-shipping-row');
@@ -221,11 +249,11 @@
                         const address = order.shipping.shipping_address || 'Alamat tidak diisi saat checkout.';
                         const estimate = order.shipping.estimated_delivery ?? 'Estimasi tidak tersedia';
                         shippingInfoEl.innerHTML = `
-                            <h4 class="font-semibold text-sm mb-1">Info Pengiriman</h4>
-                            <p class="text-xs">${address}</p>
-                            <p class="text-xs text-gray-500 mt-1">${order.shipping.delivery_service || ''}</p>
-                            <p class="text-xs text-gray-500 mt-1">Estimasi: ${estimate}</p> 
-                        `;
+                                <h4 class="font-semibold text-sm mb-1">Info Pengiriman</h4>
+                                <p class="text-xs">${address}</p>
+                                <p class="text-xs text-gray-500 mt-1">${order.shipping.delivery_service || ''}</p>
+                                <p class="text-xs text-gray-500 mt-1">Estimasi: ${estimate}</p>
+                            `;
                     } else {
                         shippingInfoEl.innerHTML = `<h4 class="font-semibold text-sm">Metode Pengambilan: Ambil di Toko</h4>`;
                     }
