@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\UserPackage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 
 class KelolaMitraController extends Controller
@@ -54,19 +55,23 @@ class KelolaMitraController extends Controller
      */
     public function deactivate(User $mitra)
     {
+        $mitra->load('userPackage', 'subdomain');
+
         if ($mitra->hasRole('mitra') && $mitra->userPackage) {
             try {
-                // Update status di userPackage menjadi 'pending'
-                $mitra->userPackage->update(['status' => 'pending']);
+                // Update status di userPackage menjadi 'pending' atau 'inactive'
+                $mitra->userPackage->update(['status' => 'pending']); 
 
                 // Menonaktifkan subdomain
                 if ($mitra->subdomain) {
-                    $mitra->subdomain->update(['status' => 'pending']);
+                    $mitra->subdomain->update(['status' => 'pending']); 
                 }
 
                 return back()->with('success', "Mitra '{$mitra->name}' berhasil dinonaktifkan.");
             } catch (\Exception $e) {
-                return back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+                // Tambahkan logging untuk debug di masa depan
+                Log::error('Deactivate Mitra Error: ' . $e->getMessage());
+                return back()->with('error', 'Terjadi kesalahan saat menonaktifkan mitra.');
             }
         }
         return back()->with('error', 'Gagal menemukan data paket untuk mitra ini.');
@@ -82,7 +87,7 @@ class KelolaMitraController extends Controller
         if ($mitra->hasRole('mitra') && $mitra->userPackage) {
             try {
                 $userPackage = $mitra->userPackage;
-                
+
                 $newExpiredDate = Carbon::now()->addMonth();
                 if ($userPackage->plan_type === 'yearly') {
                     $newExpiredDate = Carbon::now()->addYear();

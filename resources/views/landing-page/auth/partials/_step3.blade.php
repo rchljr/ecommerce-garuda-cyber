@@ -31,6 +31,15 @@
                         class="mt-1 block w-full h-12 px-4 border-2 border-gray-300 rounded-lg" required>
                 </div>
                 <div>
+                    <label for="postal_code" class="block text-base font-semibold text-gray-800 mb-1">Kode Pos<span
+                            class="text-red-600">*</span></label>
+                    <input type="text" id="postal_code" name="postal_code"
+                        value="{{ session('register.step_3.postal_code') ?? old('postal_code') }}"
+                        class="mt-1 block w-full h-12 px-4 border-2 border-gray-300 rounded-lg" required
+                        pattern="[0-9]{5}" title="Kode pos harus terdiri dari 5 angka">
+                </div>
+
+                <div>
                     <label for="product_categories" class="block text-base font-semibold text-gray-800 mb-1">Kategori
                         Produk<span class="text-red-600">*</span></label>
                     <select id="product_categories" name="product_categories"

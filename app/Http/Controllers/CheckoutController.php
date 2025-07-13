@@ -185,7 +185,6 @@ class CheckoutController extends Controller
             'alamat' => 'required_if:delivery_method,ship|nullable|string|max:500',
             'payment_method' => 'required|string|in:bca_va,bni_va,gopay,qris',
             'voucher_id' => 'nullable|exists:vouchers,id',
-            'discount_amount' => 'nullable|numeric',
         ]);
 
         $customer = Auth::guard('customers')->user();
@@ -195,22 +194,41 @@ class CheckoutController extends Controller
             return response()->json(['error' => 'Item tidak ditemukan.'], 404);
         }
 
-        $subdomainId = $checkoutItems->first()->product->shopOwner->subdomain->id;
+        $shopOwner = $checkoutItems->first()->product->shopOwner;
+        $subdomainId = $shopOwner->subdomain->id;
+
         $subtotal = $checkoutItems->sum(fn($item) => $item->product->price * $item->quantity);
         $shippingCost = ($validated['delivery_method'] === 'ship') ? ($validated['shipping_cost'] ?? 0) : 0;
-        $totalPrice = $subtotal + $shippingCost; // Kurangi diskon jika ada
+        $discountAmount = 0;
+        $voucher = null;
+
+        // 1. Validasi dan hitung ulang diskon di server
+        if (!empty($validated['voucher_id'])) {
+            $voucher = Voucher::find($validated['voucher_id']);
+            // Pastikan voucher valid, milik toko ini, aktif, dan subtotal memenuhi syarat
+            if ($voucher && $voucher->user_id === $shopOwner->id && $voucher->expired_date >= now() && $subtotal >= $voucher->min_spending) {
+                $discountAmount = ($subtotal * $voucher->discount) / 100;
+            } else {
+                // Jika voucher tidak valid, batalkan penggunaan
+                $validated['voucher_id'] = null;
+            }
+        }
+
+        // 2. Hitung total harga akhir yang akan dibayar
+        $finalPrice = ($subtotal - $discountAmount) + $shippingCost;
+        $finalPrice = max(0, round($finalPrice)); // Pastikan tidak negatif dan bulatkan
 
         DB::beginTransaction();
         try {
             // Gunakan updateOrCreate untuk menghindari duplikasi order jika user refresh halaman
             $order = Order::updateOrCreate(
+                ['user_id' => $customer->id, 'subdomain_id' => $subdomainId, 'status' => 'pending'],
                 [
-                    'user_id' => $customer->id,
-                    'subdomain_id' => $subdomainId,
-                    'status' => 'pending',
-                ],
-                [
-                    'total_price' => $totalPrice,
+                    'total_price' => $finalPrice,
+                    'subtotal' => $subtotal,
+                    'shipping_cost' => $shippingCost,
+                    'discount_amount' => $discountAmount,
+                    'voucher_id' => $validated['voucher_id'],
                     'order_date' => now(),
                 ]
             );
@@ -243,7 +261,7 @@ class CheckoutController extends Controller
 
             $transactionId = $order->id . '-' . uniqid();
 
-            // Siapkan parameter untuk Midtrans Core API
+            // 3. Siapkan item_details untuk Midtrans
             $itemDetails = $checkoutItems->map(function ($item) {
                 return [
                     'id' => $item->product_variant_id,
@@ -254,24 +272,19 @@ class CheckoutController extends Controller
             });
 
             if ($shippingCost > 0) {
-                $itemDetails->push([
-                    'id' => 'SHIPPING',
-                    'price' => $shippingCost,
-                    'quantity' => 1,
-                    'name' => 'Ongkos Kirim',
-                ]);
+                $itemDetails->push(['id' => 'SHIPPING', 'price' => $shippingCost, 'quantity' => 1, 'name' => 'Ongkos Kirim']);
+            }
+
+            if ($discountAmount > 0) {
+                $itemDetails->push(['id' => 'VOUCHER_' . ($voucher->code ?? 'DISCOUNT'), 'price' => -round($discountAmount), 'quantity' => 1, 'name' => 'Diskon Voucher']);
             }
 
             $params = [
                 'transaction_details' => [
                     'order_id' => $transactionId,
-                    'gross_amount' => $totalPrice,
+                    'gross_amount' => $finalPrice, // Kirim harga final ke Midtrans
                 ],
-                'customer_details' => [
-                    'first_name' => $customer->name,
-                    'email' => $customer->email,
-                    'phone' => $customer->phone,
-                ],
+                'customer_details' => ['first_name' => $customer->name, 'email' => $customer->email, 'phone' => $customer->phone,],
                 'item_details' => $itemDetails->toArray(),
             ];
 

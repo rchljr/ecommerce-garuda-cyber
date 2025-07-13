@@ -302,14 +302,21 @@
             };
 
             function updateTotals() {
-                const totalBelanja = subtotal + shippingCost;
+                voucherDiscount = 0;
                 if (selectedVoucher) {
-                    const discountPercent = parseFloat(selectedVoucher.dataset.discountPercent);
-                    voucherDiscount = (totalBelanja * discountPercent) / 100;
-                } else {
-                    voucherDiscount = 0;
+                    const minSpending = parseFloat(selectedVoucher.dataset.minSpending);
+                    // Validasi ulang: pastikan subtotal masih memenuhi syarat
+                    if (subtotal >= minSpending) {
+                        const discountPercent = parseFloat(selectedVoucher.dataset.discountPercent);
+                        // Hitung diskon HANYA dari subtotal produk
+                        voucherDiscount = (subtotal * discountPercent) / 100;
+                    } else {
+                        // Jika setelah ongkir berubah subtotal jadi tidak memenuhi syarat, hapus voucher
+                        btnRemoveVoucher.click(); // Panggil event klik untuk mereset voucher
+                    }
                 }
-                const finalTotal = totalBelanja - voucherDiscount;
+                // Hitung total akhir dengan benar: (Subtotal - Diskon) + Ongkir
+                const finalTotal = (subtotal - voucherDiscount) + shippingCost;
 
                 shippingCostDisplay.textContent = formatRupiah(shippingCost);
                 voucherDiscountDisplay.textContent = `- ${formatRupiah(voucherDiscount)}`;
@@ -449,7 +456,7 @@
 
             // --- VOUCHER LOGIC ---
             function updateVoucherEligibility() {
-                const currentTotal = subtotal + shippingCost;
+                const currentTotal = subtotal;
                 document.querySelectorAll('.voucher-item').forEach(item => {
                     const minSpending = parseFloat(item.dataset.minSpending);
                     item.classList.toggle('disabled', currentTotal < minSpending);
