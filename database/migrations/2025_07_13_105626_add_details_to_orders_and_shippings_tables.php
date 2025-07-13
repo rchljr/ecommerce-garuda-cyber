@@ -14,6 +14,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('orders', function (Blueprint $table) {
+            // Cek apakah kolom sudah ada sebelum menambahkannya
             if (!Schema::hasColumn('orders', 'subtotal')) {
                 $table->decimal('subtotal', 15, 2)->default(0)->after('total_price');
             }
@@ -21,11 +22,13 @@ return new class extends Migration
                 $table->decimal('shipping_cost', 15, 2)->default(0)->after('subtotal');
             }
             if (!Schema::hasColumn('orders', 'discount_amount')) {
-                $table->decimal('discount_amount', 15, 2)->default(0)->after('discount_amount');
+                // PERBAIKAN: Mengubah 'after' ke kolom yang benar ('shipping_cost')
+                $table->decimal('discount_amount', 15, 2)->default(0)->after('shipping_cost');
             }
         });
 
         Schema::table('shippings', function (Blueprint $table) {
+            // Cek apakah kolom sudah ada sebelum menambahkannya
             if (!Schema::hasColumn('shippings', 'estimated_delivery')) {
                 $table->string('estimated_delivery')->nullable();
             }
