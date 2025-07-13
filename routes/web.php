@@ -1,5 +1,7 @@
 <?php
 
+// die('DEBUG-STEP-1-ROUTES');
+
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\HomeController;
