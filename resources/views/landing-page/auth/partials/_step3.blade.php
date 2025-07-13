@@ -8,6 +8,7 @@
         class="flex-grow flex flex-col">
         @csrf
         <div class="flex-grow space-y-3">
+            {{-- Grid untuk input teks dan select --}}
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                     <label for="shop_name" class="block text-base font-semibold text-gray-800 mb-1">Nama Toko<span
@@ -38,7 +39,9 @@
                         class="mt-1 block w-full h-12 px-4 border-2 border-gray-300 rounded-lg" required
                         pattern="[0-9]{5}" title="Kode pos harus terdiri dari 5 angka">
                 </div>
-                <div>
+
+                {{-- PERBAIKAN: Tambahkan md:col-span-2 agar elemen ini memenuhi 2 kolom --}}
+                <div class="md:col-span-2">
                     <label for="product_categories" class="block text-base font-semibold text-gray-800 mb-1">Kategori
                         Produk<span class="text-red-600">*</span></label>
                     <select id="product_categories" name="product_categories"
@@ -55,6 +58,7 @@
                 </div>
             </div>
 
+            {{-- Grid untuk input file --}}
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
                 @include('landing-page.auth.partials._file-input', ['name' => 'shop_photo', 'label1' => 'Foto Tempat Usaha', 'required' => true])
                 @include('landing-page.auth.partials._file-input', ['name' => 'ktp', 'label1' => 'Scan/Foto KTP', 'required' => true])
@@ -63,6 +67,7 @@
                 @include('landing-page.auth.partials._file-input', ['name' => 'nib', 'label2' => 'Nomor Induk Usaha (NIB)'])
                 @include('landing-page.auth.partials._file-input', ['name' => 'iumk', 'label2' => 'Surat Izin Usaha Mikro dan Kecil (IUMK)'])
             </div>
+
             <div class="flex-shrink-0 pt-4">
                 <button type="submit"
                     class="w-full bg-red-700 text-white font-semibold py-3 rounded-lg hover:bg-red-800 transition-colors text-lg">

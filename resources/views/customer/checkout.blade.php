@@ -115,7 +115,8 @@
                                             <div class="mt-2 border-t pt-2">
                                                 <p>{{ $contact->address_line1 }}</p>
                                                 <p>{{ $contact->city }}{{ $contact->state ? ', ' . $contact->state : '' }}
-                                                    {{ $contact->postal_code ?? '' }}</p>
+                                                    {{ $contact->postal_code ?? '' }}
+                                                </p>
                                                 <p class="mt-2"><strong>Telepon:</strong> {{ $contact->phone ?? '-' }}</p>
                                                 <p><strong>Jam Buka:</strong> {{ $contact->working_hours ?? '-' }}</p>
                                             </div>
@@ -214,31 +215,33 @@
                 @else
                     @foreach ($vouchers as $voucher)
                         <div class="voucher-item relative flex bg-white rounded-lg shadow-sm overflow-hidden cursor-pointer transition-transform transform hover:scale-105"
-                             data-id="{{ $voucher->id }}"
-                             data-code="{{ $voucher->code }}"
-                             data-min-spending="{{ $voucher->min_spending }}"
-                             data-discount-percent="{{ $voucher->discount }}">
-                            
+                            data-id="{{ $voucher->id }}" data-code="{{ $voucher->code }}"
+                            data-min-spending="{{ $voucher->min_spending }}" data-discount-percent="{{ $voucher->discount }}">
+
                             <!-- Bagian Kiri - Info Diskon -->
                             <div class="flex-none w-24 bg-red-500 text-white flex flex-col items-center justify-center p-2">
-                                <p class="font-bold text-2xl">{{ (int)$voucher->discount }}<span class="text-lg">%</span></p>
+                                <p class="font-bold text-2xl">{{ (int) $voucher->discount }}<span class="text-lg">%</span></p>
                                 <p class="text-xs uppercase tracking-wider">Diskon</p>
                             </div>
 
                             <!-- Garis putus-putus pemisah -->
-                            <div class="absolute top-0 bottom-0 left-24 w-px bg-gray-50" style="background-image: linear-gradient(to bottom, #e5e7eb 5px, transparent 5px); background-size: 100% 10px;"></div>
+                            <div class="absolute top-0 bottom-0 left-24 w-px bg-gray-50"
+                                style="background-image: linear-gradient(to bottom, #e5e7eb 5px, transparent 5px); background-size: 100% 10px;">
+                            </div>
                             <div class="absolute top-0 bottom-0 left-24 flex items-center">
                                 <div class="w-4 h-4 rounded-full bg-gray-50 transform -translate-x-1/2"></div>
                             </div>
-                             <div class="absolute top-0 bottom-0 right-auto left-24 flex items-center">
+                            <div class="absolute top-0 bottom-0 right-auto left-24 flex items-center">
                                 <div class="w-4 h-4 rounded-full bg-gray-50 transform -translate-x-1/2" style="top: -0.5rem"></div>
-                                <div class="w-4 h-4 rounded-full bg-gray-50 transform -translate-x-1/2" style="bottom: -0.5rem"></div>
+                                <div class="w-4 h-4 rounded-full bg-gray-50 transform -translate-x-1/2" style="bottom: -0.5rem">
+                                </div>
                             </div>
-                            
+
                             <!-- Bagian Kanan - Detail -->
                             <div class="flex-grow p-3 pl-6">
                                 <p class="font-bold text-gray-800">{{ $voucher->name }}</p>
-                                <p class="text-xs text-gray-500 mt-1">Gunakan kode: <span class="font-semibold text-red-600">{{ $voucher->code }}</span></p>
+                                <p class="text-xs text-gray-500 mt-1">Gunakan kode: <span
+                                        class="font-semibold text-red-600">{{ $voucher->code }}</span></p>
                                 <div class="mt-2 pt-2 border-t border-dashed text-xs text-gray-600 space-y-1">
                                     <p>• Min. belanja: {{ format_rupiah($voucher->min_spending) }}</p>
                                     <p>• Berlaku hingga: {{ \Carbon\Carbon::parse($voucher->expired_date)->format('d M Y') }}</p>
@@ -369,7 +372,7 @@
                                 areas.forEach(area => {
                                     const nameParts = area.name.split('. ');
                                     const postalCode = nameParts.length > 1 ? nameParts[1] : '';
-                                    
+
                                     const item = document.createElement('div');
                                     item.className = 'p-3 text-sm cursor-pointer hover:bg-gray-100 border-b';
                                     const displayName = `${area.administrative_division_level_3_name}, ${area.administrative_division_level_2_name}, ${area.administrative_division_level_1_name} (${postalCode})`;
@@ -417,13 +420,13 @@
                             pricing.forEach(rate => {
                                 const id = `${rate.courier_code}-${rate.courier_service_code}`;
                                 shippingOptionsContainer.innerHTML += `
-                                <label for="${id}" class="block border rounded-lg p-4 cursor-pointer has-[:checked]:bg-red-50 has-[:checked]:border-red-500">
-                                    <input type="radio" id="${id}" name="shipping_option" value="${rate.price}" class="hidden" data-service-name="${rate.courier_name} - ${rate.courier_service_name}">
-                                    <div class="flex justify-between items-center">
-                                        <div><p class="font-bold">${rate.courier_name} (${rate.courier_service_name})</p><p class="text-sm text-gray-500">Estimasi ${rate.duration}</p></div>
-                                        <p class="font-semibold">${formatRupiah(rate.price)}</p>
-                                    </div>
-                                </label>`;
+                                    <label for="${id}" class="block border rounded-lg p-4 cursor-pointer has-[:checked]:bg-red-50 has-[:checked]:border-red-500">
+                                        <input type="radio" id="${id}" name="shipping_option" value="${rate.price}" class="hidden" data-service-name="${rate.courier_name} - ${rate.courier_service_name}">
+                                        <div class="flex justify-between items-center">
+                                            <div><p class="font-bold">${rate.courier_name} (${rate.courier_service_name})</p><p class="text-sm text-gray-500">Estimasi ${rate.duration}</p></div>
+                                            <p class="font-semibold">${formatRupiah(rate.price)}</p>
+                                        </div>
+                                    </label>`;
                             });
                         } else {
                             shippingOptionsContainer.innerHTML = '<p class="text-sm text-red-500">Tidak ada layanan pengiriman yang tersedia untuk tujuan ini.</p>';
@@ -437,14 +440,14 @@
             }
 
             // --- EVENT LISTENER FOR SHIPPING OPTIONS ---
-            shippingOptionsContainer.addEventListener('change', function(e) {
+            shippingOptionsContainer.addEventListener('change', function (e) {
                 // Pastikan yang diklik adalah radio button pengiriman
                 if (e.target && e.target.matches('input[name="shipping_option"]')) {
                     const selectedOption = e.target;
-                    
+
                     // Update state ongkos kirim
                     shippingCost = parseFloat(selectedOption.value);
-                    
+
                     // Simpan nama layanan pengiriman ke input tersembunyi
                     const serviceName = selectedOption.dataset.serviceName;
                     document.getElementById('shipping_service_input').value = serviceName;
