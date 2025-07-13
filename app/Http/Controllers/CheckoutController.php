@@ -57,6 +57,7 @@ class CheckoutController extends Controller
         $firstItem = $checkoutItems->first();
         $shopOwner = $firstItem->product->shopOwner;
         $shop = $shopOwner->shop;
+        $contact = $shopOwner->contact;
         $originPostalCode = $shop->postal_code ?? '28293';
 
         // Mengambil voucher yang sesuai dengan dua kriteria:
@@ -75,6 +76,7 @@ class CheckoutController extends Controller
             'originPostalCode',
             'totalWeightInKg',
             'shop',
+            'contact'
         ));
     }
 
@@ -177,7 +179,7 @@ class CheckoutController extends Controller
             'delivery_method' => 'required|string|in:ship,pickup',
             'shipping_cost' => 'nullable|numeric',
             'shipping_service' => 'nullable|string',
-            'estimated_delivery' => 'nullable|string',
+            'estimated_delivery' => 'nullable|string', // Validasi untuk estimasi
             'alamat' => 'required_if:delivery_method,ship|nullable|string|max:500',
             'payment_method' => 'required|string|in:bca_va,bni_va,gopay,qris',
             'voucher_id' => 'nullable|exists:vouchers,id',
@@ -193,30 +195,25 @@ class CheckoutController extends Controller
         $shopOwner = $checkoutItems->first()->product->shopOwner;
         $subdomainId = $shopOwner->subdomain->id;
 
+        // --- Kalkulasi Final di Server ---
         $subtotal = $checkoutItems->sum(fn($item) => $item->product->price * $item->quantity);
         $shippingCost = ($validated['delivery_method'] === 'ship') ? ($validated['shipping_cost'] ?? 0) : 0;
         $discountAmount = 0;
         $voucher = null;
 
-        // 1. Validasi dan hitung ulang diskon di server
         if (!empty($validated['voucher_id'])) {
             $voucher = Voucher::find($validated['voucher_id']);
-            // Pastikan voucher valid, milik toko ini, aktif, dan subtotal memenuhi syarat
             if ($voucher && $voucher->user_id === $shopOwner->id && $voucher->expired_date >= now() && $subtotal >= $voucher->min_spending) {
                 $discountAmount = ($subtotal * $voucher->discount) / 100;
             } else {
-                // Jika voucher tidak valid, batalkan penggunaan
                 $validated['voucher_id'] = null;
             }
         }
 
-        // 2. Hitung total harga akhir yang akan dibayar
-        $finalPrice = ($subtotal - $discountAmount) + $shippingCost;
-        $finalPrice = max(0, round($finalPrice)); // Pastikan tidak negatif dan bulatkan
+        $finalPrice = max(0, round(($subtotal - $discountAmount) + $shippingCost));
 
         DB::beginTransaction();
         try {
-            // Gunakan updateOrCreate untuk menghindari duplikasi order jika user refresh halaman
             $order = Order::updateOrCreate(
                 ['user_id' => $customer->id, 'subdomain_id' => $subdomainId, 'status' => 'pending'],
                 [
@@ -229,8 +226,7 @@ class CheckoutController extends Controller
                 ]
             );
 
-            // Sinkronisasi item order
-            $order->items()->delete(); // Hapus item lama untuk memastikan data baru
+            $order->items()->delete();
             foreach ($checkoutItems as $item) {
                 $order->items()->create([
                     'product_id' => $item->product_id,
@@ -241,15 +237,13 @@ class CheckoutController extends Controller
             }
 
             if ($validated['delivery_method'] === 'ship') {
-                $shippingAddress = !empty(trim($validated['alamat'])) ? $validated['alamat'] : $customer->alamat;
-
                 Shipping::updateOrCreate(
                     ['order_id' => $order->id],
                     [
                         'delivery_service' => $validated['shipping_service'],
                         'shipping_cost' => $shippingCost,
                         'status' => 'pending',
-                        'shipping_address' => $shippingAddress,
+                        'shipping_address' => $validated['alamat'],
                         'estimated_delivery' => $validated['estimated_delivery'] ?? null,
                     ]
                 );
@@ -257,7 +251,6 @@ class CheckoutController extends Controller
 
             $transactionId = $order->id . '-' . uniqid();
 
-            // 3. Siapkan item_details untuk Midtrans
             $itemDetails = $checkoutItems->map(function ($item) {
                 return [
                     'id' => $item->product_variant_id,
@@ -276,15 +269,11 @@ class CheckoutController extends Controller
             }
 
             $params = [
-                'transaction_details' => [
-                    'order_id' => $transactionId,
-                    'gross_amount' => $finalPrice, // Kirim harga final ke Midtrans
-                ],
-                'customer_details' => ['first_name' => $customer->name, 'email' => $customer->email, 'phone' => $customer->phone,],
+                'transaction_details' => ['order_id' => $transactionId, 'gross_amount' => $finalPrice],
+                'customer_details' => ['first_name' => $customer->name, 'email' => $customer->email, 'phone' => $customer->phone],
                 'item_details' => $itemDetails->toArray(),
             ];
 
-            // Set payment_type berdasarkan input
             switch ($request->payment_method) {
                 case 'bca_va':
                 case 'bni_va':
@@ -301,7 +290,6 @@ class CheckoutController extends Controller
 
             $response = CoreApi::charge($params);
 
-            // Buat atau update catatan pembayaran
             Payment::updateOrCreate(
                 ['order_id' => $order->id],
                 [
@@ -314,7 +302,7 @@ class CheckoutController extends Controller
                 ]
             );
 
-            $this->cartService->clearCartItems($validated['items']); // Kosongkan keranjang
+            $this->cartService->clearCartItems($validated['items']);
 
             DB::commit();
             return response()->json($response);
