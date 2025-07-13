@@ -15,6 +15,7 @@ class Order extends Model
     use HasFactory, HasUuids;
     public $incrementing = false;
     protected $keyType = 'string';
+    //kolom baru
     protected $fillable = [
         'user_id',
         'subdomain_id',
