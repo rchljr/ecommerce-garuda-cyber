@@ -68,7 +68,8 @@ class MitraTokoSeeder extends Seeder
         $mitraDataArray = [
             [
                 'user' => ['name' => 'Budi Santoso', 'email' => 'mitra1@gmail.com', 'password' => 'mitra123'],
-                'shop' => ['shop_name' => 'Toko Maju Jaya', 'shop_address' => 'Jl. Pahlawan No. 123, Jakarta', 'product_categories' => 'pakaian-aksesoris'],
+                // --- PERUBAHAN DI SINI ---
+                'shop' => ['shop_name' => 'Toko Maju Jaya', 'shop_address' => 'Jl. Pahlawan No. 123, Jakarta', 'postal_code' => '12190', 'product_categories' => 'pakaian-aksesoris'],
                 'subdomain' => 'toko-maju-jaya',
                 'template' => $template1,
                 'contact' => ['phone' => '6281298765432', 'email' => 'support@tokomajujaya.com'],
@@ -92,7 +93,8 @@ class MitraTokoSeeder extends Seeder
             ],
             [
                 'user' => ['name' => 'Siti Aminah', 'email' => 'mitra2@gmail.com', 'password' => 'mitra123'],
-                'shop' => ['shop_name' => 'Gaya Modern', 'shop_address' => 'Jl. Merdeka No. 45, Bandung', 'product_categories' => 'pakaian-aksesoris'],
+                // --- PERUBAHAN DI SINI ---
+                'shop' => ['shop_name' => 'Gaya Modern', 'shop_address' => 'Jl. Merdeka No. 45, Bandung', 'postal_code' => '40117', 'product_categories' => 'pakaian-aksesoris'],
                 'subdomain' => 'gaya-modern',
                 'template' => $template1,
                 'contact' => ['phone' => '6285712345678', 'email' => 'cs@gayamodern.com'],
@@ -112,7 +114,8 @@ class MitraTokoSeeder extends Seeder
             ],
             [
                 'user' => ['name' => 'Rina Melati', 'email' => 'mitra3@gmail.com', 'password' => 'mitra123'],
-                'shop' => ['shop_name' => 'Fashionista Corner', 'shop_address' => 'Jl. Sudirman Kav. 5, Surabaya', 'product_categories' => 'pakaian-aksesoris'],
+                // --- PERUBAHAN DI SINI ---
+                'shop' => ['shop_name' => 'Fashionista Corner', 'shop_address' => 'Jl. Sudirman Kav. 5, Surabaya', 'postal_code' => '60271', 'product_categories' => 'pakaian-aksesoris'],
                 'subdomain' => 'fashionista-corner',
                 'template' => $template1,
                 'contact' => ['phone' => '6281122334455', 'email' => 'info@fashionistacorner.id'],
@@ -169,6 +172,7 @@ class MitraTokoSeeder extends Seeder
         $mitra->assignRole('mitra');
 
         // 2. Buat Toko (Shop)
+        // Tidak perlu perubahan di sini, karena $shopData sudah mengandung postal_code
         $shop = Shop::create(array_merge($shopData, [
             'user_id' => $mitra->id,
             'shop_photo' => 'seeders/shop_photo.jpg',
