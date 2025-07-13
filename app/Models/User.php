@@ -19,6 +19,7 @@ class User extends Authenticatable
 
     public $incrementing = false;
     protected $keyType = 'string';
+    protected $connection = 'mysql';
 
     protected $fillable = [
         'id',

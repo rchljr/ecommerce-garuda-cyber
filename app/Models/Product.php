@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Storage;
 use Spatie\Multitenancy\Models\Concerns\UsesTenantConnection;
+use App\Models\Category; 
 
 class Product extends Model
 {
@@ -91,7 +92,7 @@ class Product extends Model
 
     public function subCategory()
     {
-        return $this->belongsTo(SubCategory::class, 'sub_category_id');
+        return $this->belongsTo(Category::class, 'sub_category_id');
     }
 
     public function variants(): HasMany
@@ -112,6 +113,10 @@ class Product extends Model
     public function orderItems(): HasMany
     {
         return $this->hasMany(OrderItem::class);
+    }
+    public function getRouteKeyName()
+    {
+        return 'slug';
     }
 
     // --- ACCESSORS ---

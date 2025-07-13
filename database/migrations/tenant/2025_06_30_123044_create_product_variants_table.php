@@ -13,7 +13,6 @@ return new class extends Migration
             $table->id();
             // PERBAIKAN: Gunakan foreignUuid untuk merujuk ke primary key tipe UUID di tabel 'products'
             $table->foreignUuid('product_id')->constrained('products')->onDelete('cascade');
-            
             $table->string('color');
             $table->string('size');
             $table->unsignedInteger('stock')->default(0);

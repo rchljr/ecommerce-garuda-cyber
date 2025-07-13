@@ -18,6 +18,7 @@ class EnsureTenantExists
      */
     public function handle(Request $request, Closure $next)
     {
+        // dd('MIDDLEWARE BERJALAN DI SINI');
         // 1. Ambil parameter 'subdomain' dari rute
         $subdomainName = $request->route('subdomain');
 
@@ -28,9 +29,9 @@ class EnsureTenantExists
         // 2. Cari tenant, ABAIKAN STATUS untuk sementara waktu demi debugging
         $tenant = Tenant::whereHas('subdomain', function ($query) use ($subdomainName) {
             $query->where('subdomain_name', $subdomainName);
-                  //->where('status', 'active'); // Pengecekan status dinonaktifkan
+            //->where('status', 'active'); // Pengecekan status dinonaktifkan
         })
-        ->first();
+            ->first();
 
         // --- DEBUGGING: Tampilkan hasil pencarian tenant ---
         // Jika ini menampilkan null, berarti nama subdomain di URL salah.
@@ -47,9 +48,9 @@ class EnsureTenantExists
         // =================================================================
         // 4. LOGIKA KUNCI UNTUK SWITCH DATABASE
         // =================================================================
-        config(['database.connections.mysql.database' => $tenant->db_name]);
-        DB::purge('mysql');
-        DB::reconnect('mysql');
+        config(['database.connections.tenant.database' => $tenant->db_name]);
+        DB::purge('tenant');
+        DB::reconnect('tenant');
         // =================================================================
 
         // 5. Jika ditemukan, simpan objek tenant ke dalam request

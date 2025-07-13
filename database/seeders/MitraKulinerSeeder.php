@@ -15,7 +15,7 @@ use App\Models\Hero;
 use App\Models\Banner;
 use App\Models\Product;
 use App\Models\SubCategory;
-use Illuminate\Support\Facades\DB; // WAJIB DI-IMPORT
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
@@ -31,34 +31,37 @@ class MitraKulinerSeeder extends Seeder
         // =================================================================
         // BAGIAN 1: PERSIAPAN DATA DI DATABASE PUSAT
         // =================================================================
-        $this->command->info('Memulai Seeder untuk Mitra Toko Demo...');
+        $this->command->info('Memulai Seeder untuk Mitra Kuliner Demo...');
 
         // Data ini diambil dari database pusat
         $businessPackage = SubscriptionPackage::where('package_name', 'Business Plan')->first();
-        $template = Template::where('path', 'template1')->first();
-        $subCategory = SubCategory::where('slug', 'baju-wanita')->first();
+        $template = Template::where('path', 'template2')->first(); // MENGGUNAKAN TEMPLATE 2
 
-        if (!$businessPackage || !$template || !$subCategory) {
-            $this->command->error('Pastikan SubscriptionPackage, Template, dan SubCategory sudah ada sebelum menjalankan seeder ini.');
+        // Mengambil semua sub-kategori kuliner berdasarkan slug
+        $subCategorySlugs = ['makanan', 'minuman', 'snack', 'kue-roti', 'lainnya'];
+        $subCategories = SubCategory::whereIn('slug', $subCategorySlugs)->get()->keyBy('slug');
+
+        if (!$businessPackage || !$template || $subCategories->count() !== count($subCategorySlugs)) {
+            $this->command->error('Pastikan SubscriptionPackage, Template2, dan semua SubCategory Kuliner sudah ada sebelum menjalankan seeder ini.');
             return;
         }
 
         // Membuat data di database pusat
-        $mitra = User::firstOrCreate(['email' => 'mitra@gmail.com'], ['name' => 'Budi Santoso', 'password' => Hash::make('mitra123'), 'status' => 'active']);
+        $mitra = User::firstOrCreate(['email' => 'mitrakuliner@gmail.com'], ['name' => 'Siti Aminah', 'password' => Hash::make('mitra123'), 'status' => 'active']);
         $mitra->assignRole('mitra');
 
         $shop = Shop::updateOrCreate(
             ['user_id' => $mitra->id],
             [
-                'shop_name' => 'Toko Maju Jaya',
-                'year_founded' => '2023-01-01',
-                'shop_address' => 'Jl. Pahlawan No. 123, Jakarta',
-                'product_categories' => 'pakaian-aksesoris',
-                'shop_photo' => 'seeders/shop_photo.jpg',
-                'ktp' => 'seeders/ktp.jpg',
+                'shop_name' => 'Dapur Lezat Bunda',
+                'year_founded' => '2022-01-01',
+                'shop_address' => 'Jl. Kuliner No. 45, Pekanbaru',
+                'product_categories' => 'kuliner', // KATEGORI UTAMA: KULINER
+                'shop_photo' => 'seeders/shop_photo_kuliner.jpg',
+                'ktp' => 'seeders/ktp_kuliner.jpg',
             ]
         );
-        $subdomain = Subdomain::updateOrCreate(['user_id' => $mitra->id], ['subdomain_name' => 'toko-maju-jaya', 'status' => 'active']);
+        $subdomain = Subdomain::updateOrCreate(['user_id' => $mitra->id], ['subdomain_name' => 'dapur-lezat-bunda', 'status' => 'active']);
         
         // =================================================================
         // BAGIAN 2: MEMBUAT DATABASE TENANT & MENGISI RECORD TENANT
@@ -100,36 +103,46 @@ class MitraKulinerSeeder extends Seeder
 
             // --- SEMUA DATA SPESIFIK TENANT DIBUAT DI SINI ---
 
-            Contact::updateOrCreate(['id' => 1], ['address_line1' => 'Jl. Pahlawan No. 123', 'city' => 'Jakarta', 'email' => 'support@tokomajujaya.com']);
+            Contact::updateOrCreate(['id' => 1], ['address_line1' => 'Jl. Kuliner No. 45', 'city' => 'Pekanbaru', 'email' => 'info@dapurlezat.com']);
             
-            // PERBAIKAN: Menambahkan 'user_id'
-            Hero::updateOrCreate(['order' => 1], ['user_id' => $mitra->id, 'title' => 'Koleksi Musim Panas', 'subtitle' => 'Diskon Hingga 30%', 'image' => 'seeders/hero1.jpg', 'is_active' => true]);
-            Hero::updateOrCreate(['order' => 2], ['user_id' => $mitra->id, 'title' => 'Gaya Kasual Terbaik', 'subtitle' => 'Tampil Beda Setiap Hari', 'image' => 'seeders/hero2.jpg', 'is_active' => true]);
+            Hero::updateOrCreate(['order' => 1], ['user_id' => $mitra->id, 'title' => 'Menu Spesial Hari Ini', 'subtitle' => 'Cita Rasa Autentik Nusantara', 'image' => 'seeders/hero_kuliner1.jpg', 'is_active' => true]);
+            Hero::updateOrCreate(['order' => 2], ['user_id' => $mitra->id, 'title' => 'Nikmati Kesegaran Minuman Kami', 'subtitle' => 'Dibuat dari Bahan Pilihan', 'image' => 'seeders/hero_kuliner2.jpg', 'is_active' => true]);
 
-            // PERBAIKAN: Menambahkan 'user_id'
-            Banner::updateOrCreate(['order' => 1], ['user_id' => $mitra->id, 'title' => 'Aksesoris Wajib Punya', 'image' => 'seeders/banner1.jpg', 'is_active' => true]);
-            Banner::updateOrCreate(['order' => 2], ['user_id' => $mitra->id, 'title' => 'Tas & Dompet Terbaru', 'image' => 'seeders/banner2.jpg', 'is_active' => true]);
+            Banner::updateOrCreate(['order' => 1], ['user_id' => $mitra->id, 'title' => 'Paket Hemat Keluarga', 'image' => 'seeders/banner_kuliner1.jpg', 'is_active' => true]);
+            Banner::updateOrCreate(['order' => 2], ['user_id' => $mitra->id, 'title' => 'Cemilan Enak & Renyah', 'image' => 'seeders/banner_kuliner2.jpg', 'is_active' => true]);
 
             $products = [
-                ['name' => 'Blouse Wanita Elegan', 'price' => 185000, 'is_best_seller' => true],
-                ['name' => 'Kemeja Pria Lengan Panjang', 'price' => 220000, 'is_new_arrival' => true],
-                ['name' => 'Gaun Pesta Malam', 'price' => 350000, 'is_hot_sale' => true],
+                // Makanan
+                ['name' => 'Nasi Goreng Spesial', 'price' => 25000, 'category_slug' => 'makanan', 'is_best_seller' => true],
+                ['name' => 'Ayam Bakar Madu', 'price' => 35000, 'category_slug' => 'makanan', 'is_new_arrival' => true],
+                ['name' => 'Soto Ayam Lamongan', 'price' => 20000, 'category_slug' => 'makanan'],
+                // Minuman
+                ['name' => 'Es Teh Manis Jumbo', 'price' => 8000, 'category_slug' => 'minuman'],
+                ['name' => 'Jus Alpukat Segar', 'price' => 15000, 'category_slug' => 'minuman', 'is_best_seller' => true],
+                // Snack
+                ['name' => 'Keripik Singkong Balado', 'price' => 12000, 'category_slug' => 'snack', 'is_hot_sale' => true],
+                ['name' => 'Tahu Crispy', 'price' => 10000, 'category_slug' => 'snack'],
+                // Kue & Roti
+                ['name' => 'Bolu Pandan Klasik', 'price' => 30000, 'category_slug' => 'kue-roti', 'is_new_arrival' => true],
             ];
 
             foreach ($products as $productData) {
-                // PERBAIKAN: Menambahkan 'user_id'
+                // Mencari ID sub-kategori dari koleksi yang sudah diambil
+                $subCategoryId = $subCategories[$productData['category_slug']]->id;
+
                 $product = Product::updateOrCreate(
-                    ['name' => $productData['name']],
+                    ['name' => $productData['name'], 'user_id' => $mitra->id],
                     [
-                        'user_id' => $mitra->id,
                         'slug' => Str::slug($productData['name']) . '-' . uniqid(),
                         'price' => $productData['price'],
-                        'sub_category_id' => $subCategory->id,
-                        'main_image' => 'seeders/product.jpg',
+                        'sub_category_id' => $subCategoryId,
+                        'main_image' => 'seeders/product_kuliner.jpg',
+                        'is_best_seller' => $productData['is_best_seller'] ?? false,
+                        'is_new_arrival' => $productData['is_new_arrival'] ?? false,
+                        'is_hot_sale' => $productData['is_hot_sale'] ?? false,
                     ]
                 );
-                $product->variants()->create(['color' => 'Merah', 'size' => 'M', 'stock' => 10]);
-                $product->variants()->create(['color' => 'Biru', 'size' => 'L', 'stock' => 15]);
+                $product->variants()->create(['size' => 'Original', 'stock' => 50]);
             }
             
             $this->command->info("Data untuk '{$dbName}' berhasil diisi.");
@@ -142,6 +155,6 @@ class MitraKulinerSeeder extends Seeder
             $this->command->info("Kembali ke database pusat '{$originalDbName}'.");
         }
 
-        $this->command->info('Seeder untuk Toko Mitra Demo berhasil dijalankan!');
+        $this->command->info('Seeder untuk Mitra Kuliner Demo berhasil dijalankan!');
     }
 }

@@ -25,13 +25,18 @@ class CartController extends Controller
      */
     public function add(Request $request)
     {
+        // ## PERBAIKAN DI SINI ##
+        // Secara eksplisit memberitahu validator untuk menggunakan koneksi 'tenant'.
+        // Ini memastikan validasi berjalan pada database yang benar.
         $request->validate([
-            'product_id' => 'required|exists:products,id',
+            'product_id' => 'required|exists:tenant.products,id',
             'quantity' => 'required|integer|min:1',
             'size' => 'nullable|string', // Varian sekarang opsional
             'color' => 'nullable|string', // Varian sekarang opsional
         ]);
 
+        // Karena model Product sudah diatur untuk menggunakan koneksi 'tenant',
+        // query ini akan berjalan di database yang benar.
         $product = Product::with('variants')->findOrFail($request->product_id);
 
         // Jika varian tidak dikirim dari frontend (misalnya dari halaman toko),
@@ -77,8 +82,12 @@ class CartController extends Controller
         $tenant = $request->get('tenant');
 
         $cartItems = $this->cartService->getItems($request);
+        
+        // Pastikan Anda memiliki view yang benar
+        // Misalnya: 'templates.template1.cart'
+        $templatePath = $tenant->template->path ?? 'default_template_path';
 
-        return view('customer.cart', compact('tenant', 'cartItems'));
+        return view($templatePath . '.cart', compact('tenant', 'cartItems'));
     }
 
     /**

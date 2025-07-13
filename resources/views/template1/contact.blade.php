@@ -57,15 +57,41 @@
 
                 <div class="col-lg-6 col-md-6">
                     <div class="contact__map">
-                        @if ($mapEmbedCode)
-                            {{-- Gunakan {!! !!} untuk merender HTML mentah dari database --}}
-                            {!! $mapEmbedCode !!}
-                        @else
-                            {{-- Tampilkan pesan jika kode embed tidak ditemukan di database --}}
-                            <div class="w-full h-[500px] bg-gray-200 flex items-center justify-center">
-                                <p class="text-gray-500">Lokasi peta tidak tersedia.</p>
+                        {{-- Kode yang sudah diperbaiki --}}
+                        @if (isset($mapEmbedCode) && !empty($mapEmbedCode))
+                            <div class="mt-5">
+                                <h3 class="fw-bold mb-3">Lokasi Kami</h3>
+                                <a href="{{ $googleMapsLink }}" target="_blank" rel="noopener noreferrer"
+                                    class="d-block position-relative map-container-link">
+
+                                    {{-- Lapisan transparan di atas peta untuk menangkap klik --}}
+                                    <div
+                                        style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2;">
+                                    </div>
+
+                                    {{-- Kode Embed Peta Anda --}}
+                                    <div class="ratio ratio-16x9">
+                                        {!! $mapEmbedCode !!}
+                                    </div>
+
+                                    {{-- Tambahkan styling pada iframe jika perlu agar tidak menangkap klik mouse --}}
+                                    <style>
+                                        .map-container-link iframe {
+                                            pointer-events: none;
+                                            border-radius: 0.5rem;
+                                            /* Membuat sudut lebih manis */
+                                        }
+                                    </style>
+                                </a>
+                                <div class="text-center mt-2">
+                                    <a href="{{ $googleMapsLink }}" target="_blank" rel="noopener noreferrer"
+                                        class="btn btn-outline-primary">
+                                        <i class="bi bi-geo-alt-fill"></i> Buka di Google Maps
+                                    </a>
+                                </div>
                             </div>
                         @endif
+
                     </div>
                 </div>
             </div>

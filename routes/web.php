@@ -60,11 +60,11 @@ Route::prefix('tenant/{subdomain}')
         Route::get('/ping', function () {
             return 'Pong! Rute subdomain berhasil diakses.';
         });
-
+        Route::get('/halaman-yang-error', [HomeController::class, 'methodPenyebabError']);
         // Rute Halaman Publik Toko
         Route::get('/', [HomeController::class, 'index'])->name('home');
         Route::get('/shop', [ShopController::class, 'index'])->name('shop');
-        Route::get('/shop/{product:slug}', [ShopController::class, 'show'])->name('product.details');
+        Route::get('/shop/{product}', [ShopController::class, 'show'])->name('product.details');
         Route::get('/contact', [ContactController::class, 'showPublic'])->name('contact');
 
         // Rute Wishlist
@@ -293,7 +293,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/dashboard', [DashboardMitraController::class, 'index'])->name('dashboard');
 
         Route::get('/produk', [ProductController::class, 'index'])->name('produk');
-        
+
         Route::get('/hero', [HeroController::class, 'index'])->name('hero');
         Route::get('/heroes/create', [HeroController::class, 'create'])->name('heroes.create');
         Route::post('/heroes', [HeroController::class, 'store'])->name('heroes.store');

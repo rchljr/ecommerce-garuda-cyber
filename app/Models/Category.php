@@ -10,9 +10,11 @@ use Spatie\Multitenancy\Models\Concerns\UsesLandlordConnection;
 
 class Category extends Model
 {
+
     use HasFactory, HasUuids;
     use UsesLandlordConnection;
-    
+    protected $connection = 'mysql';
+
     protected $table = 'categories';
     public $incrementing = false;
     protected $keyType = 'string';

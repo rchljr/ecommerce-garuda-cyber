@@ -11,7 +11,7 @@ use Spatie\Multitenancy\Models\Tenant as BaseTenant;
 
 class Tenant extends BaseTenant
 {
-    use UsesLandlordConnection;
+    // use UsesLandlordConnection;
     use HasFactory, HasUuids;
     public $incrementing = false;
     protected $keyType = 'string';
@@ -20,16 +20,16 @@ class Tenant extends BaseTenant
         'subdomain_id',
         'template_id',
         'user_id',
-        'db_mame',
+        'db_name',
     ];
 
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
-    public function template(): BelongsTo
+    public function template()
     {
-        return $this->belongsTo(Template::class);
+        return $this->belongsTo(Template::class, 'template_id');
     }
     public function subdomain()
     {

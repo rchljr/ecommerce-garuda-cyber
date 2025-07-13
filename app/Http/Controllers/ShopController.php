@@ -8,11 +8,13 @@ use Illuminate\Http\Request;
 
 class ShopController extends Controller
 {
+   
     /**
      * Menampilkan halaman toko dengan data yang sudah difilter untuk tenant tertentu.
      */
     public function index(Request $request)
     {
+        //  dd(new \App\Models\Category);
         // 1. Ambil data tenant dari request (sudah disiapkan oleh middleware)
         $tenant = $request->get('tenant');
         if (!$tenant) {
@@ -78,27 +80,36 @@ class ShopController extends Controller
     /**
      * Menampilkan halaman detail produk.
      */
-    public function show(Request $request, Product $product)
+    public function show(Request $request, $productSlug)
     {
-        // 1. Ambil data tenant dan path template (sudah benar)
+        // --- PERBAIKAN DI SINI ---
+        // 1. Cari produk HANYA berdasarkan slug, tanpa memperhatikan status.
+        $product = Product::where('slug', $productSlug)->first();
+
+        // 2. Periksa apakah produknya ada. Jika tidak, hentikan proses.
+        if (!$product) {
+            abort(404, "Produk dengan slug '{$productSlug}' tidak ditemukan.");
+        }
+
+        // 3. Jika produknya ada, periksa statusnya. Jika tidak aktif, hentikan.
+        if ($product->status !== 'active') {
+             abort(404, "Produk '{$product->name}' ditemukan, tetapi saat ini tidak tersedia.");
+        }
+        // --- AKHIR PERBAIKAN ---
+
+        // Jika semua pengecekan lolos, baru lanjutkan.
         $tenant = $request->get('tenant');
         $templatePath = $tenant->template->path;
 
-        // 2. PERBAIKAN: Memuat relasi yang benar
-        // Kita memuat 'subCategory' dan juga 'category' yang ada di dalamnya
+        // Baris ini sekarang aman karena $product dijamin tidak null.
         $product->load('subCategory.category', 'variants', 'gallery', 'tags');
 
-        // 3. PERBAIKAN: Mencari produk terkait berdasarkan sub_category_id
-        // Produk terkait adalah produk dalam sub-kategori yang sama
         $relatedProducts = Product::where('sub_category_id', $product->sub_category_id)
-          
             ->where('id', '!=', $product->id)
-            ->where('status', 'active') // Tambahan: hanya tampilkan produk terkait yang aktif
+            ->where('status', 'active')
             ->limit(4)
             ->get();
 
-        // 4. Tampilkan view dari template yang benar (sudah benar)
-  
         return view($templatePath . '.details', compact('tenant', 'product', 'relatedProducts'));
     }
 }

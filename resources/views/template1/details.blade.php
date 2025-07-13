@@ -66,21 +66,22 @@
 
 @section('content')
     @php
-        $isPreview = $isPreview ?? false;
-        $currentSubdomain = !$isPreview ? request()->route('subdomain') : null;
+        // Variabel ini tidak lagi diperlukan karena rute sudah ditangani oleh grup domain
+        // $isPreview = $isPreview ?? false;
+        // $currentSubdomain = !$isPreview ? request()->route('subdomain') : null;
     @endphp
 
     <!-- Shop Details Section Begin -->
     <section class="shop-details">
+        
         <div class="product__details__pic">
             <div class="container">
                 <div class="row">
                     <div class="col-lg-12">
                         <div class="product__details__breadcrumb">
-                            {{-- PERBAIKAN: Tambahkan parameter subdomain ke rute tenant.home --}}
-                            <a href="{{ !$isPreview ? route('tenant.home', ['subdomain' => $currentSubdomain]) : '#' }}">Home</a>
-                            {{-- PERBAIKAN: Tambahkan parameter subdomain ke rute tenant.shop --}}
-                            <a href="{{ !$isPreview ? route('tenant.shop', ['subdomain' => $currentSubdomain]) : '#' }}">Shop</a>
+                            {{-- PERBAIKAN: Hapus parameter 'subdomain' --}}
+                            <a href="{{ route('tenant.home') }}">Home</a>
+                            <a href="{{ route('tenant.shop') }}">Shop</a>
                             <span>{{ $product->name ?? 'Detail Produk' }}</span>
                         </div>
                     </div>
@@ -94,11 +95,13 @@
                                     <div class="product__thumb__pic set-bg" data-setbg="{{ $product->image_url }}"></div>
                                 </a>
                             </li>
-                            @if(isset($product->gallery) && $product->gallery->count() > 0)
-                                @foreach($product->gallery as $key => $image)
+                            @if (isset($product->gallery) && $product->gallery->count() > 0)
+                                @foreach ($product->gallery as $key => $image)
                                     <li class="nav-item">
-                                        <a class="nav-link" data-toggle="tab" href="#tabs-{{ $key }}" role="tab">
-                                            <div class="product__thumb__pic set-bg" data-setbg="{{ $image->image_url }}"></div>
+                                        <a class="nav-link" data-toggle="tab" href="#tabs-{{ $key }}"
+                                            role="tab">
+                                            <div class="product__thumb__pic set-bg" data-setbg="{{ $image->image_url }}">
+                                            </div>
                                         </a>
                                     </li>
                                 @endforeach
@@ -113,8 +116,8 @@
                                     <img src="{{ $product->image_url }}" alt="{{ $product->name }}">
                                 </div>
                             </div>
-                            @if(isset($product->gallery) && $product->gallery->count() > 0)
-                                @foreach($product->gallery as $key => $image)
+                            @if (isset($product->gallery) && $product->gallery->count() > 0)
+                                @foreach ($product->gallery as $key => $image)
                                     <div class="tab-pane" id="tabs-{{ $key }}" role="tabpanel">
                                         <div class="product__details__pic__item">
                                             <img src="{{ $image->image_url }}"
@@ -137,16 +140,17 @@
                             <div class="rating">
                                 @for ($i = 1; $i <= 5; $i++)
                                     <i
-                                        class="fa {{ ($product->rating ?? 0) >= $i ? 'fa-star' : (($product->rating ?? 0) > ($i - 1) ? 'fa-star-half-o' : 'fa-star-o') }}"></i>
+                                        class="fa {{ ($product->rating ?? 0) >= $i ? 'fa-star' : (($product->rating ?? 0) > $i - 1 ? 'fa-star-half-o' : 'fa-star-o') }}"></i>
                                 @endfor
                                 <span> - {{ $product->reviews_count ?? 0 }} Reviews</span>
                             </div>
                             <h3>Rp {{ number_format($product->price, 0, ',', '.') }}</h3>
                             <p>{{ $product->short_description ?? 'Deskripsi singkat produk akan muncul di sini.' }}</p>
 
-                            {{-- PERBAIKAN: Tambahkan parameter subdomain ke rute tenant.cart.add --}}
+                            {{-- PERBAIKAN: Hapus parameter 'subdomain' --}}
                             <form id="add-to-cart-form"
-                                action="{{ !$isPreview ? route('tenant.cart.add', ['subdomain' => $currentSubdomain]) : '#' }}" method="POST">
+                                action="{{ route('tenant.cart.add') }}"
+                                method="POST">
                                 @csrf
                                 <input type="hidden" name="product_id" value="{{ $product->id }}">
 
@@ -158,14 +162,15 @@
                                 <div class="product__details__option">
                                     <div class="product__details__option__size">
                                         <span>Size:</span>
-                                        @foreach($uniqueSizes as $size)
-                                            <label for="size-{{$size}}"><input type="radio" id="size-{{$size}}" name="size"
-                                                    value="{{$size}}"> {{$size}}</label>
+                                        @foreach ($uniqueSizes as $size)
+                                            <label for="size-{{ $size }}"><input type="radio"
+                                                    id="size-{{ $size }}" name="size"
+                                                    value="{{ $size }}"> {{ $size }}</label>
                                         @endforeach
                                     </div>
                                     <div class="product__details__option__color">
                                         <span>Color:</span>
-                                        @foreach($uniqueColors as $color)
+                                        @foreach ($uniqueColors as $color)
                                             @php
                                                 $cssColor = strtolower($color);
                                                 $colorMap = [
@@ -179,9 +184,10 @@
                                                 ];
                                                 $displayColor = $colorMap[$cssColor] ?? $cssColor;
                                             @endphp
-                                            <label for="color-{{$color}}"
+                                            <label for="color-{{ $color }}"
                                                 style="background-color: {{ $displayColor }}; border: 1px solid #ccc;">
-                                                <input type="radio" id="color-{{$color}}" name="color" value="{{$color}}">
+                                                <input type="radio" id="color-{{ $color }}" name="color"
+                                                    value="{{ $color }}">
                                             </label>
                                         @endforeach
                                     </div>
@@ -206,7 +212,6 @@
                                 <img src="{{ asset('template1/img/shop-details/details-payment.png') }}" alt="">
                                 <ul>
                                     <li><span>SKU:</span> {{ $product->sku ?? 'N/A' }}</li>
-                                    {{-- PERBAIKAN: Menggunakan relasi subCategory --}}
                                     <li><span>Categories:</span> {{ $product->subCategory->name ?? 'Uncategorized' }}</li>
                                     <li><span>Tag:</span>
                                         @forelse($product->tags as $tag)
@@ -265,26 +270,30 @@
 
 @push('scripts')
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
+        document.addEventListener('DOMContentLoaded', function() {
             // Fungsi 'pro-qty' untuk tombol kuantitas
             var proQty = $('.pro-qty');
             proQty.prepend('<span class="fa fa-angle-up dec qtybtn"></span>');
             proQty.append('<span class="fa fa-angle-down inc qtybtn"></span>');
-            proQty.on('click', '.qtybtn', function () {
+            proQty.on('click', '.qtybtn', function() {
                 var $button = $(this);
                 var oldValue = $button.parent().find('input').val();
                 var newVal;
                 if ($button.hasClass('inc')) {
                     newVal = parseFloat(oldValue) + 1;
                 } else {
-                    if (oldValue > 1) { newVal = parseFloat(oldValue) - 1; }
-                    else { newVal = 1; }
+                    if (oldValue > 1) {
+                        newVal = parseFloat(oldValue) - 1;
+                    } else {
+                        newVal = 1;
+                    }
                 }
                 $button.parent().find('input').val(newVal);
             });
 
             // Fungsi untuk memilih varian
-            $('.product__details__option__size label, .product__details__option__color label').on('click', function () {
+            $('.product__details__option__size label, .product__details__option__color label').on('click',
+            function() {
                 $(this).siblings().removeClass('active');
                 $(this).addClass('active');
             });
@@ -292,6 +301,7 @@
             // --- Logika AJAX (Sama seperti halaman shop) ---
             const toastElement = document.getElementById('toast-notification');
             let toastTimeout;
+
             function showToast(message, type = 'success') {
                 clearTimeout(toastTimeout);
                 toastElement.textContent = message;
@@ -304,7 +314,7 @@
             const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
 
             // AJAX untuk Add to Cart (menggunakan form)
-            document.getElementById('add-to-cart-form').addEventListener('submit', function (e) {
+            document.getElementById('add-to-cart-form').addEventListener('submit', function(e) {
                 e.preventDefault();
 
                 const selectedSize = this.querySelector('input[name="size"]:checked');
@@ -320,24 +330,21 @@
                 originalButton.disabled = true;
                 originalButton.textContent = 'ADDING...';
 
-                // =======================================================//
-                // ========= PERBAIKAN UTAMA ADA DI SINI ================= //
-                // =======================================================//
                 fetch(this.action, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json', // Beri tahu server kita mengirim JSON
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': csrfToken
-                    },
-                    body: JSON.stringify(Object.fromEntries(formData)) // Ubah form data menjadi JSON
-                })
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json', // Beri tahu server kita mengirim JSON
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken
+                        },
+                        body: JSON.stringify(Object.fromEntries(
+                            formData)) // Ubah form data menjadi JSON
+                    })
                     .then(res => {
-                        // Cek jika response tidak OK, lalu coba parse errornya
                         if (!res.ok) {
                             return res.json().then(errorData => {
-                                // Buat pesan error dari validasi Laravel
-                                const errorMessages = Object.values(errorData.errors).flat().join('\n');
+                                const errorMessages = Object.values(errorData.errors).flat()
+                                    .join('\n');
                                 throw new Error(errorMessages);
                             });
                         }
@@ -351,12 +358,10 @@
                                 cartCountElement.textContent = data.cart_count;
                             }
                         } else {
-                            // Ini seharusnya tidak terjadi jika validasi gagal, tapi sebagai fallback
                             showToast(data.message || 'Gagal menambahkan produk.', 'error');
                         }
                     })
                     .catch(err => {
-                        // Tampilkan pesan error validasi atau error umum
                         showToast(err.message, 'error');
                     })
                     .finally(() => {
@@ -367,22 +372,32 @@
 
             // AJAX untuk Wishlist
             document.querySelectorAll('.toggle-wishlist').forEach(button => {
-                button.addEventListener('click', function (e) {
+                button.addEventListener('click', function(e) {
                     e.preventDefault();
-                    if (!csrfToken) { showToast('Terjadi kesalahan. Coba refresh halaman.', 'error'); return; }
+                    if (!csrfToken) {
+                        showToast('Terjadi kesalahan. Coba refresh halaman.', 'error');
+                        return;
+                    }
 
                     const productId = this.dataset.productId;
 
-                    // PERBAIKAN: Tambahkan parameter subdomain ke rute tenant.wishlist.toggle
-                    fetch("{{ !$isPreview ? route('tenant.wishlist.toggle', ['subdomain' => $currentSubdomain]) : '#' }}", {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
-                        body: JSON.stringify({ product_id: productId })
-                    })
+                    // PERBAIKAN: Hapus parameter 'subdomain'
+                    fetch("{{ route('tenant.wishlist.toggle') }}", {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json',
+                                'X-CSRF-TOKEN': csrfToken
+                            },
+                            body: JSON.stringify({
+                                product_id: productId
+                            })
+                        })
                         .then(response => {
                             if (response.status === 401) {
-                                // PERBAIKAN: Tambahkan parameter subdomain ke rute tenant.customer.login.form
-                                window.location.href = "{{ !$isPreview ? route('tenant.customer.login.form', ['subdomain' => $currentSubdomain]) : '#' }}";
+                                // PERBAIKAN: Hapus parameter 'subdomain'
+                                window.location.href =
+                                    "{{ route('tenant.customer.login.form') }}";
                                 throw new Error('Unauthorized');
                             }
                             return response.json();
@@ -396,7 +411,8 @@
                                     showToast('Produk dihapus dari Wishlist.', 'success');
                                     this.classList.remove('active');
                                 }
-                                const wishlistCountElement = document.getElementById('wishlist-count');
+                                const wishlistCountElement = document.getElementById(
+                                    'wishlist-count');
                                 if (wishlistCountElement) {
                                     wishlistCountElement.textContent = data.wishlist_count;
                                 }

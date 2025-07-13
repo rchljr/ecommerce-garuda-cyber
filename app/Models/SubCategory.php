@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class SubCategory extends Model
 {
     use HasFactory, HasUuids;
+    protected $connection = 'central';
 
     protected $table = 'sub_categories';
     public $incrementing = false;

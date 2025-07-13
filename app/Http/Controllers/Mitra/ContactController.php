@@ -71,24 +71,44 @@ class ContactController extends Controller
             );
         });
 
-        return redirect()->route('mitra.contacts.edit')->with('success', 'Informasi kontak berhasil diperbarui!');
+        // Diarahkan kembali ke halaman edit, bukan update.
+        return redirect()->route('mitra.contacts.update')->with('success', 'Informasi kontak berhasil diperbarui!');
     }
 
     /**
      * Menampilkan halaman kontak publik untuk tenant.
-     * Method ini sudah benar karena ia berjalan di rute tenant,
-     * di mana middleware Spatie sudah mengganti koneksi database.
+     * Method ini sudah disesuaikan untuk memastikan peta tampil.
      */
     public function showPublic(Request $request)
     {
-        // Middleware Spatie sudah mengidentifikasi tenant dan mengganti koneksi.
-        // Jadi, kita bisa langsung query model Contact.
+        // Middleware sudah mengidentifikasi tenant dan mengganti koneksi.
         $contact = Contact::first();
+        
+        $tenant = $request->get('tenant');
+        $templatePath = optional($tenant->template)->path ?? 'default';
 
-        // Ambil data tenant dan path template yang sudah disiapkan oleh middleware
-        $tenant = $request->get('tenant'); // Helper dari Spatie untuk mendapatkan tenant saat ini
-        $templatePath = optional($tenant->template)->path ?? 'default'; // Fallback jika template tidak ada
+        $mapEmbedCode = $contact ? $contact->map_embed_code : null;
 
-        return view($templatePath . '.contact', compact('tenant', 'contact'));
+        // ## PERBAIKAN DI SINI ##
+        // Buat URL Google Maps dari data alamat yang ada.
+        $googleMapsLink = '#'; // Default link jika tidak ada alamat
+        if ($contact && $contact->address_line1) {
+            // Gabungkan alamat menjadi satu string untuk query
+            $addressQuery = urlencode(
+                $contact->address_line1 . ', ' . 
+                $contact->city . ', ' . 
+                $contact->state . ' ' . 
+                $contact->postal_code
+            );
+            $googleMapsLink = "https://www.google.com/maps/search/?api=1&query=" . $addressQuery;
+        }
+
+        // Kirim semua variabel yang dibutuhkan ke view.
+        return view($templatePath . '.contact', compact(
+            'tenant', 
+            'contact', 
+            'mapEmbedCode',
+            'googleMapsLink' 
+        ));
     }
 }

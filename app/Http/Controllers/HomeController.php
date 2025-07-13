@@ -19,10 +19,10 @@ class HomeController extends Controller
      */
     public function index(Request $request)
     {
-        dd('Database yang sedang aktif:', DB::connection()->getDatabaseName());
-
+        //  dd('Database yang sedang aktif:', DB::connection()->getDatabaseName());
         // 1. Ambil data tenant dari request (sudah disiapkan oleh middleware)
         $tenant = $request->get('tenant');
+        
         $templatePath = $tenant->template->path;
 
         // 2. Ambil data yang dibutuhkan oleh template (logika Anda tidak berubah)
