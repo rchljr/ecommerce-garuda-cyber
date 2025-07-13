@@ -38,7 +38,6 @@
                         class="mt-1 block w-full h-12 px-4 border-2 border-gray-300 rounded-lg" required
                         pattern="[0-9]{5}" title="Kode pos harus terdiri dari 5 angka">
                 </div>
-
                 <div>
                     <label for="product_categories" class="block text-base font-semibold text-gray-800 mb-1">Kategori
                         Produk<span class="text-red-600">*</span></label>
