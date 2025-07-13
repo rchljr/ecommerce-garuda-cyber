@@ -158,6 +158,9 @@ Route::prefix('register')->name('register.')->group(function () {
 //preview template
 Route::get('/{template:name}/beranda', [TemplateController::class, 'preview'])->name('template.preview');
 
+//== MIDTRANS WEBHOOK (TIDAK MEMERLUKAN AUTH/CSRF) ==//
+Route::post('/payment/webhook', [PaymentController::class, 'handleWebhook'])->name('midtrans.webhook');
+
 //Mitra Sementara
 // Route::prefix('dashboard-mitra')->name('mitra.')->group(function () {
 //     // Rute dashboard utama
@@ -216,10 +219,6 @@ Route::get('/{template:name}/beranda', [TemplateController::class, 'preview'])->
 
 // routes/web.php
 Route::get('/template1/beranda', [HomeController::class, 'index'])->name('home');
-
-
-//== MIDTRANS WEBHOOK (TIDAK MEMERLUKAN AUTH/CSRF) ==//
-Route::post('/midtrans/webhook', [PaymentController::class, 'handleWebhook'])->name('midtrans.webhook');
 
 Route::get('/fruit', function () {
     return view('template2.home');
