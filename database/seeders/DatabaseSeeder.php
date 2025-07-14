@@ -21,6 +21,7 @@ class DatabaseSeeder extends Seeder
             VoucherSeeder::class,
             PointRewardSeeder::class,
             TemplateSeeder::class,
+            TestOrderSeeder::class,
         ]);
 
         $this->call([

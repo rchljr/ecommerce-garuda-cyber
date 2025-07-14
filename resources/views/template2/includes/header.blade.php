@@ -1,46 +1,45 @@
 <!DOCTYPE html>
 <html lang="en">
 @php
-    // Logika ini disiapkan di bagian atas agar rapi.
+    // --- BLOK LOGIKA THEME & KERANJANG ---
+    // Variabel $customTema, $tenant, dan $shop tersedia berkat middleware dan View Composer.
 
-    // Cek apakah ini mode preview dari TemplateController.
+    // 1. Pengaturan Dasar
     $isPreview = $isPreview ?? false;
-
-    // Ambil data tenant yang sudah disiapkan oleh middleware.
-    // Variabel $tenant diasumsikan sudah ada dan dikirim dari controller.
-    $tenant = $tenant ?? null;
-
-    // Ambil subdomain saat ini jika bukan mode preview.
     $currentSubdomain = !$isPreview && $tenant ? $tenant->subdomain->subdomain_name : null;
 
-    // Ambil data kontak dan toko dari tenant.
-    $contact = $tenant ? $tenant->contact : null;
-    $shop = $tenant ? $tenant->shop : null;
+    // 2. Pengaturan Tema Dinamis
+    // Ambil data dari $customTema, berikan nilai default jika tidak ada.
+    $logoPath = optional($customTema)->shop_logo;
+    $shopName = optional($customTema)->shop_name ?? (optional($shop)->shop_name ?? 'Nama Toko');
+    $primaryColor = optional($customTema)->primary_color ?? '#82ae46'; // Default: Hijau
+    $secondaryColor = optional($customTema)->secondary_color ?? '#F96D00'; // Default: Oranye
 
-    // Logika untuk hitungan keranjang belanja.
+    // Siapkan URL logo dengan fallback ke logo default template.
+    $logoUrl = $logoPath ? asset('storage/' . $logoPath) : null; // Defaultnya tidak ada logo, hanya nama
+
+    // 3. Logika Hitungan Keranjang
     $cartCount = 0;
     if (!$isPreview && Auth::guard('customers')->check()) {
-        // Jika pelanggan login, hitung dari database.
         $cart = Auth::guard('customers')->user()->cart;
         $cartCount = $cart ? $cart->items->sum('quantity') : 0;
     } elseif (!$isPreview && session()->has('cart')) {
-        // Jika tamu, hitung dari session.
         $cartCount = array_sum(array_column(session('cart'), 'quantity'));
     }
 @endphp
 
 <head>
-    {{-- Menggunakan nama toko dari tenant secara dinamis sebagai judul halaman --}}
-    <title>{{ $shop->shop_name ?? 'Nama Toko' }}</title>
+    <title>{{ $shopName }}</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+
 
     <link href="https://fonts.googleapis.com/css?family=Poppins:200,300,400,500,600,700,800&display=swap"
         rel="stylesheet">
     <link href="https://fonts.googleapis.com/css?family=Lora:400,400i,700,700i&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css?family=Amatic+SC:400,700&display=swap" rel="stylesheet">
 
-    {{-- Path ke aset CSS di folder public menggunakan helper asset() --}}
     <link rel="stylesheet" href="{{ asset('template2/css/open-iconic-bootstrap.min.css') }}">
     <link rel="stylesheet" href="{{ asset('template2/css/animate.css') }}">
     <link rel="stylesheet" href="{{ asset('template2/css/owl.carousel.min.css') }}">
@@ -53,6 +52,47 @@
     <link rel="stylesheet" href="{{ asset('template2/css/flaticon.css') }}">
     <link rel="stylesheet" href="{{ asset('template2/css/icomoon.css') }}">
     <link rel="stylesheet" href="{{ asset('template2/css/style.css') }}">
+
+    {{-- CSS DINAMIS UNTUK WARNA TEMA --}}
+    <style>
+        :root {
+            --primary-color: {{ $primaryColor }};
+            --secondary-color: {{ $secondaryColor }};
+        }
+
+        /* Menerapkan warna tema ke elemen-elemen kunci */
+        .bg-primary,
+        .ftco-navbar-light .navbar-nav>.nav-item.cta>a {
+            background: var(--primary-color) !important;
+        }
+
+        .text-primary,
+        .ftco-navbar-light .navbar-nav>.nav-item.active>a {
+            color: var(--primary-color) !important;
+        }
+
+        a,
+        .product-category a.active {
+            color: var(--primary-color);
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+            opacity: 0.9;
+        }
+
+        .price,
+        .price-sale {
+            color: var(--secondary-color) !important;
+        }
+    </style>
+    @stack('styles')
 </head>
 
 <body class="goto-here">
@@ -89,7 +129,12 @@
             {{-- Menampilkan nama toko sebagai brand --}}
             <a class="navbar-brand"
                 href="{{ !$isPreview ? route('tenant.home', ['subdomain' => $currentSubdomain]) : '#' }}">
-                {{ $shop->shop_name ?? 'Nama Toko' }}
+                {{-- LOGO & NAMA TOKO DINAMIS --}}
+                @if ($logoUrl)
+                    <img src="{{ $logoUrl }}" alt="Logo {{ $shopName }}"
+                        style="max-height: 40px; margin-right: 10px;">
+                @endif
+                {{ $shopName }}
             </a>
 
             <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#ftco-nav"
@@ -136,11 +181,11 @@
                             class="nav-link">Kontak</a></li>
 
                     {{-- Link ke halaman keranjang dengan hitungan dinamis --}}
+                    {{-- Cari bagian navigasi keranjang --}}
                     <li class="nav-item cta cta-colored">
                         <a href="{{ !$isPreview ? route('tenant.cart.index', ['subdomain' => $currentSubdomain]) : '#' }}"
                             class="nav-link">
-                            <span class="icon-shopping_cart"></span>[<span
-                                id="cart-count">{{ $cartCount ?? 0 }}</span>]
+                            <span class="icon-shopping_cart"></span>[<span id="cart-count">{{ $cartCount }}</span>]
                         </a>
                     </li>
                 </ul>

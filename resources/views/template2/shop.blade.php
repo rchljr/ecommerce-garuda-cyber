@@ -2,7 +2,7 @@
 
 @section('title', 'Produk Kami')
 
-{{-- Langkah 1: Menambahkan CSS Kustom untuk Modal & Notifikasi --}}
+{{-- CSS Kustom untuk Modal & Notifikasi --}}
 @push('styles')
     <style>
         .toast-notification {
@@ -111,7 +111,6 @@
                             </div>
                             <div class="bottom-area d-flex px-3">
                                 <div class="m-auto d-flex">
-                                    {{-- Langkah 2: Tombol Add to Cart dengan data-attributes --}}
                                     <a href="#" class="add-to-cart add-cart-button d-flex justify-content-center align-items-center text-center"
                                        data-product-id="{{ $product->id }}"
                                        data-product-name="{{ $product->name }}"
@@ -145,7 +144,7 @@
     </div>
 </section>
 
-{{-- Langkah 3: HTML untuk Modal & Notifikasi --}}
+{{-- HTML untuk Modal & Notifikasi --}}
 <div id="toast-notification" class="toast-notification"></div>
 
 <div id="variant-modal" class="variant-modal">
@@ -165,7 +164,6 @@
 </div>
 @endsection
 
-{{-- Langkah 4: JavaScript Lengkap untuk menangani semua logika --}}
 @push('scripts')
     <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -175,53 +173,63 @@
         const modal = document.getElementById('variant-modal');
         const closeModalBtn = document.querySelector('.variant-modal-close');
 
-        document.querySelectorAll('.add-cart-button').forEach(button => {
-            button.addEventListener('click', function(e) {
-                e.preventDefault();
+        // ## PERBAIKAN DENGAN EVENT DELEGATION ##
+        // Memasang satu listener pada dokumen untuk menangkap semua klik.
+        document.addEventListener('click', function(e) {
+            // Mengecek apakah elemen yang diklik (atau salah satu induknya) adalah tombol '.add-cart-button'
+            const button = e.target.closest('.add-cart-button');
 
-                if (isPreview) {
-                    showToast('Fitur ini tidak tersedia dalam mode pratinjau.', 'error');
-                    return;
+            // Jika bukan tombol yang kita cari, hentikan fungsi.
+            if (!button) {
+                return;
+            }
+
+            // Jika tombol ditemukan, jalankan logika modal.
+            e.preventDefault();
+
+            if (isPreview) {
+                showToast('Fitur ini tidak tersedia dalam mode pratinjau.', 'error');
+                return;
+            }
+
+            const productId = button.dataset.productId;
+            const productName = button.dataset.productName;
+            const productPrice = parseFloat(button.dataset.productPrice);
+            const productImage = button.dataset.productImage;
+            const variants = JSON.parse(button.dataset.productVariants);
+
+            document.getElementById('modal-product-id').value = productId;
+            document.getElementById('modal-product-info').innerHTML = `
+                <img src="${productImage}" alt="${productName}" style="width:80px; height:80px; object-fit:cover; border-radius:5px; margin-right: 15px;">
+                <div>
+                    <h5 style="margin-bottom: 5px;">${productName}</h5>
+                    <p class="price" style="font-size: 18px; color: #82ae46; font-weight: 700;">Rp ${productPrice.toLocaleString('id-ID')}</p>
+                </div>`;
+
+            const variantContainer = document.getElementById('modal-variant-selection');
+            variantContainer.innerHTML = ''; 
+
+            if (variants && variants.length > 0) {
+                const sizes = [...new Set(variants.map(v => v.size).filter(v => v))];
+                if (sizes.length > 0) {
+                    let sizeOptions = sizes.map(s => `<option value="${s}">${s}</option>`).join('');
+                    variantContainer.innerHTML += `
+                        <div class="form-group"><label for="modal-size">Size</label>
+                        <select id="modal-size" name="size" class="form-control" required>${sizeOptions}</select></div>`;
                 }
-
-                const productId = this.dataset.productId;
-                const productName = this.dataset.productName;
-                const productPrice = parseFloat(this.dataset.productPrice);
-                const productImage = this.dataset.productImage;
-                const variants = JSON.parse(this.dataset.productVariants);
-
-                document.getElementById('modal-product-id').value = productId;
-                document.getElementById('modal-product-info').innerHTML = `
-                    <img src="${productImage}" alt="${productName}" style="width:80px; height:80px; object-fit:cover; border-radius:5px; margin-right: 15px;">
-                    <div>
-                        <h5 style="margin-bottom: 5px;">${productName}</h5>
-                        <p class="price" style="font-size: 18px; color: #82ae46; font-weight: 700;">Rp ${productPrice.toLocaleString('id-ID')}</p>
-                    </div>`;
-
-                const variantContainer = document.getElementById('modal-variant-selection');
-                variantContainer.innerHTML = ''; 
-
-                if (variants && variants.length > 0) {
-                    const sizes = [...new Set(variants.map(v => v.size).filter(v => v))];
-                    if (sizes.length > 0) {
-                        let sizeOptions = sizes.map(s => `<option value="${s}">${s}</option>`).join('');
-                        variantContainer.innerHTML += `
-                            <div class="form-group"><label for="modal-size">Size</label>
-                            <select id="modal-size" name="size" class="form-control" required>${sizeOptions}</select></div>`;
-                    }
-                    
-                    const colors = [...new Set(variants.map(v => v.color).filter(v => v))];
-                     if (colors.length > 0) {
-                        let colorOptions = colors.map(c => `<option value="${c}">${c}</option>`).join('');
-                        variantContainer.innerHTML += `
-                            <div class="form-group"><label for="modal-color">Color</label>
-                            <select id="modal-color" name="color" class="form-control" required>${colorOptions}</select></div>`;
-                    }
+                
+                const colors = [...new Set(variants.map(v => v.color).filter(v => v))];
+                 if (colors.length > 0) {
+                    let colorOptions = colors.map(c => `<option value="${c}">${c}</option>`).join('');
+                    variantContainer.innerHTML += `
+                        <div class="form-group"><label for="modal-color">Color</label>
+                        <select id="modal-color" name="color" class="form-control" required>${colorOptions}</select></div>`;
                 }
-                modal.style.display = 'block';
-            });
+            }
+            modal.style.display = 'block';
         });
 
+        // Logika untuk menutup modal (tidak berubah)
         if (modal) {
             closeModalBtn.onclick = () => modal.style.display = "none";
             window.onclick = (event) => {
@@ -229,6 +237,7 @@
             };
         }
 
+        // Logika untuk submit form (tidak berubah)
         const variantForm = document.getElementById('variant-form');
         if (variantForm) {
             variantForm.addEventListener('submit', function(e) {
@@ -250,7 +259,12 @@
                     },
                     body: JSON.stringify(data)
                 })
-                .then(response => response.json())
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(err => { throw err; });
+                    }
+                    return response.json();
+                })
                 .then(data => {
                     if (data.success) {
                         showToast(data.message, 'success');
@@ -265,7 +279,11 @@
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    showToast('Terjadi kesalahan. Coba lagi.', 'error');
+                    if (error.message) {
+                        showToast(error.message, 'error');
+                    } else {
+                        showToast('Terjadi kesalahan. Silakan coba lagi.', 'error');
+                    }
                 });
             });
         }

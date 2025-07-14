@@ -19,9 +19,24 @@ class HomeController extends Controller
      */
     public function index(Request $request)
     {
-        //  dd('Database yang sedang aktif:', DB::connection()->getDatabaseName());
         // 1. Ambil data tenant dari request (sudah disiapkan oleh middleware)
         $tenant = $request->get('tenant');
+        if (!$tenant) {
+            abort(404, 'Tenant tidak ditemukan.');
+        }
+
+        // ## PERBAIKAN BARU ##
+        // Ambil user (mitra) dari tenant terlebih dahulu
+        $user = $tenant->user;
+        if (!$user) {
+            abort(404, 'User (mitra) untuk tenant ini tidak ditemukan.');
+        }
+
+        // Ambil data 'shop' dari user (mitra)
+        $shop = $user->shop;
+        if (!$shop) {
+            abort(404, 'Toko untuk mitra ini tidak ditemukan.');
+        }
         
         $templatePath = $tenant->template->path;
 
@@ -32,8 +47,16 @@ class HomeController extends Controller
         $newArrivals = Product::where('is_new_arrival', true)->where('status', 'active')->latest()->limit(8)->get();
         $hotSales = Product::where('is_hot_sale', true)->where('status', 'active')->latest()->limit(8)->get();
 
-        // 3. Tampilkan view dari template yang benar dengan semua data
-        return view($templatePath . '.home', compact('tenant', 'heroes', 'banners', 'bestSellers', 'newArrivals', 'hotSales'));
-       
+        // 3. Tampilkan view dari template yang benar dengan SEMUA data yang dibutuhkan
+        return view($templatePath . '.home', [
+            'tenant' => $tenant,
+            'shop' => $shop, // <-- Variabel $shop sekarang dikirim ke view
+            'heroes' => $heroes,
+            'banners' => $banners,
+            'bestSellers' => $bestSellers,
+            'newArrivals' => $newArrivals,
+            'hotSales' => $hotSales,
+        ]);
+        
     }
 }

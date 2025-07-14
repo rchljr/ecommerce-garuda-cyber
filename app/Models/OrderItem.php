@@ -19,7 +19,7 @@ class OrderItem extends Model
         'order_id',
         'product_id',
         'quantity',
-        'price', // Harga saat item dibeli
+        'unit_price', // Harga saat item dibeli
     ];
 
     /**

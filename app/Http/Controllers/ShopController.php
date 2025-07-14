@@ -17,6 +17,7 @@ class ShopController extends Controller
         //  dd(new \App\Models\Category);
         // 1. Ambil data tenant dari request (sudah disiapkan oleh middleware)
         $tenant = $request->get('tenant');
+        $shop = $tenant->shop; 
         if (!$tenant) {
             abort(404, 'Tenant tidak ditemukan dari middleware.');
         }

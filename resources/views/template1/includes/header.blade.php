@@ -1,31 +1,65 @@
 @php
-    // Cek apakah ini mode preview. Jika ya, $currentSubdomain akan null.
-    // Variabel $isPreview akan dikirim dari TemplateController.
+    // --- BLOK LOGIKA BARU ---
+    // Variabel $customTema sekarang tersedia berkat View Composer.
+
+    // Cek mode preview
     $isPreview = $isPreview ?? false;
 
-    // Ambil subdomain saat ini sekali saja dari parameter rute agar lebih efisien.
-    // Ini tersedia karena middleware 'tenant.exists' sudah memprosesnya.
+    // Ambil subdomain jika bukan mode preview
     $currentSubdomain = !$isPreview ? request()->route('subdomain') : null;
 
-    // Asumsi: Anda memiliki relasi one-to-one bernama 'customTema' di model Shop Anda.
-    // public function customTema() { return $this->hasOne(CustomTema::class); }
-    $logoPath = (isset($currentShop) && $currentShop) ? optional($currentShop->customTema)->shop_logo : null;
-
-    // Tentukan URL logo: gunakan logo kustom jika ada, jika tidak, gunakan logo default template.
-    // Pastikan file kustom di-upload ke 'storage/app/public/logos' atau path serupa.
+    // Ambil path logo dari data tema, gunakan default jika tidak ada
+    $logoPath = optional($customTema)->shop_logo;
     $logoUrl = $logoPath ? asset('storage/' . $logoPath) : asset('template1/img/logo.png');
 
-    // Logika untuk hitungan keranjang
+    // Ambil nama toko dari data tema, gunakan fallback ke data shop, lalu default
+    $shopName = optional($customTema)->shop_name ?? optional($shop)->shop_name ?? 'Nama Toko';
+
+    // Ambil warna dari data tema, gunakan default jika tidak ada
+    $primaryColor = optional($customTema)->primary_color ?? '#111111'; // Warna default template1
+    $secondaryColor = optional($customTema)->secondary_color ?? '#e53637'; // Warna default template1
+
+    // Logika hitungan keranjang (tetap sama)
     $cartCount = 0;
-    if (Auth::guard('customers')->check()) {
-        // Jika pelanggan login, hitung dari database
+    if (!$isPreview && Auth::guard('customers')->check()) {
         $cart = Auth::guard('customers')->user()->cart;
         $cartCount = $cart ? $cart->items->sum('quantity') : 0;
-    } elseif (session()->has('cart')) {
-        // Jika tamu, hitung dari session
+    } elseif (!$isPreview && session()->has('cart')) {
         $cartCount = array_sum(array_column(session('cart'), 'quantity'));
     }
 @endphp
+
+{{-- MENAMBAHKAN STYLE DINAMIS DI HEAD --}}
+<style>
+    /* Menggunakan CSS Variables untuk kemudahan */
+    :root {
+        --primary-color: {{ $primaryColor }};
+        --secondary-color: {{ $secondaryColor }};
+    }
+
+    /* Mengganti warna elemen-elemen kunci */
+    .header__top {
+        background: var(--primary-color);
+    }
+    .header__menu ul li.active>a,
+    .header__menu ul li:hover>a {
+        color: var(--secondary-color);
+    }
+    .header__nav__option a span {
+        background: var(--secondary-color);
+    }
+    .site-btn, .primary-btn { /* Asumsi nama class untuk tombol utama */
+        background-color: var(--primary-color);
+    }
+    .product__item__text .add-cart {
+        border-color: var(--primary-color);
+        color: var(--primary-color);
+    }
+    .product__item__text .add-cart:hover {
+        background: var(--primary-color);
+        color: #ffffff;
+    }
+</style>
 
 <header class="header">
     <div class="header__top">
@@ -92,8 +126,11 @@
         <div class="row">
             <div class="col-lg-3 col-md-3">
                 <div class="header__logo">
+                    {{-- PERBAIKAN: Logo dan Nama Toko Dinamis --}}
                     <a href="{{ !$isPreview ? route('tenant.home', ['subdomain' => $currentSubdomain]) : '#' }}">
-                        <img src="{{ $logoUrl }}" alt="{{ optional($currentShop)->shop_name ?? 'Logo Toko' }}">
+                        <img src="{{ $logoUrl }}" alt="{{ $shopName }}" style="max-height: 40px;">
+                        {{-- Opsional: tampilkan nama toko di sebelah logo --}}
+                        <span style="font-size: 20px; font-weight: 700; color: #111; vertical-align: middle; margin-left: 10px;">{{ $shopName }}</span>
                     </a>
                 </div>
             </div>
