@@ -33,11 +33,11 @@ class ProductController extends Controller
         // Ambil ID semua sub-kategori yang dimiliki toko ini
         $mainCategory = Category::where('slug', $shop->product_categories)->first();
         $subCategoryIds = $mainCategory ? $mainCategory->subCategories()->pluck('id') : [];
-        
+
         // Tampilkan produk yang hanya memiliki sub_category_id yang diizinkan
         $products = Product::whereIn('sub_category_id', $subCategoryIds)
-                            ->latest()
-                            ->paginate(10);
+            ->latest()
+            ->paginate(10);
 
         return view('dashboard-mitra.products.index', compact('products'));
     }
@@ -132,7 +132,6 @@ class ProductController extends Controller
 
             DB::commit();
             return redirect()->route('mitra.products.index')->with('success', 'Produk berhasil ditambahkan!');
-
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->withInput()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
@@ -142,9 +141,9 @@ class ProductController extends Controller
     /**
      * Menampilkan detail produk tertentu.
      */
-    public function show(Product $product)
+    public function show(Request $request, string $productSlug)
     {
-        $product->load(['subCategory', 'tags', 'variants', 'gallery']); // Changed 'category' to 'subCategory'
+        $product = Product::where('slug', $productSlug)->firstOrFail(); // Changed 'category' to 'subCategory'
         return view('dashboard-mitra.products.show', compact('product'));
     }
 
@@ -238,7 +237,6 @@ class ProductController extends Controller
 
             DB::commit();
             return redirect()->route('mitra.products.index')->with('success', 'Produk berhasil diperbarui!');
-
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->withInput()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
@@ -264,7 +262,6 @@ class ProductController extends Controller
 
             DB::commit();
             return redirect()->route('mitra.products.index')->with('success', 'Produk berhasil dihapus!');
-
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());

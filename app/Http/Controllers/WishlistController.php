@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Wishlist;
+use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -29,25 +30,24 @@ class WishlistController extends Controller
      */
     public function toggle(Request $request)
     {
-        // Pastikan user sudah login
-        if (!Auth::check()) {
-            return response()->json(['success' => false, 'message' => 'Silakan login terlebih dahulu.'], 401);
-        }
-
-        $request->validate(['product_id' => 'required|exists:products,id']);
+        // KEMBALIKAN VALIDASI INI
+        $request->validate([
+            'product_id' => 'required|exists:products,id'
+        ]);
 
         $userId = Auth::id();
+        // AMBIL PRODUCT ID DARI REQUEST
         $productId = $request->product_id;
 
         // Cek apakah produk sudah ada di wishlist
-        $wishlistItem = Wishlist::where('user_id', $userId)->where('product_id', $productId)->first();
+        $wishlistItem = Wishlist::where('user_id', $userId)
+                                ->where('product_id', $productId)
+                                ->first();
 
         if ($wishlistItem) {
-            // Jika sudah ada, hapus dari wishlist
             $wishlistItem->delete();
             $action = 'removed';
         } else {
-            // Jika belum ada, tambahkan ke wishlist
             Wishlist::create([
                 'user_id' => $userId,
                 'product_id' => $productId,
@@ -55,12 +55,11 @@ class WishlistController extends Controller
             $action = 'added';
         }
 
-        // Hitung jumlah wishlist terbaru
         $wishlistCount = Wishlist::where('user_id', $userId)->count();
 
         return response()->json([
             'success' => true,
-            'action' => $action, // 'added' atau 'removed'
+            'action' => $action,
             'wishlist_count' => $wishlistCount
         ]);
     }
