@@ -93,14 +93,14 @@ class ShopController extends Controller
         // 3. PERBAIKAN: Mencari produk terkait berdasarkan sub_category_id
         // Produk terkait adalah produk dalam sub-kategori yang sama
         $relatedProducts = Product::where('sub_category_id', $product->sub_category_id)
-          
+
             ->where('id', '!=', $product->id)
             ->where('status', 'active') // Tambahan: hanya tampilkan produk terkait yang aktif
             ->limit(4)
             ->get();
 
         // 4. Tampilkan view dari template yang benar (sudah benar)
-  
+
         return view($templatePath . '.details', compact('tenant', 'product', 'relatedProducts'));
     }
 }

@@ -25,7 +25,7 @@
             <table class="w-full whitespace-no-wrap min-w-[1000px]">
                 <thead class="bg-gray-200">
                     <tr class="text-center font-semibold text-sm uppercase text-gray-700 tracking-wider">
-                        <th class="px-6 py-3 border-b-2 border-gray-300 text-left">Nama Toko</th>
+                        <th class="px-6 py-3 border-b-2 border-gray-300 text-left"> Toko</th>
                         <th class="px-6 py-3 border-b-2 border-gray-300 text-left">Pemilik</th>
                         <th class="px-6 py-3 border-b-2 border-gray-300">Kategori</th>
                         <th class="px-6 py-3 border-b-2 border-gray-300">Paket</th>
@@ -65,7 +65,7 @@
                             <td class="px-6 py-4 text-left">
                                 <div class="font-bold text-black">{{ optional($mitra->shop)->shop_name ?? 'N/A' }}</div>
                                 <a href="http://ecommercegaruda.my.id/tenant/{{ optional($mitra->subdomain)->subdomain_name }}" target="_blank" class="text-sm text-gray-500 underline">
-                                    {{ optional($mitra->subdomain)->subdomain_name }}.ecommercegaruda.my.id
+                                    ecommercegaruda.my.id/tenant/{{ optional($mitra->subdomain)->subdomain_name }}
                                 </a>
                             </td>
                             <td class="px-6 py-4 text-left">

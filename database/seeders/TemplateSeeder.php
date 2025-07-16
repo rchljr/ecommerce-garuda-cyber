@@ -24,7 +24,8 @@ class TemplateSeeder extends Seeder
             'slug' => 'pakaian-aksesoris',
             'path' => 'template1',
             'description' => 'Desain yang bersih dan modern, memberikan pengalaman pengguna yang intuitif dan elegan.',
-            'image_preview' => 'templates/preview1.png'
+            'image_preview' => 'templates/preview1.png',
+            'status' => 'active'
         ]);
 
         Template::create([
@@ -32,7 +33,8 @@ class TemplateSeeder extends Seeder
             'slug' => 'kuliner',
             'path' => 'template2',
             'description' => 'Tampilan penuh warna dan dinamis yang mampu menarik perhatian dan meningkatkan interaksi pengguna.',
-            'image_preview' => 'templates/preview2.png'
+            'image_preview' => 'templates/preview2.png',
+            'status' => 'active'
         ]);
 
         Template::create([
@@ -40,21 +42,8 @@ class TemplateSeeder extends Seeder
             'slug' => 'elektronik',
             'path' => 'template3',
             'description' => 'Desain profesional dengan sentuhan elegan yang menonjolkan kualitas dan kepercayaan.',
-            'image_preview' => 'templates/preview3.png'
+            'image_preview' => 'templates/preview3.png',
+            'status' => 'coming_soon'
         ]);
-        // Template::create([
-        //     'name' => 'Refined1',
-        //     'slug' => 'elektronik1',
-        //     'path' => 'template3',
-        //     'description' => 'Desain profesional dengan sentuhan elegan yang menonjolkan kualitas dan kepercayaan.',
-        //     'image_preview' => 'templates/preview1.png'
-        // ]);
-        // Template::create([
-        //     'name' => 'Refined2',
-        //     'slug' => 'elektronik2',
-        //     'path' => 'template3',
-        //     'description' => 'Desain profesional dengan sentuhan elegan yang menonjolkan kualitas dan kepercayaan.',
-        //     'image_preview' => 'templates/preview2.png'
-        // ]);
     }
 }

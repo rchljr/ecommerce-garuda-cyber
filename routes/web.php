@@ -1,7 +1,5 @@
 <?php
 
-// die('DEBUG-STEP-1-ROUTES');
-
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\HomeController;
@@ -53,7 +51,7 @@ use App\Http\Controllers\Customer\CustomerNotificationController;
 */
 
 // ===================================================================
-// RUTE SUBDOMAIN (HARUS DI ATAS RUTE UMUM)
+// RUTE SUBDOMAIN (HANYA UNTUK TAMPILAN TOKO)
 // ===================================================================
 Route::prefix('tenant/{subdomain}')
     ->middleware(['web', 'tenant.exists']) // Middleware 'web' menangani session
@@ -102,6 +100,7 @@ Route::prefix('tenant/{subdomain}')
             Route::prefix('checkout')->name('checkout.')->group(function () {
                 Route::get('/', [CheckoutController::class, 'index'])->name('index');
                 Route::post('/charge', [CheckoutController::class, 'charge'])->name('charge');
+                Route::post('/detail', [CheckoutController::class, 'getDetails'])->name('get_details');
             });
 
             // Dasbor Pelanggan
@@ -124,15 +123,13 @@ Route::prefix('tenant/{subdomain}')
 
 //== RUTE PUBLIK & AUTENTIKASI ==//
 Route::get('/', [LandingPageController::class, 'home'])->name('landing');
+Route::get('/tenant', [LandingPageController::class, 'allTenants'])->name('tenants.index');
 Route::post('/testimonials', [TestimoniController::class, 'submitFromLandingPage'])->name('testimonials.store');
-Route::post('/review/submit', [TestimoniController::class, 'submitReview'])
-    ->name('review.submit')
-    ->middleware('auth:customers');
+Route::post('/review/submit', [TestimoniController::class, 'submitReview'])->name('review.submit')->middleware('auth:customers');
+
 
 Route::get('/review/{testimonial}', [TestimoniController::class, 'getReviewJson'])->name('review.get')->middleware('auth:customers');
-;
 Route::put('/review/{testimonial}', [TestimoniController::class, 'updateReview'])->name('review.update')->middleware('auth:customers');
-;
 
 // Auth (Proses Registrasi dan Login)
 // Rute untuk menampilkan form login & register admin dan mitra
@@ -208,6 +205,7 @@ Route::get('/template1/beranda', [HomeController::class, 'index'])->name('home')
 Route::get('/fruit', function () {
     return view('template2.home');
 });
+
 // == GRUP RUTE UNTUK PENGGUNA YANG SUDAH LOGIN ==
 Route::middleware(['auth'])->group(function () {
     /// Rute yang bisa diakses oleh semua user yang login

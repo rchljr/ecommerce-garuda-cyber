@@ -104,7 +104,7 @@ class AuthController extends BaseController
         }
 
         // Definisikan progress bar secara dinamis
-        $steps = [0 => 'Pilih Paket', 1 => 'Subdomain', 2 => 'Data Diri', 3 => 'Data Toko'];
+        $steps = [0 => 'Pilih Paket', 1 => 'Alamat Toko', 2 => 'Data Diri', 3 => 'Data Toko'];
         if ($isBusinessPlan) {
             $steps[4] = 'Pilih Template';
             $steps[5] = 'Verifikasi';

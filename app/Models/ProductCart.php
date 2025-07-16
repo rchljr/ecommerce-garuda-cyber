@@ -30,6 +30,14 @@ class ProductCart extends Model
     {
         return $this->belongsTo(Product::class);
     }
+    public function subdomain()
+    {
+        return $this->belongsTo(Subdomain::class);
+    }
+    public function shop()
+    {
+        return $this->belongsTo(Shop::class, 'user_id', 'id');
+    }
     public function variant()
     {
         return $this->belongsTo(ProductVariant::class, 'product_variant_id');

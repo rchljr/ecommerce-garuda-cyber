@@ -14,7 +14,7 @@ class CustomerPointController extends Controller
      */
     public function index()
     {
-        $user = Auth::user();
+        $user = Auth::guard('customers')->user();
 
         // Ambil semua hadiah yang aktif dan bisa ditukarkan
         $rewards = PointReward::where('is_active', true)

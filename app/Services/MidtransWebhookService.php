@@ -66,10 +66,14 @@ class MidtransWebhookService
                 'midtrans_response' => $notification->getResponse(),
             ]);
 
-            $order = $payment->order;
-            if ($order && $order->status !== 'completed') {
-                $order->update(['status' => 'failed']);
-                Log::info('MidtransWebhookService: Status order berhasil diupdate menjadi failed.', ['order_id' => $order->id]);
+            if ($payment->order_group_id) {
+                $orders = Order::where('order_group_id', $payment->order_group_id)->get();
+                foreach ($orders as $order) {
+                    if ($order->status !== 'completed') {
+                        $order->update(['status' => 'failed']);
+                        Log::info('MidtransWebhookService: Status order berhasil diupdate menjadi failed.', ['order_id' => $order->id]);
+                    }
+                }
             }
         });
     }
@@ -98,12 +102,14 @@ class MidtransWebhookService
                 Log::info('MidtransWebhookService: Status order dan payment berhasil diupdate.', ['order_id' => $order->id]);
 
                 // Langkah 3: Jalankan logika finalisasi berdasarkan tipe pembayaran
-                if ($payment->subs_package_id) {
-                    // Ini adalah pembayaran langganan, jalankan aktivasi
-                    $this->activateSubscription($order->user);
+                if ($payment->order_group_id) {
+                    // Ini adalah pembayaran produk dari multi-toko
+                    $this->finalizeGroupedProductOrder($payment);
+                } elseif ($payment->subs_package_id && $payment->order) {
+                    // Ini adalah pembayaran langganan (logika lama)
+                    $this->activateSubscription($payment->order->user);
                 } else {
-                    // Ini adalah pembayaran produk, jalankan finalisasi pesanan
-                    $this->finalizeProductOrder($order);
+                    Log::error('MidtransWebhookService: Tipe pembayaran tidak dikenali.', ['payment_id' => $payment->id]);
                 }
             });
 
@@ -117,32 +123,58 @@ class MidtransWebhookService
     }
 
     /**
-     * Menyelesaikan pesanan produk dan mengirim notifikasi.
-     * Logika ini diambil dari ProcessSuccessfulOrderJob.
+     * Menyelesaikan semua pesanan produk dalam satu grup dan mengirim notifikasi.
      */
-    protected function finalizeProductOrder(Order $order)
+    protected function finalizeGroupedProductOrder(Payment $payment)
     {
-        Log::info('FinalizeProductOrder: Memulai finalisasi pesanan.', ['order_id' => $order->id]);
-        // Update status pengiriman jika ada
+        Log::info('FinalizeGroupedProductOrder: Memulai finalisasi pesanan untuk grup.', ['order_group_id' => $payment->order_group_id]);
+
+        // Ambil semua order yang terkait dengan grup ini
+        $orders = Order::where('order_group_id', $payment->order_group_id)->get();
+
+        if ($orders->isEmpty()) {
+            Log::error('FinalizeGroupedProductOrder: Tidak ada order yang ditemukan untuk grup.', ['order_group_id' => $payment->order_group_id]);
+            return;
+        }
+
+        foreach ($orders as $order) {
+            // Langkah 2: Update status setiap Order menjadi 'completed'
+            $order->update(['status' => 'completed']);
+            Log::info('FinalizeGroupedProductOrder: Status order diupdate.', ['order_id' => $order->id]);
+
+            // Langkah 3: Finalisasi setiap pesanan (update shipping & kirim notif)
+            $this->finalizeSingleProductOrder($order);
+        }
+    }
+
+    /**
+     * Menyelesaikan satu pesanan produk dan mengirim notifikasi.
+     */
+    protected function finalizeSingleProductOrder(Order $order)
+    {
+        Log::info('FinalizeSingleProductOrder: Memulai finalisasi untuk satu pesanan.', ['order_id' => $order->id]);
+
         if ($order->shipping) {
             $order->shipping->update(['status' => 'preparing_shipment']);
-            Log::info('FinalizeProductOrder: Status shipping diupdate ke preparing_shipment.', ['order_id' => $order->id]);
+            Log::info('FinalizeSingleProductOrder: Status shipping diupdate.', ['order_id' => $order->id]);
         }
 
         try {
             $customer = $order->user;
             $shopOwner = $order->subdomain->user;
 
-            // Kirim notifikasi ke pelanggan
-            Notification::send($customer, new CustomerPaymentSuccessNotification($order));
-            Log::info('Notifikasi sukses pembayaran dikirim ke pelanggan.', ['order_id' => $order->id, 'customer_id' => $customer->id]);
+            if ($customer) {
+                Notification::send($customer, new CustomerPaymentSuccessNotification($order));
+                Log::info('Notifikasi sukses pembayaran dikirim ke pelanggan.', ['order_id' => $order->id, 'customer_id' => $customer->id]);
+            }
 
-            // Kirim notifikasi ke mitra (pemilik toko)
-            Notification::send($shopOwner, new NewOrderNotification($order));
-            Log::info('Notifikasi pesanan baru dikirim ke mitra.', ['order_id' => $order->id, 'partner_id' => $shopOwner->id]);
+            if ($shopOwner) {
+                Notification::send($shopOwner, new NewOrderNotification($order));
+                Log::info('Notifikasi pesanan baru dikirim ke mitra.', ['order_id' => $order->id, 'partner_id' => $shopOwner->id]);
+            }
 
         } catch (\Exception $e) {
-            Log::error('FinalizeProductOrder: Gagal mengirim notifikasi.', [
+            Log::error('FinalizeSingleProductOrder: Gagal mengirim notifikasi.', [
                 'order_id' => $order->id,
                 'error' => $e->getMessage()
             ]);
@@ -171,13 +203,9 @@ class MidtransWebhookService
         $expiredDate = $userPackage->plan_type === 'yearly' ? $activeDate->copy()->addYear() : $activeDate->copy()->addMonth();
 
         $userPackage->update(['status' => 'active', 'active_date' => $activeDate, 'expired_date' => $expiredDate]);
-        
+
         $user->removeRole('calon-mitra');
         $user->assignRole('mitra');
-
-        if ($user->subdomain) {
-            $user->subdomain->update(['status' => 'active']);
-        }
 
         try {
             Notification::send($user, new PartnerActivatedNotification($user));

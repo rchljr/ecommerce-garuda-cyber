@@ -91,4 +91,19 @@ class User extends Authenticatable
     {
         return $this->hasMany(Order::class, 'user_id', 'id');
     }
+    public function vouchers()
+    {
+        return $this->hasMany(Voucher::class, 'user_id');
+    }
+
+    /**
+     * Relasi untuk mengambil voucher yang sedang aktif saja.
+     */
+    public function activeVouchers()
+    {
+        return $this->hasMany(Voucher::class, 'user_id')
+                    ->where('start_date', '<=', now())
+                    ->where('expired_date', '>=', now())
+                    ->orderBy('discount', 'desc'); // Urutkan dari diskon terbesar
+    }
 }

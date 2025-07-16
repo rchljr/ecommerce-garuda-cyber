@@ -6,6 +6,7 @@
     @include('landing-page.section.highlight')
     @include('landing-page.section.tema')
     @include('landing-page.section.paket')
+    @include('landing-page.section.mitra')
     @include('landing-page.section.slogan')
     @include('landing-page.section.faq')
     @include('landing-page.section.testimoni')
