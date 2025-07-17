@@ -1,10 +1,11 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Admin;
 
 use App\Models\User;
 use App\Services\OrderService;
 use App\Services\VerificationService;
+use App\Http\Controllers\BaseController;
 
 class VerificationController extends BaseController
 {
