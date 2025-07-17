@@ -5,6 +5,16 @@
     @php
         // Ambil subdomain saat ini untuk digunakan di dalam rute
         $currentSubdomain = request()->route('subdomain');
+        // Kelompokkan item berdasarkan ID toko pemilik produk
+        $groupedItems = $cartItems->groupBy(function($item) {
+            // $item adalah instance dari ProductCart
+            // Kita cek setiap langkah relasi untuk memastikan tidak ada yang null
+            if ($item->product && $item->product->shopOwner && $item->product->shopOwner->shop) {
+                return $item->product->shopOwner->shop->id;
+            }
+            // Jika ada produk tanpa toko, kelompokkan ke 'unknown_shop'
+            return 'unknown_shop';
+        });
     @endphp
 
     <div class="bg-gray-100 py-12">
@@ -18,8 +28,8 @@
 
                     <!-- Kolom Kiri: Daftar Item Keranjang -->
                     <div class="w-full lg:w-2/3">
-                        <div class="bg-white rounded-lg shadow-md p-6 space-y-4">
-                            @if(isset($cartItems) && $cartItems->isNotEmpty())
+                        <div class="bg-white rounded-lg shadow-md p-6 space-y-6">
+                            @if($cartItems->isNotEmpty())
                                 <div class="flex justify-between items-center border-b pb-4">
                                     <label class="flex items-center">
                                         <input type="checkbox" id="select-all-items"
@@ -31,60 +41,84 @@
                                 </div>
                             @endif
 
-                            @forelse ($cartItems as $item)
+                            @forelse ($groupedItems as $shopId => $items)
                                 @php
-                                    // Logika disederhanakan karena data sudah konsisten dari service
-                                    $product = $item->product;
-                                    $variant = $item->variant; // Ambil objek variant
-
-                                    // Untuk guest, ID item adalah variant_id. Untuk user login, ID item adalah UUID.
-                                    $itemId = $item->id;
-                                    $quantity = $item->quantity;
-
-                                    // Ambil data varian dari relasi
-                                    $color = optional($variant)->color ?? 'N/A';
-                                    $size = optional($variant)->size ?? 'N/A';
-
-                                    $slug = optional($product)->slug;
+                                    // Ambil informasi toko dari item pertama di grup ini
+                                    $shopOwner = optional($items->first()->product)->shopOwner;
+                                    $shop = optional($shopOwner)->shop;
+                                    // Ambil model subdomain dari shopOwner
+                                    $subdomainModel = optional($shopOwner)->subdomain;
+                                    // Ambil nama subdomain dari model tersebut
+                                    $shopSubdomain = optional($subdomainModel)->subdomain_name;
                                 @endphp
-                                {{-- Gunakan $itemId sebagai data-id dan value checkbox --}}
-                                <div class="cart-item flex flex-col sm:flex-row items-start border-b py-4 gap-4" data-id="{{ $itemId }}">
-                                    <div class="flex items-start w-full">
-                                        <input type="checkbox" name="items[]" value="{{ $itemId }}"
-                                            class="item-checkbox h-5 w-5 rounded border-gray-300 text-red-600 focus:ring-red-500 mt-1"
-                                            data-price="{{ $product->price ?? 0 }}">
 
-                                        <img src="{{ asset('storage/' . ($product->main_image ?? 'images/placeholder.png')) }}"
-                                            onerror="this.onerror=null;this.src='https://placehold.co/80x80/f1f5f9/cbd5e1?text=No+Image';"
-                                            alt="{{ $product->name ?? 'Produk tidak ditemukan' }}"
-                                            class="w-20 h-20 rounded-md object-cover mx-4">
-
-                                        <div class="flex-grow">
-                                            @if($slug)
-                                                <a href="{{ route('tenant.product.details', ['subdomain' => $currentSubdomain, 'product' => $slug]) }}"
-                                                    class="font-semibold text-gray-800 hover:text-red-600">{{ $product->name ?? 'Nama Produk' }}</a>
-                                            @else
-                                                <span class="font-semibold text-gray-800">{{ $product->name ?? 'Nama Produk' }}</span>
-                                            @endif
-                                            <p class="text-sm text-gray-500">
-                                                Varian: {{ $color }} / {{ $size }}
-                                            </p>
-                                            <p class="text-lg font-bold text-gray-800 mt-1 sm:hidden">
-                                                {{ format_rupiah($product->price ?? 0) }}
-                                            </p>
+                                <!-- Header Toko -->
+                                <div class="shop-container border rounded-lg p-4">
+                                    <div class="bg-gray-50 p-3 rounded-t-lg flex justify-between items-center border-b">
+                                        <div class="flex items-center gap-3">
+                                            <i class="fa fa-store text-gray-500"></i>
+                                            <span class="font-bold text-gray-800">{{ optional($shop)->shop_name ?? 'Toko Tidak Dikenal' }}</span>
                                         </div>
+                                        @if($shopSubdomain)
+                                            <a href="{{ route('tenant.home', ['subdomain' => $shopSubdomain]) }}" class="text-sm font-semibold text-red-600 hover:underline flex items-center gap-1">
+                                                Kunjungi Toko <i class="fa fa-arrow-right"></i>
+                                            </a>
+                                        @endif
                                     </div>
 
-                                    <div class="w-full sm:w-auto flex justify-between items-center">
-                                        <p class="text-lg font-bold text-gray-800 mt-1 hidden sm:block">
-                                            {{ format_rupiah($product->price ?? 0) }}
-                                        </p>
-                                        <div class="flex items-center border border-gray-300 rounded-md ml-auto">
-                                            <button type="button" class="quantity-btn px-3 py-1 text-lg" data-action="decrease">-</button>
-                                            <input type="number" class="w-12 text-center border-l border-r border-gray-300 quantity-input" value="{{ $quantity }}" min="1">
-                                            <button type="button" class="quantity-btn px-3 py-1 text-lg" data-action="increase">+</button>
-                                        </div>
-                                        <button type="button" class="remove-item-btn text-xs text-gray-500 hover:text-red-600 hover:underline ml-4 sm:hidden">Hapus</button>
+                                    <!-- Daftar Produk per Toko -->
+                                    <div class="space-y-4">
+                                        @foreach ($items as $item)
+                                            @php
+                                                $product = $item->product;
+                                                $variant = $item->variant;
+                                                $itemId = $item->id;
+                                                $quantity = $item->quantity;
+                                                $color = optional($variant)->color ?? 'N/A';
+                                                $size = optional($variant)->size ?? 'N/A';
+                                                $slug = optional($product)->slug;
+                                            @endphp
+                                            {{-- Item Keranjang --}}
+                                            <div class="cart-item flex flex-col sm:flex-row items-start border-t pt-4 gap-4" data-id="{{ $itemId }}">
+                                                <div class="flex items-start w-full">
+                                                    <input type="checkbox" name="items[]" value="{{ $itemId }}"
+                                                        class="item-checkbox h-5 w-5 rounded border-gray-300 text-red-600 focus:ring-red-500 mt-1"
+                                                        data-price="{{ $product->price ?? 0 }}">
+
+                                                    <img src="{{ asset('storage/' . ($product->main_image ?? 'images/placeholder.png')) }}"
+                                                        onerror="this.onerror=null;this.src='https://placehold.co/80x80/f1f5f9/cbd5e1?text=No+Image';"
+                                                        alt="{{ $product->name ?? 'Produk tidak ditemukan' }}"
+                                                        class="w-20 h-20 rounded-md object-cover mx-4">
+
+                                                    <div class="flex-grow">
+                                                        @if($slug)
+                                                            <a href="{{ route('tenant.product.details', ['subdomain' => $currentSubdomain, 'product' => $slug]) }}"
+                                                                class="font-semibold text-gray-800 hover:text-red-600">{{ $product->name ?? 'Nama Produk' }}</a>
+                                                        @else
+                                                            <span class="font-semibold text-gray-800">{{ $product->name ?? 'Nama Produk' }}</span>
+                                                        @endif
+                                                        <p class="text-sm text-gray-500">
+                                                            Varian: {{ $color }} / {{ $size }}
+                                                        </p>
+                                                        <p class="text-lg font-bold text-gray-800 mt-1 sm:hidden">
+                                                            {{ format_rupiah($product->price ?? 0) }}
+                                                        </p>
+                                                    </div>
+                                                </div>
+
+                                                <div class="w-full sm:w-auto flex justify-between items-center">
+                                                    <p class="text-lg font-bold text-gray-800 mt-1 hidden sm:block mr-4">
+                                                        {{ format_rupiah($product->price ?? 0) }}
+                                                    </p>
+                                                    <div class="flex items-center border border-gray-300 rounded-md ml-auto">
+                                                        <button type="button" class="quantity-btn px-3 py-1 text-lg" data-action="decrease">-</button>
+                                                        <input type="number" class="w-12 text-center border-l border-r border-gray-300 quantity-input" value="{{ $quantity }}" min="1">
+                                                        <button type="button" class="quantity-btn px-3 py-1 text-lg" data-action="increase">+</button>
+                                                    </div>
+                                                    <button type="button" class="remove-item-btn text-xs text-gray-500 hover:text-red-600 hover:underline ml-4 sm:hidden">Hapus</button>
+                                                </div>
+                                            </div>
+                                        @endforeach
                                     </div>
                                 </div>
                             @empty
@@ -143,9 +177,9 @@
 @endsection
 
 @push('scripts')
+    {{-- Kode JavaScript Anda tidak perlu diubah dan tetap sama --}}
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // Ambil elemen dengan aman untuk menghindari error jika tidak ada
             const csrfTokenEl = document.querySelector('meta[name="csrf-token"]');
             const csrfToken = csrfTokenEl ? csrfTokenEl.getAttribute('content') : null;
             const checkoutBtn = document.getElementById('checkout-btn');
@@ -183,10 +217,7 @@
                 clearTimeout(updateTimeout);
                 updateTimeout = setTimeout(() => {
                     if (!csrfToken) return;
-
-                    // DEBUGGING: Tampilkan ID dan kuantitas yang akan dikirim
-                    console.log(`[DEBUG] Mengirim update untuk Item ID: ${itemId}, Kuantitas: ${quantity}`);
-
+                    
                     const updateUrl = `{{ route('tenant.cart.update', ['subdomain' => $currentSubdomain, 'productCartId' => '__ID__']) }}`.replace('__ID__', itemId);
 
                     fetch(updateUrl, {
@@ -198,27 +229,32 @@
                         },
                         body: JSON.stringify({ quantity: quantity })
                     })
-                        .then(response => {
-                            if (!response.ok) {
-                                console.error(`[DEBUG] Gagal update. Status: ${response.status}`);
-                            }
-                            return response.json();
-                        })
-                        .then(data => {
-                            console.log('[DEBUG] Respons dari server:', data);
-                        })
-                        .catch(error => {
-                            console.error('[DEBUG] Terjadi error saat fetch:', error)
-                        });
+                    .then(response => {
+                        if (!response.ok) {
+                            console.error(`Gagal update. Status: ${response.status}`);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log('Respons dari server:', data);
+                    })
+                    .catch(error => {
+                        console.error('Terjadi error saat fetch:', error)
+                    });
                 }, 500);
             }
 
             function handleRemove(itemIds) {
                 if (!csrfToken) return;
                 Swal.fire({
-                    title: 'Anda Yakin?', text: `Anda akan menghapus ${itemIds.length} item dari keranjang.`, icon: 'warning',
-                    showCancelButton: true, confirmButtonColor: '#d33', cancelButtonColor: '#6e7881',
-                    confirmButtonText: 'Ya, hapus!', cancelButtonText: 'Batal'
+                    title: 'Anda Yakin?',
+                    text: `Anda akan menghapus ${itemIds.length} item dari keranjang.`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#6e7881',
+                    confirmButtonText: 'Ya, hapus!',
+                    cancelButtonText: 'Batal'
                 }).then((result) => {
                     if (result.isConfirmed) {
                         fetch(`{{ route('tenant.cart.remove', ['subdomain' => $currentSubdomain]) }}`, {
@@ -226,29 +262,36 @@
                             headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
                             body: JSON.stringify({ ids: itemIds })
                         })
-                            .then(response => response.json())
-                            .then(data => {
-                                if (data.success) {
-                                    itemIds.forEach(id => {
-                                        document.querySelector(`.cart-item[data-id="${id}"]`)?.remove();
-                                    });
-                                    updateSummary();
-                                    const cartCountEl = document.getElementById('cart-count');
-                                    if (cartCountEl) cartCountEl.textContent = data.cart_count;
-                                    Swal.fire('Dihapus!', data.message, 'success');
-                                    if (document.querySelectorAll('.cart-item').length === 0) {
-                                        window.location.reload();
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                itemIds.forEach(id => {
+                                    const itemElement = document.querySelector(`.cart-item[data-id="${id}"]`);
+                                    if (itemElement) {
+                                        const shopContainer = itemElement.closest('.shop-container');
+                                        itemElement.remove(); // Hanya hapus elemen item
+
+                                        // Jika tidak ada item lagi di dalam grup toko, hapus grup toko tersebut
+                                        if (shopContainer && shopContainer.querySelectorAll('.cart-item').length === 0) {
+                                            shopContainer.remove();
+                                        }
                                     }
-                                } else {
-                                    Swal.fire('Gagal', data.message || 'Gagal menghapus item.', 'error');
+                                });
+                                updateSummary();
+                                const cartCountEl = document.getElementById('cart-count');
+                                if (cartCountEl) cartCountEl.textContent = data.cart_count;
+                                Swal.fire('Dihapus!', data.message, 'success');
+                                if (document.querySelectorAll('.cart-item').length === 0) {
+                                    window.location.reload();
                                 }
-                            }).catch(err => Swal.fire('Error', 'Terjadi kesalahan.', 'error'));
+                            } else {
+                                Swal.fire('Gagal', data.message || 'Gagal menghapus item.', 'error');
+                            }
+                        }).catch(err => Swal.fire('Error', 'Terjadi kesalahan.', 'error'));
                     }
                 });
             }
 
-
-            // --- Event Listeners ---
             const selectAllCheckbox = document.getElementById('select-all-items');
             if (selectAllCheckbox) {
                 selectAllCheckbox.addEventListener('change', (e) => {
@@ -265,12 +308,8 @@
 
             document.querySelectorAll('.cart-item').forEach(cartItem => {
                 const quantityInput = cartItem.querySelector('.quantity-input');
-                // PERBAIKAN KUNCI: Ambil itemId dari elemen cart-item yang benar
                 const itemId = cartItem.dataset.id;
-
-                // DEBUGGING: Pastikan itemId yang diambil benar saat halaman dimuat
-                console.log(`[DEBUG] Listener terpasang untuk Item ID: ${itemId}`);
-
+                
                 cartItem.querySelector('.quantity-btn[data-action="increase"]')?.addEventListener('click', () => {
                     quantityInput.stepUp();
                     updateSummary();
@@ -302,8 +341,7 @@
                     handleRemove(idsToRemove);
                 });
             }
-
-            // Panggil sekali saat halaman dimuat untuk memastikan status tombol sudah benar
+            
             updateSummary();
         });
     </script>

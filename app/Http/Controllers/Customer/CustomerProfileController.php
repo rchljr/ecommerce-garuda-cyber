@@ -8,7 +8,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
-use App\Traits\UploadFile; // Import trait upload file
+use App\Traits\UploadFile; 
 
 class CustomerProfileController extends Controller
 {
@@ -27,7 +27,7 @@ class CustomerProfileController extends Controller
     /**
      * Memperbarui data profil pengguna.
      */
-    public function update(Request $request)
+    public function update(Request $request, $subdomain)
     {
         $user = Auth::user();
 

@@ -101,6 +101,8 @@ class ShopController extends Controller
         $product->load('subCategory.category', 'variants', 'gallery', 'tags');
 
         $relatedProducts = Product::where('sub_category_id', $product->sub_category_id)
+
+
             ->where('id', '!=', $product->id)
             ->where('status', 'active')
             ->limit(4)
@@ -108,6 +110,7 @@ class ShopController extends Controller
             
 
         // ✅ Kirim $product ke view!
+
         return view($templatePath . '.details', compact('tenant', 'product', 'relatedProducts'));
     }
 }

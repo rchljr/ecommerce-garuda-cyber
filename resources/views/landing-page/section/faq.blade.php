@@ -1,5 +1,5 @@
 <!-- FAQ Section -->
-<section id="faq" class="py-16 md:py-24">
+<section id="faq" class="py-16 md:py-24 bg-gray-50">
     <div class="container mx-auto px-6 max-w-4xl">
         <div class="text-center mb-12">
             <h2 class="text-3xl md:text-5xl font-bold text-gray-900">Pertanyaan Yang Sering Diajukan</h2>
@@ -14,9 +14,9 @@
                 </div>
                 <div class="faq-answer hidden p-5 border-t border-gray-200 text-gray-600">
                     <p>E-Commerce Garuda adalah platform lengkap yang memungkinkan Anda memiliki toko online profesional
-                        dengan subdomain Anda sendiri (contoh: `nama-toko.ecommercegaruda.my.id`). Kami menyediakan
-                        semua alat yang Anda butuhkan, mulai dari template desain, manajemen produk, hingga sistem
-                        pembayaran terintegrasi.</p>
+                        dengan alamat unik Anda sendiri (contoh: `ecommercegaruda.my.id/tenant/nama-toko-anda`). Kami
+                        menyediakan semua alat yang Anda butuhkan, mulai dari template desain, manajemen produk, hingga
+                        sistem pembayaran terintegrasi.</p>
                 </div>
             </div>
             <!-- FAQ Item 2 -->
@@ -28,12 +28,34 @@
                         class="faq-icon text-gray-500 font-bold text-xl transition-transform duration-300 transform">+</span>
                 </div>
                 <div class="faq-answer hidden p-5 border-t border-gray-200 text-gray-600">
-                    <p>Anda mendapatkan kemandirian dengan subdomain sendiri, akses ke berbagai template modern, gerbang
-                        pembayaran otomatis (transfer bank, e-wallet, QRIS), dan dashboard analitik untuk memantau
-                        performa bisnis Anda. Semua ini tanpa perlu keahlian teknis yang mendalam.</p>
+                    <p>Anda mendapatkan kemandirian dengan alamat toko yang unik dan mudah diingat, akses ke berbagai
+                        template modern, gerbang pembayaran otomatis (transfer bank, e-wallet, QRIS), dan dashboard
+                        analitik untuk memantau performa bisnis Anda. Semua ini tanpa perlu keahlian teknis yang
+                        mendalam.</p>
                 </div>
             </div>
             <!-- FAQ Item 3 -->
+            <div class="faq-item bg-white border border-gray-200 rounded-lg overflow-hidden">
+                <div class="faq-question p-5 flex justify-between items-center cursor-pointer">
+                    <h4 class="font-semibold text-gray-800">Apa perbedaan utama antar paket langganan?</h4>
+                    <span
+                        class="faq-icon text-gray-500 font-bold text-xl transition-transform duration-300 transform">+</span>
+                </div>
+                <div class="faq-answer hidden p-5 border-t border-gray-200 text-gray-600">
+                    <p class="space-y-2">
+                        Perbedaan utamanya terletak pada pilihan kustomisasi tampilan toko Anda:
+                    <ul class="list-disc list-inside mt-2 space-y-1">
+                        <li><strong>Starter Plan:</strong> Sempurna untuk memulai, Anda mendapatkan 1 tema default yang
+                            bisa dikustomisasi sesuai keinginan.</li>
+                        <li><strong>Business Plan:</strong> Memberikan Anda 3 pilihan tema premium yang lebih eksklusif
+                            untuk meningkatkan citra merek Anda.</li>
+                        <li><strong>Enterprise Plan:</strong> Solusi tanpa batas di mana kami akan membuatkan tema dan
+                            fitur kustom yang dirancang khusus untuk kebutuhan unik perusahaan Anda.</li>
+                    </ul>
+                    </p>
+                </div>
+            </div>
+            <!-- FAQ Item 4 -->
             <div class="faq-item bg-white border border-gray-200 rounded-lg overflow-hidden">
                 <div class="faq-question p-5 flex justify-between items-center cursor-pointer">
                     <h4 class="font-semibold text-gray-800">Bagaimana cara mendaftar sebagai mitra?</h4>

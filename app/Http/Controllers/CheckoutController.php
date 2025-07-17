@@ -3,107 +3,253 @@
 namespace App\Http\Controllers;
 
 use Exception;
-use Midtrans\Snap;
-use App\Models\User;
+use Throwable;
 use App\Models\Order;
-use Midtrans\CoreApi;
-use App\Models\Contact;
 use App\Models\Payment;
 use App\Models\Voucher;
 use App\Models\Shipping;
+use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use App\Services\CartService;
-use App\Services\VoucherService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Config;
-use Illuminate\Http\Client\ConnectionException;
 
 class CheckoutController extends Controller
 {
     protected $cartService;
-    protected $voucherService;
 
-    public function __construct(CartService $cartService, VoucherService $voucherService)
+    public function __construct(CartService $cartService)
     {
         $this->cartService = $cartService;
-        $this->voucherService = $voucherService;
-        // Setup Midtrans Config
         \Midtrans\Config::$serverKey = config('services.midtrans.server_key');
         \Midtrans\Config::$isProduction = config('services.midtrans.is_production');
         \Midtrans\Config::$isSanitized = true;
         \Midtrans\Config::$is3ds = true;
     }
 
-    // ... (fungsi index, searchDestination, calculateShipping tetap sama) ...
     public function index(Request $request)
     {
         $validated = $request->validate(['items' => 'required|array|min:1', 'items.*' => 'string']);
         $itemIds = $validated['items'];
         $checkoutItems = $this->cartService->getItemsByIds($itemIds);
+        if ($checkoutItems->isEmpty()) {
+            return redirect()->route('tenant.cart.index', ['subdomain' => request()->route('subdomain')])->with('error', 'Produk yang dipilih tidak ditemukan.');
+        }
+        return view('customer.checkout', ['checkoutItemIds' => $itemIds]);
+    }
+
+    public function getDetails(Request $request)
+    {
+        $validated = $request->validate(['items' => 'required|array', 'items.*' => 'string']);
+        $itemIds = $validated['items'];
+        $checkoutItems = $this->cartService->getItemsByIds($itemIds, [
+            'product:id,name,price,main_image,user_id,length,width,height,weight',
+            'product.shopOwner:id,user_id,subdomain_id',
+            'product.shopOwner.shop:id,user_id,shop_name,postal_code',
+            'variant:id,color,size'
+        ]);
 
         if ($checkoutItems->isEmpty()) {
-            return redirect()->route('tenant.cart.index', ['subdomain' => $request->route('subdomain')])->with('error', 'Produk yang dipilih tidak ditemukan.');
+            return response()->json(['error' => 'Item tidak ditemukan.'], 404);
         }
 
-        $subtotal = $checkoutItems->sum(fn($item) => $item->product->price * $item->quantity);
-        $totalWeightInKg = $checkoutItems->sum(fn($item) => ($item->product->weight ?? 100) * $item->quantity) / 1000; // Konversi ke KG
+        $groupedItems = $checkoutItems->groupBy('product.shopOwner.shop.id');
+        $shopsData = [];
+        $grandSubtotal = 0;
 
-        $customer = Auth::guard('customers')->user();
-        $firstItem = $checkoutItems->first();
-        $shopOwner = $firstItem->product->shopOwner;
-        $shop = $shopOwner->shop;
-        $contact = $shopOwner->contact;
-        $originPostalCode = $shop->postal_code ?? '28293';
+        foreach ($groupedItems as $shopId => $items) {
+            $firstItem = $items->first();
+            if (!$firstItem || !$firstItem->product || !$firstItem->product->shopOwner)
+                continue;
 
-        $vouchers = Voucher::where('user_id', $shopOwner->id)
-            ->where('expired_date', '>=', now())
-            ->latest('created_at')
-            ->get();
+            $shopOwner = $firstItem->product->shopOwner;
+            $shop = $shopOwner->shop;
+            $shopSubtotal = $items->sum(fn($item) => $item->product->price * $item->quantity);
+            $grandSubtotal += $shopSubtotal;
 
-        return view('customer.checkout', compact(
-            'checkoutItems',
-            'subtotal',
-            'customer',
-            'vouchers',
-            'originPostalCode',
-            'totalWeightInKg',
-            'shop',
-            'contact'
-        ));
+            $vouchers = Voucher::where('user_id', $shopOwner->id)
+                ->where('expired_date', '>=', now())
+                ->latest('created_at')->get()
+                ->map(function ($voucher) use ($shopSubtotal) {
+                    $voucher->is_eligible = $shopSubtotal >= $voucher->min_spending;
+                    return $voucher;
+                });
+
+            $shopsData[] = [
+                'shop' => ['id' => $shop->id, 'shop_name' => $shop->shop_name, 'postal_code' => $shop->postal_code],
+                'items' => $items->map(function ($item) {
+                    return [
+                        'id' => $item->id,
+                        'product_name' => $item->product->name,
+                        'main_image' => $item->product->main_image,
+                        'variant_color' => optional($item->variant)->color,
+                        'variant_size' => optional($item->variant)->size,
+                        'quantity' => $item->quantity,
+                        'price' => $item->product->price,
+                        'total_price' => $item->quantity * $item->product->price,
+                    ];
+                })->values(),
+                'subtotal' => $shopSubtotal,
+                'origin_postal_code' => $shop->postal_code ?? '28293',
+                'vouchers' => $vouchers,
+                'item_ids_for_shipping' => $items->pluck('id'),
+            ];
+        }
+
+        $customer = Auth::guard('customers')->user() ? ['alamat' => Auth::guard('customers')->user()->alamat] : ['alamat' => ''];
+
+        return response()->json([
+            'shopsData' => $shopsData,
+            'grandSubtotal' => $grandSubtotal,
+            'customer' => $customer,
+        ]);
+    }
+
+    public function charge(Request $request)
+    {
+        // 1. Validasi Input
+        $validated = $request->validate([
+            'items' => 'required|array',
+            'items.*' => 'string',
+            'delivery_method' => 'required|string|in:ship,pickup',
+            'payment_method' => 'required|string',
+            'alamat' => 'required_if:delivery_method,ship|nullable|string|max:500',
+            'shops' => 'present|array',
+            'shops.*.shippingCost' => 'required_if:delivery_method,ship|numeric',
+            'shops.*.shippingService' => 'required_if:delivery_method,ship|nullable|string',
+            'shops.*.voucherId' => 'nullable|string',
+        ]);
+
+        $orderGroupId = Str::uuid();
+        Log::info("Starting checkout process for group ID: {$orderGroupId}");
+
+        try {
+            $customer = Auth::guard('customers')->user();
+            if (!$customer) {
+                Log::warning("Unauthorized checkout attempt for group {$orderGroupId}.");
+                return response()->json(['error' => 'Anda harus login untuk melanjutkan pembayaran.'], 401);
+            }
+
+            $checkoutItems = $this->cartService->getItemsByIds($validated['items'], ['product.shopOwner.shop', 'product.shopOwner.subdomain']);
+            if ($checkoutItems->isEmpty()) {
+                Log::warning("Checkout attempt for group {$orderGroupId} with no items.");
+                return response()->json(['error' => 'Item tidak ditemukan.'], 404);
+            }
+
+            // 2. Kalkulasi Ulang di Server
+            $totalSubtotal = 0;
+            $totalShipping = 0;
+            $totalDiscount = 0;
+            $groupedItems = $checkoutItems->groupBy('product.shopOwner.shop.id');
+
+            foreach ($groupedItems as $shopId => $items) {
+                $shopDataFromRequest = $validated['shops'][$shopId] ?? null;
+                $shopSubtotal = $items->sum(fn($item) => $item->product->price * $item->quantity);
+                $shopShippingCost = ($validated['delivery_method'] === 'ship' && $shopDataFromRequest) ? ($shopDataFromRequest['shippingCost'] ?? 0) : 0;
+                $shopDiscount = 0;
+
+                if ($shopDataFromRequest && !empty($shopDataFromRequest['voucherId'])) {
+                    $voucher = Voucher::find($shopDataFromRequest['voucherId']);
+                    if ($voucher && $voucher->user_id == $items->first()->product->user_id && $shopSubtotal >= $voucher->min_spending) {
+                        $shopDiscount = ($shopSubtotal * $voucher->discount) / 100;
+                    }
+                }
+                $totalSubtotal += $shopSubtotal;
+                $totalShipping += $shopShippingCost;
+                $totalDiscount += $shopDiscount;
+            }
+
+            // 3. Persiapan Data untuk Midtrans
+            $grandTotalForMidtrans = round($totalSubtotal - $totalDiscount + $totalShipping);
+            if ($grandTotalForMidtrans <= 0) {
+                $grandTotalForMidtrans = 1; // Midtrans menolak jika total 0 atau negatif
+            }
+
+            $itemDetailsForMidtrans = [];
+            if ($totalSubtotal > 0)
+                $itemDetailsForMidtrans[] = ['id' => 'SUBTOTAL', 'price' => round($totalSubtotal), 'quantity' => 1, 'name' => 'Total Belanja Produk'];
+            if ($totalShipping > 0)
+                $itemDetailsForMidtrans[] = ['id' => 'SHIPPING', 'price' => round($totalShipping), 'quantity' => 1, 'name' => 'Total Ongkos Kirim'];
+            if ($totalDiscount > 0)
+                $itemDetailsForMidtrans[] = ['id' => 'DISCOUNT', 'price' => -round($totalDiscount), 'quantity' => 1, 'name' => 'Total Diskon'];
+
+            $paymentTransactionId = 'PAY-' . $orderGroupId;
+            $params = ['transaction_details' => ['order_id' => $paymentTransactionId, 'gross_amount' => $grandTotalForMidtrans], 'customer_details' => ['first_name' => $customer->name, 'email' => $customer->email, 'phone' => $customer->phone], 'item_details' => $itemDetailsForMidtrans];
+
+            $payment_type = $validated['payment_method'];
+            if ($payment_type === 'va_bca' || $payment_type === 'va_bri') {
+                $params['payment_type'] = 'bank_transfer';
+                $params['bank_transfer'] = ['bank' => str_replace('va_', '', $payment_type)];
+            } else {
+                $params['payment_type'] = $payment_type;
+            }
+
+            // 4. Proses Transaksi Database
+            DB::beginTransaction();
+            Log::info("Database transaction started for group {$orderGroupId}.");
+
+            foreach ($groupedItems as $shopId => $items) {
+                // Kalkulasi ulang untuk setiap toko (untuk disimpan di DB)
+                $shopDataFromRequest = $validated['shops'][$shopId] ?? null;
+                $shopSubtotal = $items->sum(fn($item) => $item->product->price * $item->quantity);
+                $shopShippingCost = ($validated['delivery_method'] === 'ship' && $shopDataFromRequest) ? ($shopDataFromRequest['shippingCost'] ?? 0) : 0;
+                $shopDiscount = 0;
+                if ($shopDataFromRequest && !empty($shopDataFromRequest['voucherId'])) {
+                    $voucher = Voucher::find($shopDataFromRequest['voucherId']);
+                    if ($voucher && $voucher->user_id == $items->first()->product->user_id && $shopSubtotal >= $voucher->min_spending) {
+                        $shopDiscount = ($shopSubtotal * $voucher->discount) / 100;
+                    }
+                }
+                $order = Order::create(['order_group_id' => $orderGroupId, 'user_id' => $customer->id, 'subdomain_id' => $items->first()->product->shopOwner->subdomain->id, 'total_price' => ($shopSubtotal - $shopDiscount) + $shopShippingCost, 'subtotal' => $shopSubtotal, 'shipping_cost' => $shopShippingCost, 'discount_amount' => $shopDiscount, 'order_date' => now(), 'status' => 'pending']);
+                foreach ($items as $item)
+                    $order->items()->create(['product_id' => $item->product_id, 'product_variant_id' => $item->product_variant_id, 'quantity' => $item->quantity, 'unit_price' => $item->product->price]);
+                if ($validated['delivery_method'] === 'ship')
+                    Shipping::create(['order_id' => $order->id, 'shipping_address' => $validated['alamat'], 'status' => 'pending', 'shipping_cost' => $shopShippingCost, 'delivery_service' => $shopDataFromRequest['shippingService'] ?? 'N/A']);
+            }
+
+            // 5. Kirim ke Midtrans
+            Log::info("Sending charge request to Midtrans for group {$orderGroupId}", ['params' => $params]);
+            $response = \Midtrans\CoreApi::charge($params);
+            Log::info("Received Midtrans response for group {$orderGroupId}", ['status_code' => $response->status_code, 'status_message' => $response->status_message]);
+
+            if (!isset($response->transaction_status)) {
+                throw new Exception('Midtrans response is invalid: ' . json_encode($response));
+            }
+
+            Payment::create(['order_group_id' => $orderGroupId, 'user_id' => $customer->id, 'midtrans_order_id' => $response->order_id, 'midtrans_transaction_status' => $response->transaction_status, 'midtrans_payment_type' => $response->payment_type, 'total_payment' => $response->gross_amount, 'midtrans_response' => json_encode($response)]);
+            $this->cartService->clearCartItems($validated['items']);
+
+            DB::commit();
+            Log::info("Checkout process for group {$orderGroupId} completed successfully.");
+            return response()->json($response);
+
+        } catch (Throwable $e) { // Menangkap semua jenis error
+            if (DB::transactionLevel() > 0) {
+                DB::rollBack();
+                Log::info("Database transaction rolled back for group " . ($orderGroupId ?? 'N/A'));
+            }
+            Log::error('Checkout Charge Failed for group ' . ($orderGroupId ?? 'N/A') . ': ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            return response()->json(['error' => 'Terjadi kesalahan pada server saat memproses pembayaran.'], 500);
+        }
     }
 
     public function searchDestination(Request $request)
     {
         $keyword = $request->input('keyword');
-        if (!$keyword) {
+        if (!$keyword)
             return response()->json(['areas' => []]);
-        }
         try {
             $apiKey = Config::get('biteship.api_key');
             $baseUrl = Config::get('biteship.base_url');
-
-            if (empty($apiKey)) {
-                Log::error('Biteship API Key is not configured.');
+            if (empty($apiKey))
                 return response()->json(['error' => 'Konfigurasi API pengiriman tidak ditemukan.'], 500);
-            }
-
-            $response = Http::withToken($apiKey)
-                ->get($baseUrl . '/v1/maps/areas', [
-                    'countries' => 'ID',
-                    'input' => $keyword,
-                    'type' => 'subdistrict'
-                ]);
-
+            $response = Http::withToken($apiKey)->get($baseUrl . '/v1/maps/areas', ['countries' => 'ID', 'input' => $keyword, 'type' => 'subdistrict']);
             $responseData = $response->json();
-            Log::info('Biteship Area Search Response:', ['status' => $response->status(), 'body' => $responseData]);
-
-            if ($response->successful() && !empty($responseData['areas'])) {
+            if ($response->successful() && !empty($responseData['areas']))
                 return response()->json($responseData['areas']);
-            }
-
             return response()->json(['error' => 'Lokasi tidak ditemukan.'], 404);
         } catch (Exception $e) {
             Log::error('Biteship Area Search Exception: ' . $e->getMessage());
@@ -113,203 +259,34 @@ class CheckoutController extends Controller
 
     public function calculateShipping(Request $request)
     {
-        $validated = $request->validate([
-            'origin_postal_code' => 'required|string',
-            'destination_postal_code' => 'required|string',
-            'items' => 'required|array'
-        ]);
-
+        $validated = $request->validate(['origin_postal_code' => 'required|string', 'destination_postal_code' => 'required|string', 'items' => 'required|array']);
         try {
             $apiKey = Config::get('biteship.api_key');
             $baseUrl = Config::get('biteship.base_url');
-
             $cartItems = $this->cartService->getItemsByIds($validated['items']);
-            $itemsPayload = $cartItems->map(function ($item) {
-                return [
-                    'name' => $item->product->name,
-                    'description' => 'Varian ' . optional($item->variant)->size . ' / ' . optional($item->variant)->color,
-                    'value' => $item->product->price,
-                    'length' => $item->product->length ?? 10,
-                    'width' => $item->product->width ?? 10,
-                    'height' => $item->product->height ?? 10,
-                    'weight' => $item->product->weight ?? 500,
-                    'quantity' => $item->quantity,
-                ];
-            })->toArray();
-
-            $response = Http::withToken($apiKey)
-                ->post($baseUrl . '/v1/rates/couriers', [
-                    'origin_postal_code' => $validated['origin_postal_code'],
-                    'destination_postal_code' => $validated['destination_postal_code'],
-                    'couriers' => 'jne,jnt,sicepat,anteraja,gojek,grab',
-                    'items' => $itemsPayload,
-                ]);
-
+            $itemsPayload = $cartItems->map(fn($item) => [
+                'name' => $item->product->name,
+                'description' => 'Varian',
+                'value' => $item->product->price,
+                'length' => $item->product->length ?? 10,
+                'width' => $item->product->width ?? 10,
+                'height' => $item->product->height ?? 10,
+                'weight' => $item->product->weight ?? 500,
+                'quantity' => $item->quantity,
+            ])->toArray();
+            $response = Http::withToken($apiKey)->post($baseUrl . '/v1/rates/couriers', [
+                'origin_postal_code' => $validated['origin_postal_code'],
+                'destination_postal_code' => $validated['destination_postal_code'],
+                'couriers' => 'jne,jnt,sicepat,anteraja,gojek,grab',
+                'items' => $itemsPayload,
+            ]);
             $responseData = $response->json();
-
-            if ($response->successful() && !empty($responseData['pricing'])) {
+            if ($response->successful() && !empty($responseData['pricing']))
                 return response()->json($responseData['pricing']);
-            }
-
-            Log::error('Biteship Rates Error', ['response' => $responseData]);
             return response()->json(['error' => $responseData['error'] ?? 'Gagal menghitung ongkir.'], $response->status());
-
         } catch (Exception $e) {
             Log::error('Biteship Rates Exception: ' . $e->getMessage());
             return response()->json(['error' => 'Terjadi kesalahan pada server kalkulasi.'], 500);
-        }
-    }
-
-
-    /**
-     * Memproses pembayaran dengan Midtrans.
-     */
-    public function charge(Request $request)
-    {
-        $validated = $request->validate([
-            'items' => 'required|array',
-            'delivery_method' => 'required|string|in:ship,pickup',
-            'shipping_cost' => 'nullable|numeric',
-            'shipping_service' => 'nullable|string',
-            'estimated_delivery' => 'nullable|string',
-            'alamat' => 'required_if:delivery_method,ship|nullable|string|max:500',
-            'payment_method' => 'required|string|in:bca_va,bni_va,gopay,qris',
-            'voucher_id' => 'nullable|exists:vouchers,id',
-        ]);
-
-        $customer = Auth::guard('customers')->user();
-        $checkoutItems = $this->cartService->getItemsByIds($validated['items']);
-
-        if ($checkoutItems->isEmpty()) {
-            return response()->json(['error' => 'Item tidak ditemukan.'], 404);
-        }
-
-        $shopOwner = $checkoutItems->first()->product->shopOwner;
-        $subdomainId = $shopOwner->subdomain->id;
-
-        // --- Kalkulasi Final di Server ---
-        $subtotal = $checkoutItems->sum(fn($item) => $item->product->price * $item->quantity);
-        $shippingCost = ($validated['delivery_method'] === 'ship') ? ($validated['shipping_cost'] ?? 0) : 0;
-        $discountAmount = 0;
-        $voucher = null;
-
-        if (!empty($validated['voucher_id'])) {
-            $voucher = Voucher::find($validated['voucher_id']);
-            if ($voucher && $voucher->user_id === $shopOwner->id && $voucher->expired_date >= now() && $subtotal >= $voucher->min_spending) {
-                $discountAmount = ($subtotal * $voucher->discount) / 100;
-            } else {
-                $validated['voucher_id'] = null;
-            }
-        }
-
-        $finalPrice = max(0, round(($subtotal - $discountAmount) + $shippingCost));
-
-        DB::beginTransaction();
-        try {
-            $order = Order::updateOrCreate(
-                ['user_id' => $customer->id, 'subdomain_id' => $subdomainId, 'status' => 'pending'],
-                [
-                    'total_price' => $finalPrice,
-                    'subtotal' => $subtotal,
-                    'shipping_cost' => $shippingCost,
-                    'discount_amount' => $discountAmount,
-                    'voucher_id' => $validated['voucher_id'],
-                    'order_date' => now(),
-                ]
-            );
-
-            $order->items()->delete();
-            foreach ($checkoutItems as $item) {
-                $order->items()->create([
-                    'product_id' => $item->product_id,
-                    'product_variant_id' => $item->product_variant_id,
-                    'quantity' => $item->quantity,
-                    'unit_price' => $item->product->price,
-                ]);
-            }
-
-            if ($validated['delivery_method'] === 'ship') {
-                // === PERUBAHAN 1: UPDATE ALAMAT PENGGUNA ===
-                // Jika alamat yang diinput berbeda dengan yang ada di database, update.
-                if ($customer->alamat !== $validated['alamat']) {
-                    $customer->update(['alamat' => $validated['alamat']]);
-                    Log::info('Alamat customer berhasil diupdate.', ['customer_id' => $customer->id]);
-                }
-
-                Shipping::updateOrCreate(
-                    ['order_id' => $order->id],
-                    [
-                        'delivery_service' => $validated['shipping_service'],
-                        'shipping_cost' => $shippingCost,
-                        'status' => 'pending',
-                        'shipping_address' => $validated['alamat'],
-                        'estimated_delivery' => $validated['estimated_delivery'] ?? null,
-                    ]
-                );
-            }
-
-            $transactionId = $order->id . '-' . uniqid();
-
-            $itemDetails = $checkoutItems->map(function ($item) {
-                return [
-                    'id' => $item->product_variant_id,
-                    'price' => $item->product->price,
-                    'quantity' => $item->quantity,
-                    'name' => substr($item->product->name, 0, 50),
-                ];
-            });
-
-            if ($shippingCost > 0) {
-                $itemDetails->push(['id' => 'SHIPPING', 'price' => $shippingCost, 'quantity' => 1, 'name' => 'Ongkos Kirim']);
-            }
-
-            if ($discountAmount > 0) {
-                $itemDetails->push(['id' => 'VOUCHER_' . ($voucher->code ?? 'DISCOUNT'), 'price' => -round($discountAmount), 'quantity' => 1, 'name' => 'Diskon Voucher']);
-            }
-
-            $params = [
-                'transaction_details' => ['order_id' => $transactionId, 'gross_amount' => $finalPrice],
-                'customer_details' => ['first_name' => $customer->name, 'email' => $customer->email, 'phone' => $customer->phone],
-                'item_details' => $itemDetails->toArray(),
-            ];
-
-            switch ($request->payment_method) {
-                case 'bca_va':
-                case 'bni_va':
-                    $params['payment_type'] = 'bank_transfer';
-                    $params['bank_transfer'] = ['bank' => str_replace('_va', '', $request->payment_method)];
-                    break;
-                case 'gopay':
-                    $params['payment_type'] = 'gopay';
-                    break;
-                case 'qris':
-                    $params['payment_type'] = 'qris';
-                    break;
-            }
-
-            $response = CoreApi::charge($params);
-
-            Payment::updateOrCreate(
-                ['order_id' => $order->id],
-                [
-                    'user_id' => $customer->id,
-                    'midtrans_order_id' => $response->order_id,
-                    'midtrans_transaction_status' => $response->transaction_status,
-                    'midtrans_payment_type' => $response->payment_type,
-                    'total_payment' => $response->gross_amount,
-                    'midtrans_response' => json_encode($response),
-                ]
-            );
-
-            $this->cartService->clearCartItems($validated['items']);
-
-            DB::commit();
-            return response()->json($response);
-
-        } catch (Exception $e) {
-            DB::rollBack();
-            Log::error('Checkout Charge Error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
-            return response()->json(['error' => 'Gagal memproses pembayaran: ' . $e->getMessage()], 500);
         }
     }
 }

@@ -12,46 +12,14 @@
     $cartCount = 0;
     $cartTotal = 0;
 
-    // Logika untuk menghitung item keranjang dan total harga berdasarkan tenant yang aktif.
-    if (!$isPreview && $tenant) {
-        $shopOwnerId = $tenant->user_id;
-
-        if (Auth::guard('customers')->check()) {
-            // Jika pelanggan login, hitung dari database dengan filter.
-            $cart = Auth::guard('customers')->user()->cart;
-            if ($cart) {
-                $tenantItems = $cart->items()
-                    ->whereHas('product', function ($query) use ($shopOwnerId) {
-                        $query->where('user_id', $shopOwnerId);
-                    })
-                    ->with('product:id,price') // Hanya ambil kolom yg diperlukan
-                    ->get();
-
-                $cartCount = $tenantItems->sum('quantity');
-                $cartTotal = $tenantItems->sum(function ($item) {
-                    return $item->quantity * $item->unit_price;
-                });
-            }
-        } elseif (session()->has('cart')) {
-            // Jika tamu, hitung dari session dengan filter.
-            $sessionCart = session('cart');
-            $productIdsInCart = array_column($sessionCart, 'product_id');
-
-            if (!empty($productIdsInCart)) {
-                $tenantProductIds = \App\Models\Product::whereIn('id', $productIdsInCart)
-                    ->where('user_id', $shopOwnerId)
-                    ->pluck('id')->all();
-
-                $filteredItems = collect($sessionCart)->filter(function ($item) use ($tenantProductIds) {
-                    return isset($item['product_id']) && in_array($item['product_id'], $tenantProductIds);
-                });
-
-                $cartCount = $filteredItems->sum('quantity');
-                $cartTotal = $filteredItems->sum(function ($item) {
-                    return $item['quantity'] * $item['price'];
-                });
-            }
+    $cartCount = 0;
+    if (Auth::guard('customers')->check()) {
+        $cart = Auth::guard('customers')->user()->cart;
+        if ($cart) {
+            $cartCount = $cart->items()->sum('quantity');
         }
+    } elseif (session()->has('cart')) {
+        $cartCount = collect(session('cart'))->sum('quantity');
     }
 @endphp
 
@@ -59,7 +27,6 @@
 <div class="offcanvas-menu-wrapper">
     <div class="offcanvas__option">
         <div class="offcanvas__links">
-            <a href="#">FAQs</a>
             @guest('customers')
                 @if(!$isPreview)
                     <a href="{{ route('tenant.customer.login.form', ['subdomain' => $currentSubdomain]) }}">Login</a>
@@ -95,6 +62,7 @@
                     </ul>
                 </div>
             @endauth
+            {{-- <a href="#">FAQs</a> --}}
         </div>
     </div>
     <div class="offcanvas__nav__option">
@@ -107,10 +75,7 @@
             <span>{{ $cartCount }}</span>
         </a>
         {{-- PERBAIKAN: Gunakan variabel cartTotal --}}
-        <div class="price">{{ format_rupiah($cartTotal) }}</div>
+        {{-- <div class="price">{{ format_rupiah($cartTotal) }}</div> --}}
     </div>
     <div id="mobile-menu-wrap"></div>
-    <div class="offcanvas__text">
-        <p>Free shipping, 30-day return or refund guarantee.</p>
-    </div>
 </div>

@@ -19,6 +19,10 @@ class CustomerOrderController extends Controller
 
         // Ambil semua pesanan dari pengguna ini, dengan relasi yang diperlukan
         $orders = Order::where('user_id', $user->id)
+            // PERBAIKAN: Pastikan hanya mengambil order dengan relasi yang valid
+            ->whereHas('subdomain.user.shop') // Hanya ambil order jika relasi ke toko masih lengkap
+            ->whereHas('items.product')       // Hanya ambil order jika produknya masih ada
+
             ->with(['subdomain.user.shop', 'items.product', 'items.variant', 'shipping', 'voucher', 'testimonials'])
             ->when($search, function ($query, $search) {
                 // Pencarian berdasarkan nama toko atau nama produk

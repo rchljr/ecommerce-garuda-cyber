@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Template;
+use App\Models\Category; // <-- Import Category
 use App\Models\Testimoni;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -13,9 +14,8 @@ use App\Services\SubscriptionPackageService;
 class LandingPageController extends BaseController
 {
     protected $landingPageService;
-    protected $subscriptionPackageService; // 2. Tambahkan properti
+    protected $subscriptionPackageService;
 
-    // 3. Inject kedua service di constructor
     public function __construct(LandingPageService $landingPageService, SubscriptionPackageService $subscriptionPackageService)
     {
         $this->landingPageService = $landingPageService;
@@ -24,16 +24,9 @@ class LandingPageController extends BaseController
 
     public function home()
     {
-        // Ambil data statistik
         $stats = $this->landingPageService->getStatistics();
-
-        // Ambil data testimoni
         $testimonials = Testimoni::where('status', 'published')->latest()->take(10)->get();
-
-        // 4. Ambil paket menggunakan service agar relasi 'features' ikut terbawa
         $packages = $this->subscriptionPackageService->getAllPackages();
-
-        // Urutkan paket seperti di halaman registrasi
         $sortedPackages = $packages->sortBy(function ($package) {
             if ($package->is_trial)
                 return 0;
@@ -41,18 +34,33 @@ class LandingPageController extends BaseController
                 return 2;
             return 1;
         });
-
-        // Ambil Template
         $templates = Template::all();
+        $partners = $this->landingPageService->getPartners();
 
-        // 5. Kirim semua data yang dibutuhkan ke view
         return view('landing-page.index', [
             'stats' => $stats,
             'testimonials' => $testimonials,
             'packages' => $sortedPackages,
             'templates' => $templates,
+            'partners' => $partners,
         ]);
     }
+
+    /**
+     * Menampilkan halaman untuk menjelajahi semua mitra dengan filter.
+     */
+    public function allTenants(Request $request)
+    {
+        // Ambil semua kategori untuk dropdown filter
+        $categories = Category::orderBy('name')->get();
+
+        // Ambil semua mitra dengan filter dan paginasi dari service
+        $partners = $this->landingPageService->getAllPartners($request);
+
+        return view('landing-page.all-tenants', compact('partners', 'categories'));
+    }
+
+
     /**
      * Menampilkan halaman kelola statistik.
      */
@@ -67,23 +75,19 @@ class LandingPageController extends BaseController
      */
     public function update(Request $request)
     {
-        // Daftar kolom yang diizinkan untuk diupdate
         $allowedKeys = ['total_users', 'total_shops', 'total_visitors', 'total_transactions'];
 
-        // Validasi input berdasarkan kunci (nama kolom), bukan nama tampilan
         $validated = $request->validate([
             'stat_key' => ['required', 'string', Rule::in($allowedKeys)],
             'stat_value' => 'required|integer|min:0',
         ]);
 
-        // Siapkan data untuk service
         $data = [
             $validated['stat_key'] => $validated['stat_value'],
         ];
 
         $this->landingPageService->updateStatistics($data);
 
-        // Mapping kunci ke nama tampilan untuk pesan sukses yang lebih ramah
         $keyToNameMap = [
             'total_users' => 'Total Pengguna',
             'total_shops' => 'Total Toko',
