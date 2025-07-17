@@ -16,6 +16,7 @@ use App\Models\Contact;
 use App\Models\Hero;
 use App\Models\Banner;
 use App\Models\Product;
+use App\Models\ShopSetting;
 use App\Models\SubCategory;
 use App\Models\Voucher;
 use Illuminate\Support\Facades\Hash;
@@ -36,17 +37,6 @@ class MitraTokoSeeder extends Seeder
         $emails = ['mitra1@gmail.com', 'mitra2@gmail.com', 'mitra3@gmail.com'];
         $users = User::whereIn('email', $emails)->get();
         foreach ($users as $user) {
-            Order::where('user_id', $user->id)->delete();
-            Payment::where('user_id', $user->id)->delete();
-            $user->shop()->delete();
-            $user->subdomain()->delete();
-            $user->tenant()->delete();
-            $user->userPackage()->delete();
-            $user->contact()->delete();
-            $user->heroes()->delete();
-            $user->banners()->delete();
-            $user->products()->delete();
-            $user->vouchers()->delete();
             $user->forceDelete();
         }
         DB::statement('SET FOREIGN_KEY_CHECKS=1;');
@@ -68,36 +58,37 @@ class MitraTokoSeeder extends Seeder
         $mitraDataArray = [
             [
                 'user' => ['name' => 'Budi Santoso', 'email' => 'mitra1@gmail.com', 'password' => 'mitra123'],
-                // --- PERUBAHAN DI SINI ---
                 'shop' => ['shop_name' => 'Toko Busana Kita', 'shop_address' => 'Jl. Pahlawan No. 123, Jakarta', 'postal_code' => '12190', 'product_categories' => 'pakaian-aksesoris'],
                 'subdomain' => 'toko-busana-kita',
                 'template' => $template1,
                 'contact' => ['phone' => '6281298765432', 'email' => 'support@tokomajujaya.com'],
+                'shop_settings' => [
+                    ['key' => 'theme_color', 'value' => '#E53E3E'],
+                    ['key' => 'logo_url', 'value' => 'seeders/logo1.png'],
+                ],
                 'heroes' => [
                     ['title' => 'Koleksi Musim Panas', 'subtitle' => 'Diskon Hingga 30%', 'image' => 'template1/img/hero/hero-1.jpg'],
-                    ['title' => 'Gaya Kasual Terbaik', 'subtitle' => 'Tampil Beda Setiap Hari', 'image' => 'template1/img/hero/hero-2.jpg'],
                 ],
                 'banners' => [
                     ['title' => 'Aksesoris Wajib Punya', 'image' => 'template1/img/banner/banner-1.jpg'],
-                    ['title' => 'Tas & Dompet Terbaru', 'image' => 'template1/img/banner/banner-2.jpg'],
                 ],
                 'products' => [
                     ['name' => 'Blouse Wanita Elegan', 'price' => 185000, 'is_best_seller' => true, 'sub_category_id' => $catBajuWanita->id, 'main_image' => 'template1/img/product/product-1.jpg'],
-                    ['name' => 'Kemeja Pria Lengan Panjang', 'price' => 220000, 'is_new_arrival' => true, 'sub_category_id' => $catBajuWanita->id, 'main_image' => 'template1/img/product/product-2.jpg'],
-                    ['name' => 'Gaun Pesta Malam', 'price' => 350000, 'is_hot_sale' => true, 'sub_category_id' => $catBajuWanita->id, 'main_image' => 'template1/img/product/product-3.jpg'],
                 ],
                 'vouchers' => [
-                    ['code' => 'MAJUJAYA10', 'discount' => 10, 'min_spending' => 150000, 'description' => 'Diskon 10% untuk semua produk.'],
-                    ['code' => 'DISKONHEBOH', 'discount' => 25, 'min_spending' => 500000, 'description' => 'Diskon spesial Rp 25% untuk pembelanjaan di atas Rp 500.000.'],
+                    ['code' => 'MAJUJAYA10', 'discount' => 10, 'min_spending' => 150000, 'description' => 'Diskon 10% untuk semua produk.', 'product_indices' => [0]],
                 ]
             ],
             [
                 'user' => ['name' => 'Siti Aminah', 'email' => 'mitra2@gmail.com', 'password' => 'mitra123'],
-                // --- PERUBAHAN DI SINI ---
                 'shop' => ['shop_name' => 'Gaya Modern', 'shop_address' => 'Jl. Merdeka No. 45, Bandung', 'postal_code' => '40117', 'product_categories' => 'pakaian-aksesoris'],
                 'subdomain' => 'gaya-modern',
                 'template' => $template1,
                 'contact' => ['phone' => '6285712345678', 'email' => 'cs@gayamodern.com'],
+                 'shop_settings' => [
+                    ['key' => 'theme_color', 'value' => '#3182CE'],
+                    ['key' => 'logo_url', 'value' => 'seeders/logo2.png'],
+                ],
                 'heroes' => [
                     ['title' => 'Denim Never Dies', 'subtitle' => 'Koleksi Jeans Terbaru', 'image' => 'template2/img/hero/hero-a.jpg'],
                 ],
@@ -106,32 +97,9 @@ class MitraTokoSeeder extends Seeder
                 ],
                 'products' => [
                     ['name' => 'Jaket Denim Pria', 'price' => 299000, 'is_best_seller' => true, 'sub_category_id' => $catAksesoris->id, 'main_image' => 'template2/img/product/product-4.jpg'],
-                    ['name' => 'Celana Chino Slim-Fit', 'price' => 199000, 'is_new_arrival' => true, 'sub_category_id' => $catAksesoris->id, 'main_image' => 'template2/img/product/product-5.jpg'],
                 ],
                 'vouchers' => [
-                    ['code' => 'GAYABARU15', 'discount' => 15, 'min_spending' => 200000, 'description' => 'Diskon 15% untuk pelanggan baru.'],
-                ]
-            ],
-            [
-                'user' => ['name' => 'Rina Melati', 'email' => 'mitra3@gmail.com', 'password' => 'mitra123'],
-                // --- PERUBAHAN DI SINI ---
-                'shop' => ['shop_name' => 'Fashionista Corner', 'shop_address' => 'Jl. Sudirman Kav. 5, Surabaya', 'postal_code' => '60271', 'product_categories' => 'pakaian-aksesoris'],
-                'subdomain' => 'fashionista-corner',
-                'template' => $template1,
-                'contact' => ['phone' => '6281122334455', 'email' => 'info@fashionistacorner.id'],
-                'heroes' => [
-                    ['title' => 'Luxury Handbags', 'subtitle' => 'Edisi Terbatas', 'image' => 'template1/img/hero/hero-3.jpg'],
-                ],
-                'banners' => [
-                    ['title' => 'Sepatu Impian Anda', 'image' => 'template1/img/banner/banner-3.jpg'],
-                ],
-                'products' => [
-                    ['name' => 'Tas Kulit Premium', 'price' => 750000, 'is_hot_sale' => true, 'sub_category_id' => $catAksesoris->id, 'main_image' => 'template1/img/product/product-6.jpg'],
-                    ['name' => 'Sepatu Hak Tinggi', 'price' => 450000, 'is_best_seller' => true, 'sub_category_id' => $catSepatu->id, 'main_image' => 'template1/img/product/product-7.jpg'],
-                ],
-                'vouchers' => [
-                    ['code' => 'FASHION5', 'discount' => 5, 'min_spending' => 0, 'description' => 'Diskon 5% tanpa minimum pembelian.'],
-                    ['code' => 'CORNER100K', 'discount' => 20, 'min_spending' => 500000, 'description' => 'Diskon 20% untuk pembelanjaan di atas Rp 500.000.'],
+                    ['code' => 'GAYABARU15', 'discount' => 15, 'min_spending' => 200000, 'description' => 'Diskon 15% untuk pelanggan baru.', 'product_indices' => [0]],
                 ]
             ],
         ];
@@ -145,6 +113,7 @@ class MitraTokoSeeder extends Seeder
                 $data['template'],
                 $businessPackage,
                 $data['contact'],
+                $data['shop_settings'],
                 $data['heroes'],
                 $data['banners'],
                 $data['products'],
@@ -152,13 +121,13 @@ class MitraTokoSeeder extends Seeder
             );
         }
 
-        $this->command->info('Seeder untuk 3 Toko Mitra Demo berhasil dijalankan!');
+        $this->command->info('Seeder untuk Toko Mitra Demo berhasil dijalankan!');
     }
 
     /**
      * Fungsi privat untuk membuat satu set data lengkap untuk seorang mitra.
      */
-    private function createMitraData(array $userData, array $shopData, string $subdomainName, Template $template, SubscriptionPackage $package, array $contactData, array $heroesData, array $bannersData, array $productsData, array $vouchersData)
+    private function createMitraData(array $userData, array $shopData, string $subdomainName, Template $template, SubscriptionPackage $package, array $contactData, array $settingsData, array $heroesData, array $bannersData, array $productsData, array $vouchersData)
     {
         // 1. Buat User Mitra
         $mitra = User::create([
@@ -171,21 +140,30 @@ class MitraTokoSeeder extends Seeder
         ]);
         $mitra->assignRole('mitra');
 
-        // 2. Buat Toko (Shop)
-        // Tidak perlu perubahan di sini, karena $shopData sudah mengandung postal_code
+        // 2. Buat Toko (Shop) terlebih dahulu
         $shop = Shop::create(array_merge($shopData, [
             'user_id' => $mitra->id,
+            // 'tenant_id' => $tenant->id, // Dihapus sesuai permintaan
             'shop_photo' => 'seeders/shop_photo.jpg',
             'ktp' => 'seeders/ktp.jpg',
         ]));
 
-        // 3. Buat Subdomain
-        $subdomain = Subdomain::create(['user_id' => $mitra->id, 'subdomain_name' => $subdomainName, 'status' => 'active']);
+        // 3. Buat Subdomain, sekarang terhubung ke Shop
+        $subdomain = Subdomain::create([
+            'user_id' => $mitra->id,
+            'shop_id' => $shop->id, // Ditambahkan sesuai permintaan
+            'subdomain_name' => $subdomainName,
+            'status' => 'active'
+        ]);
 
-        // 4. Buat Tenant
-        Tenant::create(['user_id' => $mitra->id, 'subdomain_id' => $subdomain->id, 'template_id' => $template->id]);
+        // 4. Buat Tenant, dengan subdomain_id yang sudah ada
+        $tenant = Tenant::create([
+            'user_id' => $mitra->id,
+            'template_id' => $template->id,
+            'subdomain_id' => $subdomain->id,
+        ]);
 
-        // 5. Buat Paket Langganan Aktif
+        // 5. Buat Paket Langganan Aktif dan data Order/Payment terkait
         $userPackage = UserPackage::create([
             'user_id' => $mitra->id,
             'subs_package_id' => $package->id,
@@ -195,7 +173,6 @@ class MitraTokoSeeder extends Seeder
             'expired_date' => now()->addYear(),
             'status' => 'active',
         ]);
-
         $order = Order::create([
             'user_id' => $mitra->id,
             'subdomain_id' => null,
@@ -203,7 +180,6 @@ class MitraTokoSeeder extends Seeder
             'order_date' => now(),
             'total_price' => $userPackage->price_paid,
         ]);
-
         Payment::create([
             'user_id' => $mitra->id,
             'order_id' => $order->id,
@@ -217,20 +193,41 @@ class MitraTokoSeeder extends Seeder
         // 6. Buat Data Kontak Toko
         Contact::create(array_merge($contactData, ['user_id' => $mitra->id]));
 
-        // 7. Buat Hero Sliders
+        // 7. Buat Shop Settings
+        foreach ($settingsData as $setting) {
+            ShopSetting::create([
+                'shop_id' => $shop->id,
+                'key' => $setting['key'],
+                'value' => $setting['value'],
+            ]);
+        }
+
+        // 8. Buat Hero Sliders, sekarang terhubung ke Shop
         foreach ($heroesData as $index => $hero) {
-            Hero::create(array_merge($hero, ['user_id' => $mitra->id, 'order' => $index + 1, 'is_active' => true]));
+            Hero::create(array_merge($hero, [
+                'user_id' => $mitra->id,
+                'shop_id' => $shop->id, // Ditambahkan sesuai permintaan
+                'order' => $index + 1,
+                'is_active' => true
+            ]));
         }
 
-        // 8. Buat Banner Promosi
+        // 9. Buat Banner Promosi, sekarang terhubung ke Shop
         foreach ($bannersData as $index => $banner) {
-            Banner::create(array_merge($banner, ['user_id' => $mitra->id, 'order' => $index + 1, 'is_active' => true]));
+            Banner::create(array_merge($banner, [
+                'user_id' => $mitra->id,
+                'shop_id' => $shop->id, // Ditambahkan sesuai permintaan
+                'order' => $index + 1,
+                'is_active' => true
+            ]));
         }
 
-        // 9. Buat Produk
+        // 10. Buat Produk, sekarang terhubung ke Shop
+        $createdProducts = [];
         foreach ($productsData as $productData) {
             $product = Product::create([
                 'user_id' => $mitra->id,
+                'shop_id' => $shop->id, // Ditambahkan sesuai permintaan
                 'name' => $productData['name'],
                 'slug' => Str::slug($productData['name']) . '-' . uniqid(),
                 'short_description' => 'Deskripsi singkat untuk ' . $productData['name'],
@@ -244,22 +241,31 @@ class MitraTokoSeeder extends Seeder
             ]);
             $product->variants()->create(['color' => 'Merah', 'size' => 'M', 'stock' => 10]);
             $product->variants()->create(['color' => 'Biru', 'size' => 'L', 'stock' => 15]);
+            $createdProducts[] = $product;
         }
 
-        // 10. Buat Voucher
-        foreach ($vouchersData as $voucher) {
-            Voucher::updateOrCreate(
-                ['voucher_code' => strtolower($voucher['code'])],
-                [
-                    'user_id' => $mitra->id,
-                    'subdomain_id' => $subdomain->id,
-                    'description' => $voucher['description'],
-                    'discount' => $voucher['discount'],
-                    'min_spending' => $voucher['min_spending'],
-                    'start_date' => now(),
-                    'expired_date' => now()->addYear(),
-                ]
-            );
+        // 11. Buat Voucher dan hubungkan ke Produk
+        foreach ($vouchersData as $voucherData) {
+            $voucher = Voucher::create([
+                'user_id' => $mitra->id,
+                'subdomain_id' => $subdomain->id,
+                'voucher_code' => strtolower($voucherData['code']),
+                'description' => $voucherData['description'],
+                'discount' => $voucherData['discount'],
+                'min_spending' => $voucherData['min_spending'],
+                'start_date' => now(),
+                'expired_date' => now()->addYear(),
+            ]);
+
+            if (!empty($voucherData['product_indices'])) {
+                $productIdsToAttach = [];
+                foreach ($voucherData['product_indices'] as $index) {
+                    if (isset($createdProducts[$index])) {
+                        $productIdsToAttach[] = $createdProducts[$index]->id;
+                    }
+                }
+                $voucher->products()->attach($productIdsToAttach);
+            }
         }
     }
 }

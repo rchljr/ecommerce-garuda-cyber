@@ -4,10 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\Shop;
 use Illuminate\Http\Request;
-// PENTING: Import model-model lama yang akan digunakan
 use App\Models\Hero;
 use App\Models\Banner;
 use App\Models\Product;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class HomeController extends Controller
 {
@@ -19,36 +20,73 @@ class HomeController extends Controller
      */
     public function index(Request $request, $subdomain)
     {
-        // 1. Ambil data tenant dari request
-        $tenant = $request->get('tenant');
-        $templatePath = $tenant->template->path;// 'template1'
+        try {
+            // 1. Ambil data tenant dari request (didapat dari middleware)
+            $tenant = $request->get('tenant');
+            if (!$tenant || !$tenant->template || !$tenant->user_id) {
+                Log::error("Data tenant tidak lengkap (user_id/template) untuk subdomain: {$subdomain}");
+                abort(404, 'Data konfigurasi toko tidak valid.');
+            }
+            $templatePath = $tenant->template->path;
 
-        // 2. Ambil data shop yang terhubung ke tenant
-        $shop = $tenant->shop;
-        if (!$shop) {
-            abort(404, 'Toko tidak ditemukan.');
+            // 2. Ambil data shop berdasarkan user_id dari tenant. Ini adalah PUSAT LOGIKA BARU.
+            $shop = Shop::where('user_id', $tenant->user_id)->first();
+            if (!$shop) {
+                Log::error("Toko tidak ditemukan untuk tenant dengan user_id: {$tenant->user_id}");
+                abort(404, 'Toko tidak ditemukan.');
+            }
+
+            // ====================================================================
+            // Ambil data berdasarkan shop_id
+            // ====================================================================
+            $shopId = $shop->id;
+
+            // 3. Ambil data Heroes berdasarkan shop_id
+            $heroes = Hero::where('shop_id', $shopId)
+                ->where('is_active', true)
+                ->orderBy('order')
+                ->get();
+
+            // 4. Ambil data Banners berdasarkan shop_id
+            $banners = Banner::where('shop_id', $shopId)
+                ->where('is_active', true)
+                ->orderBy('order')
+                ->get();
+
+            // 5. Buat query dasar untuk produk berdasarkan shop_id
+            $baseProductQuery = Product::where('shop_id', $shopId)
+                ->where('status', 'active');
+
+            // 6. Ambil koleksi produk yang berbeda dari query dasar
+            $bestSellers = (clone $baseProductQuery)->where('is_best_seller', true)->latest()->limit(8)->get();
+            $newArrivals = (clone $baseProductQuery)->where('is_new_arrival', true)->latest()->limit(8)->get();
+            $hotSales = (clone $baseProductQuery)->where('is_hot_sale', true)->latest()->limit(8)->get();
+
+            // 7. Tampilkan view dengan semua data yang dibutuhkan
+            return view($templatePath . '.home', [
+                'shop' => $shop,
+                'heroes' => $heroes,
+                'banners' => $banners,
+                'bestSellers' => $bestSellers,
+                'newArrivals' => $newArrivals,
+                'hotSales' => $hotSales,
+                'tenant' => $tenant,
+                'subdomainName' => $subdomain,
+            ]);
+
+        } catch (Throwable $e) {
+            // JIKA TERJADI ERROR APAPUN, TANGKAP DAN LOG DI SINI
+            Log::error('====================================================================');
+            Log::error('TERJADI FATAL ERROR SAAT MENCOBA MERENDER VIEW HOMEPAGE');
+            Log::error('Subdomain: ' . $subdomain);
+            Log::error('Error Message: ' . $e->getMessage());
+            Log::error('File: ' . $e->getFile());
+            Log::error('Line: ' . $e->getLine());
+            Log::error('Stack Trace: ' . $e->getTraceAsString());
+            Log::error('====================================================================');
+
+            // Tampilkan halaman error 500 yang lebih sesuai
+            abort(500, 'Terjadi kesalahan pada server. Silakan periksa log untuk detail.');
         }
-
-        // 3. Ambil data dari model-model lama, difilter berdasarkan shop_id
-        // Pastikan model Hero dan Banner Anda memiliki kolom 'shop_id'
-        $heroes = Hero::where('is_active', true)->orderBy('order')->get();
-        $banners = Banner::where('is_active', true)->orderBy('order')->get();
-        $bestSellers = Product::where('is_best_seller', true)->where('status', 'active')->latest()->limit(8)->get();
-        $newArrivals = Product::where('is_new_arrival', true)->where('status', 'active')->latest()->limit(8)->get();
-        $hotSales = Product::where('is_hot_sale', true)->where('status', 'active')->latest()->limit(8)->get();
-        $products = $shop->products()->where('status', 'active')->latest()->get();
-
-        // 5. Tampilkan view dengan semua data yang dibutuhkan oleh template versi lama
-        return view($templatePath . '.home', [
-            'shop' => $shop,
-            'heroes' => $heroes,
-            'banners' => $banners,
-            'products' => $products,
-            'bestSellers' => $bestSellers,
-            'newArrivals' => $newArrivals,
-            'hotSales' => $hotSales,
-            'tenant' => $tenant,
-            'subdomainName' => $subdomain, 
-        ]);
     }
 }

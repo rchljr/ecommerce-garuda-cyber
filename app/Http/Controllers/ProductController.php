@@ -2,21 +2,24 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
-use App\Models\SubCategory; // Make sure to import SubCategory model
-use Illuminate\Http\Request;
+use App\Models\Tag;
 use App\Models\Product;
 use App\Models\Category;
-use App\Models\Tag;
+use App\Traits\UploadFile;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\DB;
+use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
+use App\Models\SubCategory; // Make sure to import SubCategory model
 
 
 class ProductController extends Controller
 {
+    use UploadFile;
+
     /**
      * Menampilkan daftar semua produk.
      */
@@ -25,17 +28,13 @@ class ProductController extends Controller
         $user = Auth::user();
         $shop = $user->shop;
 
-        // PENINGKATAN: Pastikan mitra punya toko
-        if (!$shop || !$shop->product_categories) {
+        // Pastikan mitra memiliki toko yang terdaftar
+        if (!$shop) {
             abort(403, 'Profil toko Anda belum lengkap.');
         }
 
-        // Ambil ID semua sub-kategori yang dimiliki toko ini
-        $mainCategory = Category::where('slug', $shop->product_categories)->first();
-        $subCategoryIds = $mainCategory ? $mainCategory->subCategories()->pluck('id') : [];
-
-        // Tampilkan produk yang hanya memiliki sub_category_id yang diizinkan
-        $products = Product::whereIn('sub_category_id', $subCategoryIds)
+        // Ambil produk yang HANYA memiliki shop_id yang sama dengan toko mitra.
+        $products = Product::where('shop_id', $shop->id)
             ->latest()
             ->paginate(10);
 
@@ -48,18 +47,18 @@ class ProductController extends Controller
     public function create()
     {
         $user = Auth::user();
-        $subCategories = collect(); // Initialize as an empty collection
+        $shop = $user->shop;
+        $subCategories = collect();
 
-        // Assuming 'shop' relationship exists on the User model
-        // and 'product_categories' stores the slug of the main category
-        $mainCategorySlug = optional($user->shop)->product_categories;
+        // Pastikan mitra memiliki toko dan kategori produk
+        if (!$shop || !$shop->product_categories) {
+            abort(403, 'Profil toko Anda belum lengkap untuk menambahkan produk.');
+        }
 
-        if ($mainCategorySlug) {
-            $mainCategory = Category::where('slug', $mainCategorySlug)->first();
-            if ($mainCategory) {
-                // Assuming Category model has a hasMany relationship to SubCategory model named 'subCategories'
-                $subCategories = $mainCategory->subCategories()->orderBy('name', 'asc')->get();
-            }
+        // Ambil sub-kategori berdasarkan kategori utama toko
+        $mainCategory = Category::where('slug', $shop->product_categories)->first();
+        if ($mainCategory) {
+            $subCategories = $mainCategory->subCategories()->orderBy('name', 'asc')->get();
         }
 
         return view('dashboard-mitra.products.create', compact('subCategories'));
@@ -70,6 +69,14 @@ class ProductController extends Controller
      */
     public function store(Request $request)
     {
+        $user = Auth::user();
+        $shop = $user->shop;
+
+        // Validasi keberadaan toko sebelum menyimpan
+        if (!$shop) {
+            return back()->with('error', 'Profil toko tidak ditemukan.');
+        }
+
         $validatedData = $request->validate([
             'name' => 'required|string|max:255',
             'short_description' => 'nullable|string',
@@ -91,10 +98,11 @@ class ProductController extends Controller
 
         DB::beginTransaction();
         try {
-            $mainImagePath = $request->file('main_image')->store('products/main', 'public');
+            $mainImagePath = $this->uploadFile($request->file('main_image'), 'products/main');
 
             $product = Product::create([
                 'user_id' => auth::id(),
+                'shop_id' => $shop->id,
                 'name' => $validatedData['name'],
                 'slug' => Str::slug($validatedData['name']) . '-' . uniqid(),
                 'short_description' => $validatedData['short_description'],
@@ -125,7 +133,8 @@ class ProductController extends Controller
 
             if ($request->hasFile('gallery_images')) {
                 foreach ($request->file('gallery_images') as $galleryFile) {
-                    $galleryPath = $galleryFile->store('products/gallery', 'public');
+                    // Gunakan Trait untuk upload file galeri
+                    $galleryPath = $this->uploadFile($galleryFile, 'products/gallery');
                     $product->gallery()->create(['image_path' => $galleryPath]);
                 }
             }
@@ -141,9 +150,12 @@ class ProductController extends Controller
     /**
      * Menampilkan detail produk tertentu.
      */
-    public function show(Request $request, string $productSlug)
+    public function show(Product $product)
     {
-        $product = Product::where('slug', $productSlug)->firstOrFail(); // Changed 'category' to 'subCategory'
+        if ($product->shop_id !== Auth::user()->shop->id) {
+            abort(403, 'Anda tidak memiliki izin untuk melihat produk ini.');
+        }
+
         return view('dashboard-mitra.products.show', compact('product'));
     }
 
@@ -152,19 +164,25 @@ class ProductController extends Controller
      */
     public function edit(Product $product)
     {
+        if ($product->shop_id !== Auth::user()->shop->id) {
+            abort(403, 'Anda tidak memiliki izin untuk mengedit produk ini.');
+        }
+
         $product->load(['tags', 'variants', 'gallery']);
         $user = Auth::user();
-        $subCategories = collect(); // Initialize as an empty collection
+        $categories = collect(); // <-- PERBAIKAN: Nama variabel diubah
 
         $mainCategorySlug = optional($user->shop)->product_categories;
 
         if ($mainCategorySlug) {
             $mainCategory = Category::where('slug', $mainCategorySlug)->first();
             if ($mainCategory) {
-                $subCategories = $mainCategory->subCategories()->orderBy('name', 'asc')->get();
+                // <-- PERBAIKAN: Nama variabel diubah
+                $categories = $mainCategory->subCategories()->orderBy('name', 'asc')->get();
             }
         }
-        return view('dashboard-mitra.products.edit', compact('product', 'subCategories')); // Pass subCategories
+        // <-- PERBAIKAN: compact() sekarang menggunakan 'categories'
+        return view('dashboard-mitra.products.edit', compact('product', 'categories'));
     }
 
     /**
@@ -203,10 +221,10 @@ class ProductController extends Controller
             $updateData['is_hot_sale'] = $request->has('is_hot_sale');
 
             if ($request->hasFile('main_image')) {
-                if ($product->main_image) {
-                    Storage::disk('public')->delete($product->main_image);
-                }
-                $updateData['main_image'] = $request->file('main_image')->store('products/main', 'public');
+                // Gunakan Trait untuk hapus file lama
+                $this->deleteFile($product->main_image);
+                // Gunakan Trait untuk upload file baru
+                $updateData['main_image'] = $this->uploadFile($request->file('main_image'), 'products/main');
             }
 
             $product->update($updateData);
@@ -230,10 +248,12 @@ class ProductController extends Controller
 
             if ($request->hasFile('gallery_images')) {
                 foreach ($request->file('gallery_images') as $galleryFile) {
-                    $galleryPath = $galleryFile->store('products/gallery', 'public');
+                    // Gunakan Trait untuk upload file galeri
+                    $galleryPath = $this->uploadFile($galleryFile, 'products/gallery');
                     $product->gallery()->create(['image_path' => $galleryPath]);
                 }
             }
+
 
             DB::commit();
             return redirect()->route('mitra.products.index')->with('success', 'Produk berhasil diperbarui!');
@@ -250,12 +270,12 @@ class ProductController extends Controller
     {
         DB::beginTransaction();
         try {
-            if ($product->main_image) {
-                Storage::disk('public')->delete($product->main_image);
-            }
+            // Gunakan Trait untuk hapus file utama
+            $this->deleteFile($product->main_image);
 
+            // Gunakan Trait untuk hapus file galeri
             foreach ($product->gallery as $galleryImage) {
-                Storage::disk('public')->delete($galleryImage->image_path);
+                $this->deleteFile($galleryImage->image_path);
             }
 
             $product->delete();
