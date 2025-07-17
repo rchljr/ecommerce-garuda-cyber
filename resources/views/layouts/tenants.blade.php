@@ -32,7 +32,7 @@
                 <div class="flex justify-between items-center py-4">
                     <!-- Logo GCI -->
                     <a href="{{ route('landing') }}" class="flex items-center" title="Kembali ke Beranda">
-                        <img class="h-8 w-auto" src="{{ asset('images/logoGCI.png') }}"
+                        <img class="h-8 w-auto" src="{{ asset('images/LogoGCI.png') }}"
                             onerror="this.onerror=null;this.src='https://placehold.co/150x40/1f2937/ffffff?text=GCI';"
                             alt="Logo Garuda Cyber Indonesia">
                     </a>

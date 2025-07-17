@@ -69,5 +69,11 @@ class Voucher extends Model
     {
         return $this->belongsTo(Subdomain::class);
     }
+    public function products()
+    {
+        // Mendefinisikan relasi many-to-many ke model Product
+        // melalui tabel pivot 'product_voucher'.
+        return $this->belongsToMany(Product::class, 'product_voucher', 'voucher_id', 'product_id');
+    }
 }
 

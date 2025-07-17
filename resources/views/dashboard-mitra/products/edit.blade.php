@@ -126,12 +126,12 @@
                         <label for="gallery_images" class="block text-sm font-medium text-gray-700 mb-1">Tambah Gambar Galeri (Opsional)</label>
                         <input type="file" id="gallery_images" name="gallery_images[]" class="w-full" accept="image/*" multiple>
                         <div id="gallery-preview-container" class="image-preview-container">
-                             @foreach($product->gallery as $image)
-                                <div class="image-preview-wrapper">
-                                    <img src="{{ $image->image_url }}" class="image-preview" alt="Gambar Galeri">
-                                    {{-- Tambahkan tombol hapus untuk gambar galeri yang ada --}}
-                                </div>
-                            @endforeach
+                                @foreach($product->gallery as $image)
+                                    <div class="image-preview-wrapper">
+                                        <img src="{{ $image->image_url }}" class="image-preview" alt="Gambar Galeri">
+                                        {{-- Tambahkan tombol hapus untuk gambar galeri yang ada --}}
+                                    </div>
+                                @endforeach
                         </div>
                     </div>
                 </div>
@@ -173,25 +173,25 @@
             </div>
 
             {{-- Kolom Kanan (Pengaturan) --}}
-             <div class="space-y-6">
+              <div class="space-y-6">
                     <div class="bg-white p-6 rounded-lg shadow">
                         <h2 class="text-xl font-semibold mb-4">Pengaturan Tampilan</h2>
                         <div class="space-y-4">
                             <label for="is_best_seller" class="flex items-center">
                                 <input type="checkbox" id="is_best_seller" name="is_best_seller" value="1"
-                                    {{ isset($product) && $product->is_best_seller ? 'checked' : '' }}
+                                    {{ old('is_best_seller', $product->is_best_seller) ? 'checked' : '' }}
                                     class="h-4 w-4 text-blue-600 border-gray-300 rounded">
                                 <span class="ml-2 text-sm text-gray-700">Tandai sebagai Best Seller</span>
                             </label>
                             <label for="is_new_arrival" class="flex items-center">
                                 <input type="checkbox" id="is_new_arrival" name="is_new_arrival" value="1"
-                                    {{ isset($product) && $product->is_new_arrival ? 'checked' : '' }}
+                                    {{ old('is_new_arrival', $product->is_new_arrival) ? 'checked' : '' }}
                                     class="h-4 w-4 text-blue-600 border-gray-300 rounded">
                                 <span class="ml-2 text-sm text-gray-700">Tandai sebagai New Arrival</span>
                             </label>
                             <label for="is_hot_sale" class="flex items-center">
                                 <input type="checkbox" id="is_hot_sale" name="is_hot_sale" value="1"
-                                    {{ isset($product) && $product->is_hot_sale ? 'checked' : '' }}
+                                    {{ old('is_hot_sale', $product->is_hot_sale) ? 'checked' : '' }}
                                     class="h-4 w-4 text-blue-600 border-gray-300 rounded">
                                 <span class="ml-2 text-sm text-gray-700">Tandai sebagai Hot Sale</span>
                             </label>
@@ -200,46 +200,44 @@
                     <div class="bg-white p-6 rounded-lg shadow">
                         <h2 class="text-xl font-semibold mb-4">Harga & SKU</h2>
                         <div class="mb-4">
-                            <label for="price" class="block text-sm font-medium text-gray-700 mb-1">Harga Utama
-                                (Rp)</label>
-                            <input type="number" id="price" name="price"
-                                class="w-full border-gray-300 rounded-md shadow-sm" required min="0">
+                            <label for="price" class="block text-sm font-medium text-gray-700 mb-1">Harga Utama (Rp)</label>
+                            {{-- PERBAIKAN: Menambahkan value dari produk --}}
+                            <input type="number" id="price" name="price" value="{{ old('price', $product->price) }}" class="w-full border-gray-300 rounded-md shadow-sm" required min="0">
                         </div>
                         <div>
-                            <label for="sku" class="block text-sm font-medium text-gray-700 mb-1">SKU (Stock Keeping
-                                Unit)</label>
-                            <input type="text" id="sku" name="sku"
-                                class="w-full border-gray-300 rounded-md shadow-sm">
+                            <label for="sku" class="block text-sm font-medium text-gray-700 mb-1">SKU (Stock Keeping Unit)</label>
+                            {{-- PERBAIKAN: Menambahkan value dari produk --}}
+                            <input type="text" id="sku" name="sku" value="{{ old('sku', $product->sku) }}" class="w-full border-gray-300 rounded-md shadow-sm">
                         </div>
                     </div>
 
                     <div class="bg-white p-6 rounded-lg shadow">
                         <h2 class="text-xl font-semibold mb-4">Organisasi</h2>
                         <div class="mb-4">
-                            <label for="category_id" class="block text-sm font-medium text-gray-700 mb-1">Kategori</label>
-                            <select id="category_id" name="category_id"
-                                class="w-full border-gray-300 rounded-md shadow-sm" required>
+                            <label for="sub_category_id" class="block text-sm font-medium text-gray-700 mb-1">Kategori</label>
+                            {{-- PERBAIKAN 1: Mengubah name menjadi "sub_category_id" --}}
+                            <select id="sub_category_id" name="sub_category_id" class="w-full border-gray-300 rounded-md shadow-sm" required>
                                 <option value="">Pilih Kategori</option>
-                                {{-- Kategori akan di-load dari database --}}
                                 @foreach ($categories as $category)
-                                    <option value="{{ $category->id }}">{{ $category->name }}</option>
+                                    {{-- PERBAIKAN 2: Menambahkan logika 'selected' --}}
+                                    <option value="{{ $category->id }}" {{ old('sub_category_id', $product->sub_category_id) == $category->id ? 'selected' : '' }}>
+                                        {{ $category->name }}
+                                    </option>
                                 @endforeach
                             </select>
                         </div>
                         <div>
-                            <label for="tags-input" class="block text-sm font-medium text-gray-700 mb-1">Tag Produk
-                                (pisahkan dengan koma)</label>
-                            <input type="text" id="tags-input" class="w-full border-gray-300 rounded-md shadow-sm"
-                                placeholder="e.g., Baju, Musim Panas, Katun">
-                            <input type="hidden" name="tags" id="tags-hidden">
+                            <label for="tags-input" class="block text-sm font-medium text-gray-700 mb-1">Tag Produk (pisahkan dengan koma)</label>
+                            <input type="text" id="tags-input" class="w-full border-gray-300 rounded-md shadow-sm" placeholder="e.g., Baju, Musim Panas, Katun">
+                            {{-- PERBAIKAN 3: Mengisi value pada hidden input untuk tags --}}
+                            <input type="hidden" name="tags" id="tags-hidden" value="{{ old('tags', $product->tags->pluck('name')->implode(',')) }}">
                             <div id="tags-container" class="tag-container mt-2"></div>
                         </div>
                     </div>
 
                     <div class="bg-white p-6 rounded-lg shadow">
-                        <button type="submit"
-                            class="w-full bg-green-600 text-white px-4 py-3 rounded-md hover:bg-green-700 font-semibold">
-                            Simpan Produk
+                        <button type="submit" class="w-full bg-green-600 text-white px-4 py-3 rounded-md hover:bg-green-700 font-semibold">
+                            Simpan Perubahan
                         </button>
                     </div>
                 </div>
@@ -279,7 +277,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const tagsInput = document.getElementById('tags-input');
     const tagsContainer = document.getElementById('tags-container');
     const tagsHidden = document.getElementById('tags-hidden');
-    let tags = tagsHidden.value ? tagsHidden.value.split(',') : [];
+    let tags = tagsHidden.value ? tagsHidden.value.split(',').filter(tag => tag.trim() !== '') : [];
 
     function renderTags() {
         tagsContainer.innerHTML = '';
@@ -299,6 +297,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     tagsInput.addEventListener('keyup', function (e) {
         if (e.key === ',' || e.key === 'Enter') {
+            e.preventDefault(); // Mencegah form submit jika menekan Enter
             const newTag = e.target.value.trim().replace(/,/g, '');
             if (newTag.length > 1 && !tags.includes(newTag)) {
                 tags.push(newTag);
@@ -317,34 +316,37 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     // --- Logika Image Preview ---
-     function createImagePreviewer(inputId, containerId, multiple = false) {
-                const input = document.getElementById(inputId);
-                const container = document.getElementById(containerId);
+      function createImagePreviewer(inputId, containerId, multiple = false) {
+            const input = document.getElementById(inputId);
+            const container = document.getElementById(containerId);
 
-                input.addEventListener('change', function(event) {
-                    if (!multiple) {
-                        container.innerHTML = '';
-                    }
-                    const files = event.target.files;
-                    for (const file of files) {
-                        const reader = new FileReader();
-                        reader.onload = function(e) {
-                            const wrapper = document.createElement('div');
-                            wrapper.className = 'image-preview-wrapper';
-                            wrapper.innerHTML =
-                                `<img src="${e.target.result}" class="image-preview"><span class="remove-image">&times;</span>`;
-                            container.appendChild(wrapper);
+            input.addEventListener('change', function(event) {
+                if (!multiple) {
+                    container.innerHTML = '';
+                }
+                const files = event.target.files;
+                for (const file of files) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const wrapper = document.createElement('div');
+                        wrapper.className = 'image-preview-wrapper';
+                        wrapper.innerHTML =
+                            `<img src="${e.target.result}" class="image-preview"><span class="remove-image">&times;</span>`;
+                        container.appendChild(wrapper);
 
-                            wrapper.querySelector('.remove-image').addEventListener('click', () => {
-                                wrapper.remove();
-                                // Note: This only removes the preview, not the file from the input.
-                                // A more complex solution is needed to manage the FileList object.
-                            });
-                        }
-                        reader.readAsDataURL(file);
+                        wrapper.querySelector('.remove-image').addEventListener('click', () => {
+                            wrapper.remove();
+                            // Note: This only removes the preview, not the file from the input.
+                        });
                     }
-                });
-            }
+                    reader.readAsDataURL(file);
+                }
+            });
+        }
+
+        // Jalankan previewer untuk gambar utama dan galeri
+        createImagePreviewer('main_image', 'main-image-preview-container');
+        createImagePreviewer('gallery_images', 'gallery-preview-container', true);
 });
 </script>
 @endpush

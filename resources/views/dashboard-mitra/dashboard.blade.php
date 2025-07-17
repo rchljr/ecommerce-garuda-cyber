@@ -24,31 +24,69 @@
                     <p class="text-gray-500 mt-1">Selamat datang kembali! Berikut adalah ringkasan bisnis Anda.</p>
                 </div>
 
-                {{-- ====================================================== --}}
-                {{-- TOMBOL BARU: Link ke Website E-Commerce Mitra --}}
-                {{-- ====================================================== --}}
-                <div class="mt-4 sm:mt-0">
+                {{-- Grup Tombol Aksi di Header --}}
+                <div class="mt-4 sm:mt-0 flex items-center gap-3">
                     @php
                         // Mengambil data subdomain dari user yang sedang login
-                        $subdomain = Auth::user()->subdomain->subdomain_name ?? null;
+                        $subdomain = Auth::user()->shop->subdomain ?? null;
                         // Mengganti 'ecommercegaruda.my.id' dengan domain utama Anda jika berbeda
-                        $storeUrl = $subdomain ? 'http://ecommercegaruda.my.id/tenant/' . $subdomain : '#';
+                        $storeUrl = $subdomain ? $subdomain->url : '#';
                     @endphp
 
                     @if($subdomain)
+                        {{-- Tombol Kunjungi Toko --}}
                         <a href="{{ $storeUrl }}" target="_blank"
                             class="inline-flex items-center gap-2 bg-red-600 text-white font-semibold px-4 py-2 rounded-lg hover:bg-red-700 transition-colors shadow-sm">
-                            {{-- Ikon External Link --}}
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
                                 stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round"
                                     d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                             </svg>
-                            Kunjungi Toko Anda
+                            Kunjungi Toko
                         </a>
+
+                        {{-- ====================================================== --}}
+                        {{-- == BAGIAN BARU: Tombol Publish / Unpublish == --}}
+                        {{-- ====================================================== --}}
+                        @if ($subdomain->status == 'active')
+                            <form action="{{ route('mitra.editor.unpublish') }}" method="POST"
+                                onsubmit="return confirm('Apakah Anda yakin ingin menyembunyikan toko Anda dari publik?');">
+                                @csrf
+                                <button type="submit"
+                                    class="inline-flex items-center gap-2 bg-yellow-500 text-white font-semibold px-4 py-2 rounded-lg hover:bg-yellow-600 transition-colors shadow-sm">
+                                    <i class="fas fa-eye-slash"></i>
+                                    Unpublish
+                                </button>
+                            </form>
+                        @else
+                            <form action="{{ route('mitra.editor.publish') }}" method="POST"
+                                onsubmit="return confirm('Apakah Anda yakin ingin mempublikasikan toko Anda?');">
+                                @csrf
+                                <button type="submit"
+                                    class="inline-flex items-center gap-2 bg-blue-500 text-white font-semibold px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors shadow-sm">
+                                    <i class="fas fa-globe-asia"></i>
+                                    Publish
+                                </button>
+                            </form>
+                        @endif
                     @endif
                 </div>
             </div>
+
+            {{-- Menampilkan notifikasi sukses atau error --}}
+            @if (session('success'))
+                <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6" role="alert">
+                    <p class="font-bold">Sukses</p>
+                    <p>{{ session('success') }}</p>
+                </div>
+            @endif
+            @if (session('error'))
+                <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6" role="alert">
+                    <p class="font-bold">Error</p>
+                    <p>{{ session('error') }}</p>
+                </div>
+            @endif
+
 
             <!-- Grid untuk Kartu Metrik Utama (KPI) -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
@@ -128,7 +166,8 @@
                                     <tr class="border-b hover:bg-gray-50">
                                         <td class="px-4 py-3 font-medium text-gray-900">{{ $index + 1 }}</td>
                                         <td class="px-4 py-3 font-medium text-gray-900 whitespace-nowrap">
-                                            {{ Str::limit($product->name, 25) }}</td>
+                                            {{ Str::limit($product->name, 25) }}
+                                        </td>
                                         <td class="px-4 py-3 text-center font-bold">{{ $product->sold_count }}</td>
                                     </tr>
                                 @empty

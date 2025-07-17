@@ -53,11 +53,12 @@ class RegistrationService
             $user->assignRole('calon-mitra');
 
             /// 3. Simpan Data Toko
-            Shop::create(array_merge($allData['shop'], ['user_id' => $user->id]));
+            $shop = Shop::create(array_merge($allData['shop'], ['user_id' => $user->id]));
 
             // 4. Simpan Subdomain
             $subdomain = Subdomain::create([
                 'user_id' => $user->id,
+                'shop_id' => $shop->id,
                 'subdomain_name' => $allData['subdomain']['subdomain'],
                 'status' => 'pending',
             ]);
@@ -125,11 +126,6 @@ class RegistrationService
             $user->removeRole('calon-mitra');
             $user->assignRole('mitra');
             $user->save();
-
-            // 4. Update Subdomain menjadi aktif
-            if ($user->subdomain) {
-                $user->subdomain->update(['status' => 'active']);
-            }
 
             // 5. Kirim notifikasi aktivasi
             Notification::send($user, new PartnerActivatedNotification($user));
