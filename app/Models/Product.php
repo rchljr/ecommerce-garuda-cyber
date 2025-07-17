@@ -14,7 +14,8 @@ use Illuminate\Support\Facades\Storage;
 class Product extends Model
 {
     use HasFactory;
-
+    
+    protected $connection = 'mysql';
     protected $primaryKey = 'id';
     public $incrementing = false;
     protected $keyType = 'string';

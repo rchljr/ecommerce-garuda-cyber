@@ -31,4 +31,9 @@ class Tenant extends Model
     {
         return $this->belongsTo(Subdomain::class);
     }
+    public function shop()
+    {
+        // Gunakan hasOne jika satu tenant hanya punya satu shop
+        return $this->hasOne(Shop::class);
+    }
 }

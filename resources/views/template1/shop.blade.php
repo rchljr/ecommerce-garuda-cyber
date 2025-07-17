@@ -258,7 +258,7 @@
                     <div class="breadcrumb__text">
                         <h4>Shop</h4>
                         <div class="breadcrumb__links">
-                            @if($isPreview)
+                            @if ($isPreview)
                                 <a>Home</a>
                             @else
                                 <a
@@ -315,7 +315,8 @@
                                         </div>
                                     </div>
                                 </div>
-                                <button type="submit" class="primary-btn mt-3" style="width: 100%; border: none;" {{ $isPreview ? 'disabled' : '' }}>Filter</button>
+                                <button type="submit" class="primary-btn mt-3" style="width: 100%; border: none;"
+                                    {{ $isPreview ? 'disabled' : '' }}>Filter</button>
                             </div>
                         </div>
                     </div>
@@ -331,12 +332,16 @@
                                 </div>
                                 <div class="col-lg-6 col-md-6 col-sm-6">
                                     <div class="select__option">
-                                        <select name="sort" id="sort-by" class="nice-select" {{ $isPreview ? 'disabled' : '' }}>
+                                        <select name="sort" id="sort-by" class="nice-select"
+                                            {{ $isPreview ? 'disabled' : '' }}>
                                             <option value="latest" {{ request('sort') == 'latest' ? 'selected' : '' }}>
                                                 Urutkan: Terbaru</option>
-                                            <option value="price_asc" {{ request('sort') == 'price_asc' ? 'selected' : '' }}>
+                                            <option value="price_asc"
+                                                {{ request('sort') == 'price_asc' ? 'selected' : '' }}>
                                                 Harga: Rendah ke Tinggi</option>
-                                            <option value="price_desc" {{ request('sort') == 'price_desc' ? 'selected' : '' }}>Harga: Tinggi ke Rendah</option>
+                                            <option value="price_desc"
+                                                {{ request('sort') == 'price_desc' ? 'selected' : '' }}>Harga: Tinggi ke
+                                                Rendah</option>
                                         </select>
                                     </div>
                                 </div>
@@ -371,7 +376,8 @@
                                             </h6>
 
                                             {{-- Tombol ini akan membuka modal varian --}}
-                                            <a href="#" class="add-cart add-cart-button" data-product-id="{{ $product->id }}"
+                                            <a href="#" class="add-cart add-cart-button"
+                                                data-product-id="{{ $product->id }}"
                                                 data-product-name="{{ $product->name }}"
                                                 data-product-price="{{ $product->price }}"
                                                 data-product-image="{{ asset('storage/' . $product->main_image) }}"
@@ -426,9 +432,11 @@
                 </div>
                 <div class="form-group">
                     <label for="modal-quantity">Quantity</label>
-                    <input type="number" id="modal-quantity" name="quantity" value="1" min="1" class="form-control">
+                    <input type="number" id="modal-quantity" name="quantity" value="1" min="1"
+                        class="form-control">
                 </div>
-                <button type="submit" id="confirm-add-to-cart" class="site-btn" style="width: 100%; border: none;">Add to
+                <button type="submit" id="confirm-add-to-cart" class="site-btn" style="width: 100%; border: none;">Add
+                    to
                     Cart</button>
             </form>
         </div>
@@ -437,193 +445,255 @@
 @endsection
 
 @push('scripts')
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-            const isPreview = {{ $isPreview ? 'true' : 'false' }};
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // ===================================================================
+    // --- 1. INISIALISASI & VARIABEL GLOBAL ---
+    // ===================================================================
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+    const isPreview = {{ $isPreview ? 'true' : 'false' }};
+    const tenantSubdomain = '{{ $currentSubdomain ?? '' }}'; // Pastikan $currentSubdomain tersedia
 
-            if (!csrfToken && !isPreview) {
-                console.error('CSRF token not found!');
+    if (!csrfToken && !isPreview) {
+        console.error('CSRF token not found! Pastikan ada <meta name="csrf-token" content="{{ csrf_token() }}"> di <head>.');
+    }
+
+    // ===================================================================
+    // --- 2. LOGIKA MODAL VARIAN & ADD TO CART ---
+    // ===================================================================
+    const modal = document.getElementById('variant-modal');
+    const variantForm = document.getElementById('variant-form');
+    let allVariants = []; // Menyimpan semua varian dari produk yang dipilih
+
+    document.querySelectorAll('.add-cart-button').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+
+            if (isPreview) {
+                showToast('Fitur ini tidak tersedia dalam mode pratinjau.', 'error');
+                return;
             }
 
-            // ... (Kode inisialisasi Nice Select & Price Slider tidak berubah) ...
+            // Ambil data dari tombol yang diklik
+            const productId = this.dataset.productId;
+            const productName = this.dataset.productName;
+            const productPrice = parseFloat(this.dataset.productPrice);
+            const productImage = this.dataset.productImage;
+            allVariants = JSON.parse(this.dataset.productVariants || '[]');
 
-            // --- Logika Modal Varian ---
-            const modal = document.getElementById('variant-modal');
-            const closeModalBtn = document.querySelector('.variant-modal-close');
-            let allVariants = []; // Variabel untuk menyimpan semua varian dari produk yang dipilih
-
-            document.querySelectorAll('.add-cart-button').forEach(button => {
-                button.addEventListener('click', function (e) {
-                    e.preventDefault();
-
-                    if (isPreview) {
-                        showToast('Fitur ini tidak tersedia dalam mode pratinjau.', 'error');
-                        return;
-                    }
-
-                    const productId = this.dataset.productId;
-                    const productName = this.dataset.productName;
-                    const productPrice = parseFloat(this.dataset.productPrice);
-                    const productImage = this.dataset.productImage;
-                    allVariants = JSON.parse(this.dataset.productVariants); // Simpan varian
-
-                    document.getElementById('modal-product-id').value = productId;
-                    document.getElementById('modal-product-info').innerHTML = `
-                            <img src="${productImage}" onerror="this.onerror=null;this.src='https://placehold.co/80x80/f1f5f9/cbd5e1?text=No+Image';" alt="${productName}">
-                            <div class="variant-product-details">
-                                <h6>${productName}</h6>
-                                <p>Rp ${productPrice.toLocaleString('id-ID')}</p>
-                            </div>
-                        `;
-
-                    populateInitialVariants();
-                    modal.style.display = 'block';
-                });
-            });
-
-            function populateInitialVariants() {
-                const variantSelectionContainer = document.getElementById('modal-variant-selection');
-                variantSelectionContainer.innerHTML = ''; // Kosongkan container
-
-                if (allVariants && allVariants.length > 0) {
-                    const sizes = [...new Set(allVariants.map(v => v.size).filter(v => v))];
-
-                    if (sizes.length > 0) {
-                        let sizeOptions = '<option value="">Pilih Ukuran</option>' + sizes.map(s => `<option value="${s}">${s}</option>`).join('');
-                        variantSelectionContainer.innerHTML += `
-                                <div class="form-group">
-                                    <label for="modal-size">Size</label>
-                                    <select id="modal-size" name="size" required>${sizeOptions}</select>
-                                </div>
-                            `;
-                    }
-
-                    // Buat dropdown warna tapi nonaktifkan dulu
-                    variantSelectionContainer.innerHTML += `
-                            <div class="form-group">
-                                <label for="modal-color">Color</label>
-                                <select id="modal-color" name="color" required disabled>
-                                    <option value="">Pilih Ukuran Terlebih Dahulu</option>
-                                </select>
-                            </div>
-                        `;
-
-                    // Tambahkan event listener ke dropdown ukuran
-                    document.getElementById('modal-size').addEventListener('change', updateColorOptions);
-                }
-            }
-
-            function updateColorOptions() {
-                const sizeSelect = document.getElementById('modal-size');
-                const colorSelect = document.getElementById('modal-color');
-                const selectedSize = sizeSelect.value;
-
-                // Reset dan nonaktifkan dropdown warna jika tidak ada ukuran yang dipilih
-                if (!selectedSize) {
-                    colorSelect.innerHTML = '<option value="">Pilih Ukuran Terlebih Dahulu</option>';
-                    colorSelect.disabled = true;
-                    return;
-                }
-
-                // Cari warna yang tersedia untuk ukuran yang dipilih
-                const availableColors = allVariants
-                    .filter(variant => variant.size === selectedSize)
-                    .map(variant => variant.color);
-
-                const uniqueColors = [...new Set(availableColors)];
-
-                if (uniqueColors.length > 0) {
-                    let colorOptions = '<option value="">Pilih Warna</option>' + uniqueColors.map(c => `<option value="${c}">${c}</option>`).join('');
-                    colorSelect.innerHTML = colorOptions;
-                    colorSelect.disabled = false; // Aktifkan dropdown warna
-                } else {
-                    // Jika tidak ada warna yang cocok (seharusnya tidak terjadi jika data konsisten)
-                    colorSelect.innerHTML = '<option value="">Tidak ada warna tersedia</option>';
-                    colorSelect.disabled = true;
-                }
-            }
-
-            // Tutup Modal
-            if (modal) {
-                closeModalBtn.onclick = () => modal.style.display = "none";
-                window.onclick = (event) => {
-                    if (event.target == modal) {
-                        modal.style.display = "none";
-                    }
-                };
-            }
-
-            // Submit form dari dalam modal
-            const variantForm = document.getElementById('variant-form');
+            // Simpan detail produk di form untuk digunakan saat submit & event Pixel
             if (variantForm) {
-                variantForm.addEventListener('submit', function (e) {
-                    e.preventDefault();
-                    if (!csrfToken) {
-                        showToast('Terjadi kesalahan. Coba refresh halaman.', 'error');
-                        return;
-                    }
-
-                    const confirmBtn = document.getElementById('confirm-add-to-cart');
-                    const originalText = confirmBtn.innerHTML;
-                    confirmBtn.disabled = true;
-                    confirmBtn.innerHTML = 'Adding...';
-
-                    const formData = new FormData(this);
-                    const data = {
-                        product_id: formData.get('product_id'),
-                        quantity: formData.get('quantity'),
-                        size: formData.get('size'),
-                        color: formData.get('color')
-                    };
-
-                    // Validasi sederhana sebelum mengirim
-                    if (!data.size || !data.color) {
-                        showToast('Silakan pilih ukuran dan warna.', 'error');
-                        confirmBtn.disabled = false;
-                        confirmBtn.innerHTML = originalText;
-                        return;
-                    }
-
-                    fetch("{{ !$isPreview ? route('tenant.cart.add', ['subdomain' => $currentSubdomain]) : '#' }}", {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
-                        body: JSON.stringify(data)
-                    })
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.success) {
-                                showToast(data.message || 'Produk berhasil ditambahkan!', 'success');
-                                const cartCountElement = document.getElementById('cart-count');
-                                if (cartCountElement && data.cart_count !== undefined) {
-                                    cartCountElement.textContent = data.cart_count;
-                                }
-                                modal.style.display = "none";
-                            } else {
-                                showToast(data.message || 'Gagal menambahkan produk.', 'error');
-                            }
-                        })
-                        .catch(error => {
-                            console.error('Add to Cart Error:', error);
-                            showToast('Terjadi kesalahan. Silakan coba lagi.', 'error');
-                        })
-                        .finally(() => {
-                            confirmBtn.disabled = false;
-                            confirmBtn.innerHTML = originalText;
-                        });
-                });
+                variantForm.dataset.productName = productName;
+                variantForm.dataset.productPrice = productPrice;
             }
 
-            // ... (Sisa kode Anda seperti Toast, Wishlist, Facebook Pixel, dll.) ...
-            function showToast(message, type = 'success') {
-                const toastElement = document.getElementById('toast-notification');
-                if (!toastElement) return;
-                clearTimeout(window.toastTimeout);
-                toastElement.textContent = message;
-                toastElement.className = 'toast-notification';
-                toastElement.classList.add(type, 'show');
-                window.toastTimeout = setTimeout(() => toastElement.classList.remove('show'), 3000);
+            // Isi informasi produk di modal
+            document.getElementById('modal-product-id').value = productId;
+            document.getElementById('modal-product-info').innerHTML = `
+                <img src="${productImage}" onerror="this.onerror=null;this.src='https://placehold.co/80x80/f1f5f9/cbd5e1?text=No+Image';" alt="${productName}">
+                <div class="variant-product-details">
+                    <h6>${productName}</h6>
+                    <p>Rp ${productPrice.toLocaleString('id-ID')}</p>
+                </div>
+            `;
+            
+            // Reset dan tampilkan pilihan varian
+            populateInitialVariants();
+            if (modal) {
+                modal.style.display = 'block';
             }
         });
-    </script>
+    });
+
+    function populateInitialVariants() {
+        const variantSelectionContainer = document.getElementById('modal-variant-selection');
+        if (!variantSelectionContainer) return;
+        variantSelectionContainer.innerHTML = ''; // Kosongkan container
+
+        if (!allVariants || allVariants.length === 0) {
+            variantSelectionContainer.innerHTML = '<p>Produk ini tidak memiliki varian.</p>';
+            return;
+        }
+        
+        const sizes = [...new Set(allVariants.map(v => v.size).filter(v => v))];
+
+        if (sizes.length > 0) {
+            let sizeOptions = '<option value="">Pilih Ukuran</option>' + sizes.map(s => `<option value="${s}">${s}</option>`).join('');
+            variantSelectionContainer.innerHTML += `
+                <div class="form-group">
+                    <label for="modal-size">Size</label>
+                    <select id="modal-size" name="size" required>${sizeOptions}</select>
+                </div>
+            `;
+        }
+
+        variantSelectionContainer.innerHTML += `
+            <div class="form-group">
+                <label for="modal-color">Color</label>
+                <select id="modal-color" name="color" required disabled>
+                    <option value="">Pilih Ukuran Terlebih Dahulu</option>
+                </select>
+            </div>
+        `;
+
+        if (document.getElementById('modal-size')) {
+            document.getElementById('modal-size').addEventListener('change', updateColorOptions);
+        }
+    }
+
+    function updateColorOptions() {
+        const sizeSelect = document.getElementById('modal-size');
+        const colorSelect = document.getElementById('modal-color');
+        const selectedSize = sizeSelect.value;
+
+        if (!selectedSize) {
+            colorSelect.innerHTML = '<option value="">Pilih Ukuran Terlebih Dahulu</option>';
+            colorSelect.disabled = true;
+            return;
+        }
+
+        const availableColors = allVariants
+            .filter(variant => variant.size === selectedSize)
+            .map(variant => variant.color);
+        const uniqueColors = [...new Set(availableColors)];
+
+        if (uniqueColors.length > 0) {
+            let colorOptions = '<option value="">Pilih Warna</option>' + uniqueColors.map(c => `<option value="${c}">${c}</option>`).join('');
+            colorSelect.innerHTML = colorOptions;
+            colorSelect.disabled = false;
+        } else {
+            colorSelect.innerHTML = '<option value="">Tidak ada warna tersedia</option>';
+            colorSelect.disabled = true;
+        }
+    }
+
+    // Event handler untuk submit form 'Add to Cart'
+    if (variantForm) {
+        variantForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const confirmBtn = document.getElementById('confirm-add-to-cart');
+            const originalText = confirmBtn.innerHTML;
+
+            const formData = new FormData(this);
+            const data = {
+                product_id: formData.get('product_id'),
+                quantity: formData.get('quantity'),
+                size: formData.get('size'),
+                color: formData.get('color')
+            };
+
+            if (!data.size || !data.color) {
+                showToast('Silakan pilih ukuran dan warna.', 'error');
+                return;
+            }
+            
+            confirmBtn.disabled = true;
+            confirmBtn.innerHTML = 'Adding...';
+
+            fetch(`/tenant/${tenantSubdomain}/cart/add`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    showToast(result.message || 'Produk berhasil ditambahkan!', 'success');
+                    document.getElementById('cart-count').textContent = result.cart_count;
+                    modal.style.display = "none";
+
+                    // Kirim event Facebook Pixel
+                    if (typeof fbq === 'function') {
+                        fbq('track', 'AddToCart', {
+                            content_ids: [data.product_id],
+                            content_name: variantForm.dataset.productName,
+                            value: parseFloat(variantForm.dataset.productPrice) * parseInt(data.quantity, 10),
+                            currency: 'IDR'
+                        });
+                    }
+                } else {
+                    showToast(result.message || 'Gagal menambahkan produk.', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Add to Cart Error:', error);
+                showToast('Terjadi kesalahan. Silakan coba lagi.', 'error');
+            })
+            .finally(() => {
+                confirmBtn.disabled = false;
+                confirmBtn.innerHTML = originalText;
+            });
+        });
+    }
+
+    // Logika untuk menutup modal
+    if (modal) {
+        const closeModalBtn = modal.querySelector('.variant-modal-close');
+        closeModalBtn.onclick = () => modal.style.display = "none";
+        window.onclick = (event) => {
+            if (event.target == modal) {
+                modal.style.display = "none";
+            }
+        };
+    }
+
+    // ===================================================================
+    // --- 3. LOGIKA WISHLIST ---
+    // ===================================================================
+    // Menggunakan jQuery karena kode sebelumnya sudah menggunakan jQuery
+    $('.toggle-wishlist').click(function(e) {
+        e.preventDefault();
+
+        if (isPreview) {
+            showToast('Fitur ini tidak tersedia dalam mode pratinjau.', 'error');
+            return;
+        }
+
+        let button = $(this);
+        let productId = button.data('product-id');
+
+        $.ajax({
+            url: `/tenant/${tenantSubdomain}/wishlist/toggle`, // URL Dibuat dinamis
+            type: 'POST',
+            data: {
+                _token: csrfToken, // Menggunakan variabel csrfToken yang sudah ada
+                product_id: productId
+            },
+            success: function(response) {
+                if (response.success) {
+                    const message = response.action === 'added' ? 'Produk ditambahkan ke wishlist.' : 'Produk dihapus dari wishlist.';
+                    showToast(message, 'success');
+                    
+                    button.toggleClass('active', response.action === 'added');
+                    $('#wishlist-count').text(response.wishlist_count);
+                } else {
+                    showToast(response.message || 'Gagal memproses wishlist.', 'error');
+                }
+            },
+            error: function(xhr) {
+                const message = xhr.status === 401 ? 'Silakan login terlebih dahulu.' : 'Terjadi kesalahan pada server.';
+                showToast(message, 'error');
+            }
+        });
+    });
+
+    // ===================================================================
+    // --- 4. FUNGSI BANTUAN (HELPER) ---
+    // ===================================================================
+    function showToast(message, type = 'success') {
+        const toastElement = document.getElementById('toast-notification');
+        if (!toastElement) return;
+
+        clearTimeout(window.toastTimeout);
+        toastElement.textContent = message;
+        toastElement.className = 'toast-notification'; // Reset class
+        toastElement.classList.add(type, 'show');
+        window.toastTimeout = setTimeout(() => toastElement.classList.remove('show'), 3000);
+    }
+});
+</script>
 @endpush

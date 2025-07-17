@@ -57,13 +57,15 @@
 
                 <div class="col-lg-6 col-md-6">
                     <div class="contact__map">
-                        @if ($mapEmbedCode)
-                            {{-- Gunakan {!! !!} untuk merender HTML mentah dari database --}}
+                        {{-- BENAR: Gunakan 'isset()' untuk memeriksa apakah variabel ada sebelum digunakan --}}
+                        @if (isset($mapEmbedCode) && $mapEmbedCode)
+                            {{-- Jika variabel ada dan tidak kosong, tampilkan peta --}}
                             {!! $mapEmbedCode !!}
                         @else
-                            {{-- Tampilkan pesan jika kode embed tidak ditemukan di database --}}
-                            <div class="w-full h-[500px] bg-gray-200 flex items-center justify-center">
-                                <p class="text-gray-500">Lokasi peta tidak tersedia.</p>
+                            {{-- Jika tidak ada, tampilkan pesan atau placeholder --}}
+                            <div
+                                style="width: 100%; height: 450px; background-color: #f3f3f3; display: flex; align-items: center; justify-content: center; border-radius: 5px;">
+                                <p style="color: #666;">Lokasi peta tidak tersedia.</p>
                             </div>
                         @endif
                     </div>

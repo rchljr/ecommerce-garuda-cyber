@@ -15,7 +15,7 @@ class OrderController extends Controller
     {
         $user = Auth::user();
         $subdomain = $user->subdomain;
-
+       
         // Peningkatan: Pastikan user memiliki subdomain/toko
         if (!$subdomain) {
             // Jika tidak, tolak akses atau redirect
