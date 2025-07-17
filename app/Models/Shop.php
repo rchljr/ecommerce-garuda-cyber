@@ -65,4 +65,24 @@ class Shop extends Model
     {
         return $this->belongsTo(Category::class, 'product_categories', 'slug');
     }
+    public function settings()
+    {
+        return $this->hasMany(ShopSetting::class);
+    }
+    public function subdomain()
+    {
+        return $this->hasOne(Subdomain::class);
+    }
+     public function products()
+    {
+        return $this->hasMany(Product::class);
+    }
+    public function heroes()
+    {
+        return $this->hasMany(Hero::class);
+    }
+    public function banners()
+    {
+        return $this->hasMany(Banner::class);
+    }
 }

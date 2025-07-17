@@ -69,8 +69,8 @@ class MitraTokoSeeder extends Seeder
             [
                 'user' => ['name' => 'Budi Santoso', 'email' => 'mitra1@gmail.com', 'password' => 'mitra123'],
                 // --- PERUBAHAN DI SINI ---
-                'shop' => ['shop_name' => 'Toko Maju Jaya', 'shop_address' => 'Jl. Pahlawan No. 123, Jakarta', 'postal_code' => '12190', 'product_categories' => 'pakaian-aksesoris'],
-                'subdomain' => 'toko-maju-jaya',
+                'shop' => ['shop_name' => 'Toko Busana Kita', 'shop_address' => 'Jl. Pahlawan No. 123, Jakarta', 'postal_code' => '12190', 'product_categories' => 'pakaian-aksesoris'],
+                'subdomain' => 'toko-busana-kita',
                 'template' => $template1,
                 'contact' => ['phone' => '6281298765432', 'email' => 'support@tokomajujaya.com'],
                 'heroes' => [

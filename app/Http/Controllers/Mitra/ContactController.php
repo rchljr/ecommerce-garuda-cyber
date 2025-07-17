@@ -55,17 +55,27 @@ class ContactController extends Controller
     /**
      * Menampilkan halaman kontak publik untuk tenant.
      */
+
     public function showPublic(Request $request)
     {
         // 1. Ambil data tenant dan path template dari middleware
         $tenant = $request->get('tenant');
         $templatePath = $tenant->template->path;
 
-        // 2. Ambil data kontak. Anda bisa sesuaikan logika ini jika setiap
-        //    tenant punya data kontak sendiri.
-        $contact = Contact::first(); 
+        // 2. Ambil data kontak dari database
+        $contact = Contact::first();
 
-        // 3. Tampilkan view dari template yang benar
-        return view($templatePath . '.contact', compact('tenant', 'contact'));
+        // 3. Siapkan variabel dari data kontak.
+        //    Gunakan null coalescing operator (??) untuk keamanan jika $contact tidak ada (null).
+        $mapEmbedCode = $contact->map_embed_code ?? null;
+        $googleMapsLink = $contact->google_maps_link ?? '#'; // Asumsi nama kolomnya google_maps_link
+
+        // 4. Kirim semua variabel yang dibutuhkan ke view
+        return view($templatePath . '.contact', [
+            'tenant'         => $tenant,
+            'contact'        => $contact,
+            'mapEmbedCode'   => $mapEmbedCode,
+            'googleMapsLink' => $googleMapsLink,
+        ]);
     }
 }

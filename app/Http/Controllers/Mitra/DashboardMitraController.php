@@ -7,11 +7,14 @@ use App\Models\Order;
 use App\Models\Product;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Auth;
 
 class DashboardMitraController extends Controller
 {
     public function index()
     {
+        $user = Auth::user();
+      
         $thirtyDaysAgo = Carbon::now()->subDays(30);
 
         // 1. Metrik Utama (dengan pengaman)

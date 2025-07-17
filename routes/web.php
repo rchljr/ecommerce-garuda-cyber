@@ -15,10 +15,12 @@ use App\Http\Controllers\TemplateController;
 use App\Http\Controllers\WishlistController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\TestimoniController;
+use App\Http\Controllers\Mitra\TestimoniProductController;
 use App\Http\Controllers\Mitra\HeroController;
 use App\Http\Controllers\Mitra\TemaController;
 use App\Http\Controllers\Admin\LandingPageController;
 use App\Http\Controllers\Mitra\MitraController;
+use App\Http\Controllers\Mitra\TemplateEditorController;
 use App\Http\Controllers\Mitra\BannerController;
 use App\Http\Controllers\Mitra\VarianController;
 use App\Http\Controllers\Admin\VerificationController;
@@ -36,6 +38,8 @@ use App\Http\Controllers\Customer\CustomerPointController;
 use App\Http\Controllers\Customer\CustomerProfileController;
 use App\Http\Controllers\Customer\CustomerVoucherController;
 use App\Http\Controllers\Customer\CustomerNotificationController;
+use App\Http\Controllers\Mitra\StorePublicationController;
+use App\Http\Controllers\Mitra\VoucherProductController;
 
 
 /*
@@ -59,7 +63,7 @@ Route::prefix('tenant/{subdomain}')
     ->group(function () {
 
         // --- RUTE PUBLIK (Dapat diakses semua orang) ---
-        Route::get('/', [HomeController::class, 'index'])->name('home');
+        Route::get('/home', [HomeController::class, 'index'])->name('home');
         Route::get('/shop', [ShopController::class, 'index'])->name('shop');
         Route::get('/shop/{product:slug}', [ShopController::class, 'show'])->name('product.details');
         Route::get('/contact', [ContactController::class, 'showPublic'])->name('contact');
@@ -69,7 +73,7 @@ Route::prefix('tenant/{subdomain}')
         Route::post('/checkout/search-destination', [CheckoutController::class, 'searchDestination'])->name('checkout.search_destination');
         Route::post('/checkout/calculate-shipping', [CheckoutController::class, 'calculateShipping'])->name('checkout.calculate_shipping');
         // Route::get('/checkout/areas', [CheckoutController::class, 'getBiteshipAreas'])->name('checkout.areas');
-    
+
         // Wishlist
         Route::get('/wishlist', [WishlistController::class, 'index'])->name('wishlist');
         Route::post('/wishlist/toggle', [WishlistController::class, 'toggle'])->name('wishlist.toggle');
@@ -126,7 +130,6 @@ Route::get('/', [LandingPageController::class, 'home'])->name('landing');
 Route::get('/tenant', [LandingPageController::class, 'allTenants'])->name('tenants.index');
 Route::post('/testimonials', [TestimoniController::class, 'submitFromLandingPage'])->name('testimonials.store');
 Route::post('/review/submit', [TestimoniController::class, 'submitReview'])->name('review.submit')->middleware('auth:customers');
-
 
 Route::get('/review/{testimonial}', [TestimoniController::class, 'getReviewJson'])->name('review.get')->middleware('auth:customers');
 Route::put('/review/{testimonial}', [TestimoniController::class, 'updateReview'])->name('review.update')->middleware('auth:customers');
@@ -285,9 +288,25 @@ Route::middleware(['auth'])->group(function () {
         // Route::get('/dashboard', [MitraController::class, 'index'])->name('dashboard');
         Route::get('/dashboard', [DashboardMitraController::class, 'index'])->name('dashboard');
 
+        Route::post('/store/publish', [StorePublicationController::class, 'publish'])->name('store.publish');
+        Route::post('/store/unpublish', [StorePublicationController::class, 'unpublish'])->name('store.unpublish');
+
         Route::get('/produk', [ProductController::class, 'index'])->name('produk');
         Route::get('/hero', [HeroController::class, 'index'])->name('hero');
         Route::get('/banner', [BannerController::class, 'index'])->name('banner');
+
+        Route::get('/testimoni', [TestimoniProductController::class, 'index'])->name('testimoni.index');
+
+        Route::get('/editor', [TemplateEditorController::class, 'edit'])->name('editor.edit');
+        Route::post('/editor', [TemplateEditorController::class, 'update'])->name('editor.update');
+        Route::post('/editor/hero', [TemplateEditorController::class, 'updateHero'])->name('editor.update.hero');
+        Route::post('/editor/settings', [TemplateEditorController::class, 'updateSettings'])->name('editor.update.settings');
+
+        Route::get('vouchers', [VoucherProductController::class, 'index'])->name('vouchers.index');
+        Route::get('vouchers/create', [VoucherProductController::class, 'create'])->name('vouchers.create');
+        Route::get('vouchers/edit', [VoucherProductController::class, 'edit'])->name('vouchers.edit');
+        Route::get('vouchers/destroy', [VoucherProductController::class, 'destroy'])->name('vouchers.destroy');
+
 
         Route::resource('heroes', HeroController::class);
         Route::resource('banners', BannerController::class);
@@ -295,11 +314,19 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/contacts', [ContactController::class, 'edit'])->name('contacts');
         Route::put('/contacts', [ContactController::class, 'update'])->name('contacts.update');
 
-        Route::get('/tema', [TemaController::class, 'create'])->name('tema');
+        Route::post('/tema/create', [TemaController::class, 'create'])->name('tema.create');
         Route::post('/tema', [TemaController::class, 'store'])->name('tema.store');
+        Route::post('/tema/set', [TemaController::class, 'setTemplate'])->name('tema.set');
+        Route::get('/tema', [TemaController::class, 'index'])->name('tema');
+        Route::post('/editor/{template}', [TemaController::class, 'editor'])->name('editor');
+        Route::post('/store', [TemaController::class, 'store'])->name('store');
+        Route::post('/editor/template/update', [TemaController::class, 'updateTheme'])->name('editor.updateTheme');
+
 
         Route::get('/orders', [OrderController::class, 'index'])->name('orders');
         Route::get('/orders', [OrderController::class, 'show'])->name('orders.show');
+
+        // Rute untuk publikasi toko
 
         Route::resource('products', ProductController::class)->names([
             'index' => 'products.index',    // Ini akan menjadi 'mitra.products.index'
@@ -323,5 +350,16 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/', function () {
             return redirect()->route('customer.profile');
         })->name('dashboard');
+    });
+    // routes/web.php
+
+    // Route untuk menampilkan form tes
+    Route::get('/tes-form', function () {
+        return view('tes-form');
+    });
+
+    // Route untuk menerima data POST dari form tes
+    Route::post('/tes-form-submit', function () {
+        return '<h1>BERHASIL! Form POST berfungsi.</h1>';
     });
 });
