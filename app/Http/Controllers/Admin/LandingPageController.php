@@ -1,15 +1,16 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Admin;
 
 use App\Models\Template;
-use App\Models\Category; // <-- Import Category
 use App\Models\Testimoni;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use App\Models\SubscriptionPackage;
 use App\Services\LandingPageService;
+use App\Http\Controllers\BaseController;
 use App\Services\SubscriptionPackageService;
+use App\Models\Category;
 
 class LandingPageController extends BaseController
 {
