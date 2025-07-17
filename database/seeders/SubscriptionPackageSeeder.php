@@ -26,47 +26,47 @@ class SubscriptionPackageSeeder extends Seeder
         $packages = [
             [
                 'name' => 'Starter Plan',
-                'description' => 'Untuk kebutuhan bisnis sederhana Anda',
+                'description' => 'Solusi ideal untuk memulai dan mengembangkan bisnis online Anda dengan fitur esensial.',
                 'monthly_price' => 150000,
                 'yearly_price' => 1500000, // Asumsi diskon, misal bayar 10 bulan untuk 1 tahun
                 'discount_year' => 17, // (150rb*12 - 1.5jt) / (150rb*12) * 100%
                 'is_trial' => true,
                 'trial_days' => 14,
                 'features' => [
-                    'Toko online lengkap yang bisa dikustom sesuai yang diinginkan',
+                    '1 Tema menarik yang dapat dikustom',
                     'Metode pembayaran fleksibel',
                     'Manajemen penyimpanan',
-                    'Gratis subdomain (e.g., your-store.garuda.com)',
+                    'Alamat toko unik (contoh: ecommercegaruda.my.id/tenant/nama-toko-anda)',
                 ],
             ],
             [
                 'name' => 'Business Plan',
-                'description' => 'Untuk bisnis menengah dan besar dengan kebutuhan lanjutan',
+                'description' => 'Tingkatkan skala bisnis Anda dengan fitur canggih dan pilihan tema yang lebih eksklusif.',
                 'monthly_price' => 300000,
                 'yearly_price' => 3000000, // Asumsi diskon, misal bayar 10 bulan untuk 1 tahun
                 'discount_year' => 17, // (300rb*12 - 3jt) / (300rb*12) * 100%
                 'is_trial' => false,
                 'trial_days' => 0,
                 'features' => [
-                    'Toko online lengkap dengan 5 pilihan tema yang dapat digunakan',
+                    'Toko online lengkap dengan 3 pilihan tema yang dapat digunakan',
                     'Metode pembayaran fleksibel',
                     'Manajemen penyimpanan',
-                    'Gratis subdomain (e.g., your-store.garuda.com)',
+                    'Alamat toko unik (contoh: ecommercegaruda.my.id/tenant/nama-toko-anda)',
                 ],
             ],
             [
                 'name' => 'Enterprise Plan',
-                'description' => 'A custom solution for large companies with advanced e-commerce requirements.',
+                'description' => 'Solusi terintegrasi dan dapat disesuaikan sepenuhnya untuk perusahaan skala besar.',
                 'monthly_price' => null, // Harga custom, perlu kontak
                 'yearly_price' => null,
                 'discount_year' => 0,
                 'is_trial' => false,
                 'trial_days' => 0,
                 'features' => [
-                    'Toko online lengkap dengan unlimited tema',
+                    'Tema dan Fitur Kustom Sesuai Kebutuhan',
                     'Metode pembayaran fleksibel',
                     'Manajemen penyimpanan',
-                    'Gratis subdomain (e.g., your-store.garuda.com)',
+                    'Dukungan Prioritas & Konsultasi',
                     'Dan masih banyak lagi',
                 ],
             ],

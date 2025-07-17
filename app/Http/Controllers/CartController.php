@@ -18,23 +18,15 @@ class CartController extends Controller
         $this->cartService = $cartService;
     }
 
-    /**
-     * Menampilkan halaman isi keranjang belanja.
-     */
-    public function index(Request $request)
+    public function index()
     {
-        // Service akan menangani logika pengambilan data baik dari DB maupun session
-        $cartItems = $this->cartService->getItems($request);
-
+        $cartItems = $this->cartService->getItems();
         return view('customer.cart', compact('cartItems'));
     }
 
-    /**
-     * Menambahkan produk beserta variannya ke keranjang.
-     */
     public function add(Request $request)
     {
-        $validated = $request->validate([
+        $request->validate([
             'product_id' => 'required|exists:products,id',
             'quantity' => 'required|integer|min:1',
             'size' => 'required|string',
@@ -51,10 +43,10 @@ class CartController extends Controller
                     'cart_count' => $this->cartService->getCartCount(),
                 ]);
             }
+            // PERBAIKAN: Gunakan flash session untuk notifikasi helper
             return back()->with('success', 'Produk berhasil ditambahkan ke keranjang.');
 
         } catch (ModelNotFoundException $e) {
-            // Ini akan menangkap `firstOrFail()` di service jika varian tidak ditemukan
             $message = 'Varian produk yang dipilih tidak valid.';
             if ($request->wantsJson()) {
                 return response()->json(['success' => false, 'message' => $message], 404);
@@ -70,36 +62,37 @@ class CartController extends Controller
         }
     }
 
-    /**
-     * Memperbarui kuantitas item di keranjang.
-     */
     public function update(Request $request, $subdomain, $productCartId)
     {
         $validated = $request->validate(['quantity' => 'required|integer|min:1']);
 
-        $this->cartService->update($productCartId, $validated['quantity']);
+        $isSuccess = $this->cartService->update($productCartId, $validated['quantity']);
 
-        // Respons JSON yang konsisten
+        if (!$isSuccess) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal memperbarui kuantitas. Item tidak ditemukan atau tidak sah.',
+            ], 404);
+        }
+
+        $cartCount = $this->cartService->getCartCount($request);
+
         return response()->json([
             'success' => true,
             'message' => 'Kuantitas berhasil diperbarui.',
-            'cart_count' => $this->cartService->getCartCount(),
+            'cart_count' => $cartCount,
         ]);
     }
 
-    /**
-     * Menghapus satu atau lebih item dari keranjang.
-     */
     public function removeItems(Request $request)
     {
         $validated = $request->validate([
             'ids' => 'required|array',
-            'ids.*' => 'string', // Bisa UUID atau variant_id (string)
+            'ids.*' => 'string',
         ]);
 
         try {
             $this->cartService->removeItems($validated['ids']);
-
             return response()->json([
                 'success' => true,
                 'message' => 'Item yang dipilih berhasil dihapus.',

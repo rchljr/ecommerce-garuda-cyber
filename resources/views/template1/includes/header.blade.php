@@ -1,55 +1,35 @@
 @php
-    // Cek apakah ini mode preview. Jika ya, $currentSubdomain akan null.
-    // Variabel $isPreview akan dikirim dari TemplateController.
     $isPreview = $isPreview ?? false;
-
-    // Ambil subdomain saat ini sekali saja dari parameter rute agar lebih efisien.
-    // Ini tersedia karena middleware 'tenant.exists' sudah memprosesnya.
     $currentSubdomain = !$isPreview ? request()->route('subdomain') : null;
-
-    // Asumsi: Anda memiliki relasi one-to-one bernama 'customTema' di model Shop Anda.
-    // public function customTema() { return $this->hasOne(CustomTema::class); }
     $logoPath = (isset($currentShop) && $currentShop) ? optional($currentShop->customTema)->shop_logo : null;
-
-    // Tentukan URL logo: gunakan logo kustom jika ada, jika tidak, gunakan logo default template.
-    // Pastikan file kustom di-upload ke 'storage/app/public/logos' atau path serupa.
     $logoUrl = $logoPath ? asset('storage/' . $logoPath) : asset('template1/img/logo.png');
-
-    // Ambil data tenant yang sedang aktif dari request (disediakan oleh middleware).
-    $tenant = $tenant ?? (!$isPreview ? request()->get('tenant') : null);
-
-    // Logika untuk menghitung item keranjang berdasarkan tenant yang aktif.
     $cartCount = 0;
-    if (!$isPreview && $tenant) {
-        $shopOwnerId = $tenant->user_id;
+    $notificationCount = 0;
 
-        if (Auth::guard('customers')->check()) {
-            // Jika pelanggan login, hitung dari database dengan filter.
-            $cart = Auth::guard('customers')->user()->cart;
-            if ($cart) {
-                $cartCount = $cart->items()
-                    ->whereHas('product', function ($query) use ($shopOwnerId) {
-                        $query->where('user_id', $shopOwnerId);
-                    })
-                    ->sum('quantity');
-            }
-        } elseif (session()->has('cart')) {
-            // Jika tamu, hitung dari session dengan filter.
-            $sessionCart = session('cart');
-            $productIdsInCart = array_column($sessionCart, 'product_id');
+    if (Auth::guard('customers')->check()) {
+        $user = Auth::guard('customers')->user();
 
-            if (!empty($productIdsInCart)) {
-                // Ambil ID produk yang hanya milik tenant ini.
-                $tenantProductIds = \App\Models\Product::whereIn('id', $productIdsInCart)
-                    ->where('user_id', $shopOwnerId)
-                    ->pluck('id')->all();
-
-                // Jumlahkan kuantitas hanya untuk produk yang cocok.
-                $cartCount = collect($sessionCart)->filter(function ($item) use ($tenantProductIds) {
-                    return isset($item['product_id']) && in_array($item['product_id'], $tenantProductIds);
-                })->sum('quantity');
-            }
+        // Hitung Keranjang Belanja
+        $cart = $user->cart;
+        if ($cart) {
+            $cartCount = $cart->items()->sum('quantity');
         }
+
+        // Hitung Notifikasi
+        // Notifikasi dari pembayaran yang berhasil
+        $successfulPaymentsCount = \App\Models\Payment::where('user_id', $user->id)
+            ->whereIn('midtrans_transaction_status', ['settlement', 'capture'])
+            ->count();
+
+        // Notifikasi dari pesanan dengan status tertentu
+        $ordersCount = \App\Models\Order::where('user_id', $user->id)
+            ->whereIn('status', ['failed', 'cancelled', 'expired', 'pending'])
+            ->count();
+
+        $notificationCount = $successfulPaymentsCount + $ordersCount;
+
+    } elseif (session()->has('cart')) {
+        $cartCount = collect(session('cart'))->sum('quantity');
     }
 @endphp
 
@@ -59,6 +39,9 @@
             <div class="row">
                 <div class="col-lg-6 col-md-7">
                     <div class="header__top__left">
+                        <div class="header__top__links">
+                            <a href="{{ !$isPreview ? route('tenants.index') : '#' }}">Lihat Toko Mitra Lainnya</a>
+                        </div>
                     </div>
                 </div>
                 <div class="col-lg-6 col-md-5">
@@ -69,9 +52,9 @@
                                 <a href="#">FAQs</a>
                                 @if(!$isPreview)
                                     <a
-                                        href="{{ route('tenant.customer.login.form', ['subdomain' => $currentSubdomain]) }}">Login</a>
+                                        href="{{ !$isPreview ? route('tenant.customer.login.form', ['subdomain' => $currentSubdomain]) : '#'}}">Login</a>
                                     <a
-                                        href="{{ route('tenant.customer.register.form', ['subdomain' => $currentSubdomain]) }}">Daftar</a>
+                                        href="{{ !$isPreview ? route('tenant.customer.register.form', ['subdomain' => $currentSubdomain]) : '#'}}">Daftar</a>
                                 @else
                                     <a href="#" class="disabled-link">Login</a>
                                     <a href="#" class="disabled-link">Daftar</a>
@@ -88,18 +71,18 @@
                                     <ul>
                                         @if(!$isPreview)
                                             <li><a
-                                                    href="{{ route('tenant.account.profile', ['subdomain' => $currentSubdomain]) }}">Akun
+                                                    href="{{ !$isPreview ? route('tenant.account.profile', ['subdomain' => $currentSubdomain]) : '#' }}">Akun
                                                     Saya</a></li>
                                             <li><a
-                                                    href="{{ route('tenant.account.orders', ['subdomain' => $currentSubdomain]) }}">Pesanan
+                                                    href="{{ !$isPreview ? route('tenant.account.orders', ['subdomain' => $currentSubdomain]) : '#' }}">Pesanan
                                                     Saya</a></li>
                                             <li>
-                                                <a href="{{ route('tenant.customer.logout', ['subdomain' => $currentSubdomain]) }}"
+                                                <a href="{{ !$isPreview ? route('tenant.customer.logout', ['subdomain' => $currentSubdomain]) : '#' }}"
                                                     onclick="event.preventDefault(); document.getElementById('logout-form-header').submit();">
                                                     Log Out
                                                 </a>
                                                 <form id="logout-form-header"
-                                                    action="{{ route('tenant.customer.logout', ['subdomain' => $currentSubdomain]) }}"
+                                                    action="{{ !$isPreview ? route('tenant.customer.logout', ['subdomain' => $currentSubdomain]) : '#' }}"
                                                     method="POST" style="display: none;">
                                                     @csrf
                                                 </form>
@@ -140,32 +123,22 @@
                         {{-- Pages Dropdown --}}
                         <li
                             class="{{ request()->routeIs('tenant.contact', 'tenant.product.details', 'tenant.cart.index') ? 'active' : '' }}">
-                            <a href="#">Pages</a>
+                            <a href="#">Halaman</a>
                             <ul class="dropdown">
-                                <li><a href="contact"
-                                        class="{{ !$isPreview ? route('tenant.contact', ['subdomain' => $currentSubdomain]) : '#' }}">Tentang
+                                <li><a
+                                        href="{{ !$isPreview ? route('tenant.contact', ['subdomain' => $currentSubdomain]) : '#' }}">Tentang
                                         Kami</a>
                                 </li>
                                 <li><a href="{{ !$isPreview ? route('tenant.cart.index', ['subdomain' => $currentSubdomain]) : '#' }}"
                                         class="{{ request()->routeIs('cart.index') ? 'active' : '' }}">Keranjang
                                         Belanja</a></li>
-
-                                {{-- <li><a href="./checkout.html"
-                                        class="{{ request()->routeIs('checkout.*') ? 'active' : '' }}">Check Out</a>
-                                </li>
-                                <li><a href="./blog-details.html"
-                                        class="{{ request()->routeIs('blog.details.*') ? 'active' : '' }}">Blog
-                                        Details</a></li> --}}
                             </ul>
                         </li>
 
-                        {{-- Blog --}}
-                        {{-- <li><a href="./blog.html">Blog</a></li> --}}
-
                         {{-- Contacts --}}
                         <li class="{{ request()->routeIs('tenant.contact') ? 'active' : '' }}"><a
-                                href="{{ !$isPreview ? route('tenant.contact', ['subdomain' => $currentSubdomain]) : '#' }}">Tentang
-                                Kami</a></li>
+                                href="{{ !$isPreview ? route('tenant.contact', ['subdomain' => $currentSubdomain]) : '#' }}">Kontak</a>
+                        </li>
                     </ul>
                 </nav>
             </div>
@@ -175,6 +148,13 @@
                             alt=""></a>
                     <a href="{{ !$isPreview ? route('tenant.wishlist', ['subdomain' => $currentSubdomain]) : '#' }}"><img
                             src="{{ asset('template1/img/icon/heart.png') }}" alt=""></a>
+                    <a class="notification-icon"
+                        href="{{ !$isPreview ? route('tenant.account.notifications', ['subdomain' => $currentSubdomain]) : '#' }}">
+                        <i class="fa fa-bell"></i>
+                        @if ($notificationCount > 0)
+                            <span id="notification-count">{{ $notificationCount }}</span>
+                        @endif
+                    </a>
                     <a href="{{ !$isPreview ? route('tenant.cart.index', ['subdomain' => $currentSubdomain]) : '#' }}"><img
                             src="{{ asset('template1/img/icon/cart.png') }}" alt="">
                         <span id="cart-count">{{ $cartCount }}</span>
@@ -190,5 +170,37 @@
     .disabled-link {
         color: #b2b2b2 !important;
         cursor: not-allowed;
+    }
+
+    .header__nav__option .fa-bell {
+        color: #111111;
+        font-size: 20px;
+    }
+
+    /* Perbaikan untuk ikon notifikasi */
+    .notification-icon {
+        position: relative;
+        display: inline-block;
+        /* Memastikan posisi relatif bekerja */
+    }
+
+    #notification-count {
+        position: absolute;
+        top: -6px;
+        /* Posisikan lencana di atas ikon */
+        right: -9px;
+        /* Posisikan lencana di kanan ikon */
+        height: 18px;
+        width: 18px;
+        background: #ca1515;
+        /* Warna latar merah untuk notifikasi */
+        color: #ffffff;
+        border-radius: 50%;
+        /* Membuat lencana menjadi bulat */
+        font-size: 11px;
+        font-weight: 700;
+        line-height: 18px;
+        /* Menengahkan angka secara vertikal */
+        text-align: center;
     }
 </style>

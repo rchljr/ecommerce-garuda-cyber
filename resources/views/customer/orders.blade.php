@@ -74,10 +74,11 @@
                                     <div>
                                         @php
                                             $statusConfig = [
+                                                'pending' => ['text' => 'Belum Dibayar', 'class' => 'bg-yellow-100 text-yellow-800'],
                                                 'completed' => ['text' => 'Selesai', 'class' => 'bg-green-100 text-green-800'],
                                                 'cancelled' => ['text' => 'Dibatalkan', 'class' => 'bg-red-100 text-red-800'],
                                                 'failed' => ['text' => 'Gagal', 'class' => 'bg-red-100 text-red-800'],
-                                                'default' => ['text' => 'Diproses', 'class' => 'bg-yellow-100 text-yellow-800']
+                                                'default' => ['text' => 'Diproses', 'class' => 'bg-blue-100 text-blue-800']
                                             ];
                                             $status = $statusConfig[$order->status] ?? $statusConfig['default'];
                                         @endphp
@@ -97,12 +98,15 @@
                                                     class="w-16 h-16 bg-gray-200 rounded-md object-cover">
                                                 <div>
                                                     <p class="font-semibold text-gray-800">
-                                                        {{ optional($item->product)->name ?? 'Produk Dihapus' }}</p>
+                                                        {{ optional($item->product)->name ?? 'Produk Dihapus' }}
+                                                    </p>
                                                     <p class="text-xs text-gray-500">Varian:
                                                         {{ optional($item->variant)->color ?? '-' }} /
-                                                        {{ optional($item->variant)->size ?? '-' }}</p>
+                                                        {{ optional($item->variant)->size ?? '-' }}
+                                                    </p>
                                                     <p class="text-sm text-gray-600">{{ $item->quantity }} x
-                                                        {{ format_rupiah($item->unit_price) }}</p>
+                                                        {{ format_rupiah($item->unit_price) }}
+                                                    </p>
                                                 </div>
                                             </div>
                                         </div>
@@ -190,10 +194,11 @@
 
                     const statusEl = document.getElementById('detail-order-status');
                     const statusConfig = {
+                        pending: { text: 'Belum Dibayar', class: 'bg-yellow-100 text-yellow-800' },
                         completed: { text: 'Selesai', class: 'bg-green-100 text-green-800' },
                         cancelled: { text: 'Dibatalkan', class: 'bg-red-100 text-red-800' },
                         failed: { text: 'Gagal', class: 'bg-red-100 text-red-800' },
-                        default: { text: 'Diproses', class: 'bg-yellow-100 text-yellow-800' }
+                        default: { text: 'Diproses', class: 'bg-blue-100 text-blue-800' }
                     };
                     const status = statusConfig[order.status] || statusConfig.default;
                     statusEl.textContent = status.text;
@@ -206,14 +211,14 @@
                         const itemTotal = (item.quantity || 0) * (item.unit_price || 0);
                         calculatedSubtotal += itemTotal;
                         itemListEl.innerHTML += `
-                                <div class="flex justify-between text-sm">
-                                    <div>
-                                        <p>${item.product ? item.product.name : 'Produk Dihapus'}</p>
-                                        <p class="text-xs text-gray-500">${item.quantity} x ${formatRupiah(item.unit_price)}</p>
-                                    </div>
-                                    <p>${formatRupiah(itemTotal)}</p>
-                                </div>
-                            `;
+                                        <div class="flex justify-between text-sm">
+                                            <div>
+                                                <p>${item.product ? item.product.name : 'Produk Dihapus'}</p>
+                                                <p class="text-xs text-gray-500">${item.quantity} x ${formatRupiah(item.unit_price)}</p>
+                                            </div>
+                                            <p>${formatRupiah(itemTotal)}</p>
+                                        </div>
+                                    `;
                     });
 
                     const subtotal = parseFloat(order.subtotal) > 0 ? parseFloat(order.subtotal) : calculatedSubtotal;
@@ -244,9 +249,9 @@
                         const address = order.shipping.shipping_address || 'Alamat tidak diisi saat checkout.';
                         const estimate = order.shipping.estimated_delivery ?? 'Estimasi tidak tersedia';
                         shippingInfoEl.innerHTML = `
-                                <h4 class="font-semibold text-sm mb-1">Info Pengiriman</h4>
-                                <p class="text-xs text-gray-500 mt-1">${order.shipping.delivery_service || ''}</p>
-                            `;
+                                        <h4 class="font-semibold text-sm mb-1">Info Pengiriman</h4>
+                                        <p class="text-xs text-gray-500 mt-1">${order.shipping.delivery_service || ''}</p>
+                                    `;
                     } else {
                         shippingInfoEl.innerHTML = `<h4 class="font-semibold text-sm">Metode Pengambilan: Ambil di Toko</h4>`;
                     }
