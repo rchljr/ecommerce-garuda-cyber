@@ -46,12 +46,14 @@
                 </svg>
             </button>
             <div class="sidebar-submenu hidden mt-1 pl-8 space-y-1">
-                <a href="{{ route('mitra.hero') }}"
+                {{-- <a href="{{ route('mitra.hero') }}"
                     class="sidebar-subitem block p-2 rounded-lg hover:bg-red-800 text-sm">Kelola Hero</a>
                 <a href="{{ route('mitra.banner') }}"
-                    class="sidebar-subitem block p-2 rounded-lg hover:bg-red-800 text-sm">Kelola Banner</a>
+                    class="sidebar-subitem block p-2 rounded-lg hover:bg-red-800 text-sm">Kelola Banner</a> --}}
                 <a href="{{ route('mitra.tema') }}"
                     class="sidebar-subitem block p-2 rounded-lg hover:bg-red-800 text-sm">Kelola Tema</a>
+                <a href="{{ route('mitra.editor.edit') }}"
+                    class="sidebar-subitem block p-2 rounded-lg hover:bg-red-800 text-sm">Kelola Toko</a>
             </div>
         </div>
 
@@ -61,11 +63,18 @@
             <span class="sidebar-text ml-4">Kelola Kontak</span>
         </a>
 
-        {{-- <a href="{{ route('mitra.orders.show') }}"
+        <a href="{{ route('mitra.testimoni.index') }}"
+            class="sidebar-item flex items-center p-3 rounded-lg hover:bg-red-800 transition-colors">
+            <span class="sidebar-icon">@include('dashboard-admin.icons.kategori')</span>
+            <span class="sidebar-text ml-4">Testimoni</span>
+        </a>
+
+        <a href="{{ route('mitra.vouchers.index') }}"
             class="sidebar-item flex items-center p-3 rounded-lg hover:bg-red-800 transition-colors">
             <span class="sidebar-icon">@include('dashboard-admin.icons.landing')</span>
-            <span class="sidebar-text ml-4">Kelola Order</span>
-        </a> --}}
+            <span class="sidebar-text ml-4">Kelola Voucher</span>
+        </a>
+
         {{-- <a href="{{ route('admin.kategori.index') }}"
             class="sidebar-item flex items-center p-3 rounded-lg hover:bg-red-800 transition-colors">
             <span class="sidebar-icon">@include('dashboard-admin.icons.kategori')</span>

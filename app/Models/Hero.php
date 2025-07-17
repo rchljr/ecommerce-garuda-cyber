@@ -11,6 +11,7 @@ class Hero extends Model
     use HasFactory;
 
     protected $fillable = [
+        'shop_id',
         'title',
         'subtitle',
         'description',

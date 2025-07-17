@@ -39,7 +39,8 @@ class ShopController extends Controller
         $sidebarCategories = $mainCategory ? $mainCategory->subcategories()->orderBy('name')->get() : collect();
 
         // 5. Query dasar HANYA untuk produk milik mitra ini
-        $query = Product::where('user_id', $mitra->id)->where('status', 'active');
+        $query = Product::where('shop_id', $shop->id)->where('status', 'active');
+
 
         // 6. Terapkan filter berdasarkan sub-kategori yang dipilih
         if ($request->filled('category')) {

@@ -8,15 +8,17 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Auth;
 
 class BannerController extends Controller
 {
     /**
      * Menampilkan daftar semua item banner.
      */
-    public function index()
+     public function index()
     {
-        $banners = Banner::orderBy('order')->latest()->paginate(10);
+        // PERBAIKAN: Ambil hero milik shop dari user yang login
+        $banners = Auth::user()->shop->banners()->orderBy('order')->latest()->paginate(10);
         return view('dashboard-mitra.banners.index', compact('banners'));
     }
 
