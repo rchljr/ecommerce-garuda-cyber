@@ -15,6 +15,18 @@ File 1: resources/views/mitra/editor/index.blade.php (Versi Diperbarui & Lengkap
 
             <div class="space-y-4">
 
+                <details class="border rounded group">
+                    <summary class="bg-gray-100 p-3 font-semibold cursor-pointer group-open:border-b">
+                        Logo Section
+                    </summary>
+                    <div class="mb-4 text-center">
+                        <a href="{{ route('mitra.tema.create') }}"
+                            class="w-full block bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded">
+                            Kelola Logo Toko
+                        </a>
+                        <p class="text-xs text-gray-500 mt-1">Anda akan diarahkan ke halaman Kelola Banner.</p>
+                    </div>
+                </details>
                 <!-- Hero Section Controls -->
                 <details class="border rounded group" open>
                     <summary class="bg-gray-100 p-3 font-semibold cursor-pointer group-open:border-b">
@@ -88,12 +100,12 @@ File 1: resources/views/mitra/editor/index.blade.php (Versi Diperbarui & Lengkap
                         Banner Section
                     </summary>
                     <div class="mb-4 text-center">
-                            <a href="{{ route('mitra.banners.index') }}"
-                                class="w-full block bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded">
-                                + Tambah Slide Banner Baru
-                            </a>
-                            <p class="text-xs text-gray-500 mt-1">Anda akan diarahkan ke halaman Kelola Banner.</p>
-                        </div>
+                        <a href="{{ route('mitra.banners.index') }}"
+                            class="w-full block bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded">
+                            + Tambah Slide Banner Baru
+                        </a>
+                        <p class="text-xs text-gray-500 mt-1">Anda akan diarahkan ke halaman Kelola Banner.</p>
+                    </div>
                 </details>
 
                 <!-- Pengaturan Umum & Kontak -->
@@ -102,12 +114,12 @@ File 1: resources/views/mitra/editor/index.blade.php (Versi Diperbarui & Lengkap
                         Pengaturan Umum & Kontak
                     </summary>
                     <div class="mb-4 text-center">
-                            <a href="{{ route('mitra.contacts') }}"
-                                class="w-full block bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded">
-                                Atur Halaman Kontak
-                            </a>
-                            <p class="text-xs text-gray-500 mt-1">Anda akan diarahkan ke halaman Kelola Halaman Kontak.</p>
-                        </div>
+                        <a href="{{ route('mitra.contacts') }}"
+                            class="w-full block bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded">
+                            Atur Halaman Kontak
+                        </a>
+                        <p class="text-xs text-gray-500 mt-1">Anda akan diarahkan ke halaman Kelola Halaman Kontak.</p>
+                    </div>
                 </details>
 
             </div>

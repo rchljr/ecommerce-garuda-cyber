@@ -315,11 +315,13 @@ Route::middleware(['auth'])->group(function () {
         Route::put('/contacts', [ContactController::class, 'update'])->name('contacts.update');
 
         Route::post('/tema/create', [TemaController::class, 'create'])->name('tema.create');
+        Route::get('/tema/create', [TemaController::class, 'create'])->name('tema.create');
         Route::post('/tema', [TemaController::class, 'store'])->name('tema.store');
         Route::post('/tema/set', [TemaController::class, 'setTemplate'])->name('tema.set');
         Route::get('/tema', [TemaController::class, 'index'])->name('tema');
         Route::post('/editor/{template}', [TemaController::class, 'editor'])->name('editor');
-        Route::post('/store', [TemaController::class, 'store'])->name('store');
+        Route::get('/tema/store', [TemaController::class, 'store'])->name('tema.store');
+        Route::post('/tema/store', [TemaController::class, 'store'])->name('tema.store');
         Route::post('/editor/template/update', [TemaController::class, 'updateTheme'])->name('editor.updateTheme');
 
 

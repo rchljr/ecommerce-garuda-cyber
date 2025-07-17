@@ -85,7 +85,7 @@ class TemaController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'template_name'    => 'required|string|in:template1,template2,template3',
+            'template_name'    => 'required|string',
             'shop_name'        => 'required|string|max:255',
             'shop_description' => 'nullable|string',
             'shop_logo'        => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
@@ -95,11 +95,13 @@ class TemaController extends Controller
 
         $data = $request->except('shop_logo');
         $data['user_id'] = Auth::id();
+       
 
         // Handle upload logo jika ada
         if ($request->hasFile('shop_logo')) {
             $data['shop_logo'] = $request->file('shop_logo')->store('shop-logos', 'public');
         }
+        // dd($data);
 
         // Gunakan updateOrCreate untuk membuat baru atau update yang sudah ada
         CustomTema::updateOrCreate(
