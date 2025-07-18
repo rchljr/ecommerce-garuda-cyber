@@ -18,6 +18,7 @@ class Order extends Model
     //kolom baru
     protected $fillable = [
         'user_id',
+        'order_group_id',
         'subdomain_id',
         'status',
         'total_price',

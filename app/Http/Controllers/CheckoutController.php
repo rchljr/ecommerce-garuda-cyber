@@ -192,18 +192,31 @@ class CheckoutController extends Controller
             Log::info("Database transaction started for group {$orderGroupId}.");
 
             foreach ($groupedItems as $shopId => $items) {
-                // Kalkulasi ulang untuk setiap toko (untuk disimpan di DB)
                 $shopDataFromRequest = $validated['shops'][$shopId] ?? null;
                 $shopSubtotal = $items->sum(fn($item) => $item->product->price * $item->quantity);
                 $shopShippingCost = ($validated['delivery_method'] === 'ship' && $shopDataFromRequest) ? ($shopDataFromRequest['shippingCost'] ?? 0) : 0;
                 $shopDiscount = 0;
+                $voucherId = null;
                 if ($shopDataFromRequest && !empty($shopDataFromRequest['voucherId'])) {
                     $voucher = Voucher::find($shopDataFromRequest['voucherId']);
                     if ($voucher && $voucher->user_id == $items->first()->product->user_id && $shopSubtotal >= $voucher->min_spending) {
                         $shopDiscount = ($shopSubtotal * $voucher->discount) / 100;
+                        $voucherId = $voucher->id;
                     }
                 }
-                $order = Order::create(['order_group_id' => $orderGroupId, 'user_id' => $customer->id, 'subdomain_id' => $items->first()->product->shopOwner->subdomain->id, 'total_price' => ($shopSubtotal - $shopDiscount) + $shopShippingCost, 'subtotal' => $shopSubtotal, 'shipping_cost' => $shopShippingCost, 'discount_amount' => $shopDiscount, 'order_date' => now(), 'status' => 'pending']);
+                $order = Order::create([
+                    'order_group_id' => $orderGroupId,
+                    'user_id' => $customer->id,
+                    'subdomain_id' => $items->first()->product->shopOwner->subdomain->id,
+                    'voucher_id' => $voucherId,
+                    'total_price' => ($shopSubtotal - $shopDiscount) + $shopShippingCost,
+                    'subtotal' => $shopSubtotal,
+                    'shipping_cost' => $shopShippingCost,
+                    'discount_amount' => $shopDiscount,
+                    'order_date' => now(),
+                    'status' => 'pending'
+                ]);
+
                 foreach ($items as $item)
                     $order->items()->create(['product_id' => $item->product_id, 'product_variant_id' => $item->product_variant_id, 'quantity' => $item->quantity, 'unit_price' => $item->product->price]);
                 if ($validated['delivery_method'] === 'ship')
@@ -219,14 +232,25 @@ class CheckoutController extends Controller
                 throw new Exception('Midtrans response is invalid: ' . json_encode($response));
             }
 
-            Payment::create(['order_group_id' => $orderGroupId, 'user_id' => $customer->id, 'midtrans_order_id' => $response->order_id, 'midtrans_transaction_status' => $response->transaction_status, 'midtrans_payment_type' => $response->payment_type, 'total_payment' => $response->gross_amount, 'midtrans_response' => json_encode($response)]);
+            // ====================================================================
+            // PERBAIKAN: Simpan ke kolom order_group_id yang benar
+            // ====================================================================
+            Payment::create([
+                'order_group_id' => $orderGroupId, // <-- PERUBAHAN DI SINI
+                'user_id' => $customer->id,
+                'midtrans_order_id' => $response->order_id,
+                'midtrans_transaction_status' => $response->transaction_status,
+                'midtrans_payment_type' => $response->payment_type,
+                'total_payment' => $response->gross_amount,
+                'midtrans_response' => json_encode($response)
+            ]);
             $this->cartService->clearCartItems($validated['items']);
 
             DB::commit();
             Log::info("Checkout process for group {$orderGroupId} completed successfully.");
             return response()->json($response);
 
-        } catch (Throwable $e) { // Menangkap semua jenis error
+        } catch (Throwable $e) {
             if (DB::transactionLevel() > 0) {
                 DB::rollBack();
                 Log::info("Database transaction rolled back for group " . ($orderGroupId ?? 'N/A'));

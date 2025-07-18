@@ -1,4 +1,3 @@
-
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -19,12 +18,16 @@
 <link
     href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Nunito&family=Open+Sans&family=Poppins:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;600;700&family=Sen:wght@400;700;800&family=Source+Sans+Pro:wght@400;600;700&display=swap"
     rel="stylesheet">
-    
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    xintegrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
+    crossorigin="anonymous" referrerpolicy="no-referrer" />
 
 <style>
     body {
         font-family: 'Inter', sans-serif;
     }
+
     .no-scrollbar::-webkit-scrollbar {
         display: none;
     }

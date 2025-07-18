@@ -8,22 +8,29 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Collection; // Impor kelas Collection
+use Illuminate\Support\Collection;
+use Illuminate\Support\Str; // Import Str facade
 
 class CustomerNotificationController extends Controller
 {
     /**
      * Menampilkan feed aktivitas/notifikasi kustom untuk pengguna.
      */
-    public function index()
+    public function index(Request $request, $subdomain)
     {
-        $user = Auth::user();
-        $currentSubdomain = request()->route('subdomain');
+        /** @var \App\Models\Customer $user */
+        $user = Auth::guard('customers')->user();
+
+        if (!$user) {
+            return redirect()->route('tenant.customer.login.form', ['subdomain' => $subdomain]);
+        }
+
+        $currentSubdomain = $subdomain;
 
         // 1. Ambil data pembayaran yang berhasil (Lunas)
         $successfulPayments = Payment::where('user_id', $user->id)
             ->whereIn('midtrans_transaction_status', ['settlement', 'capture'])
-            ->with('order.subdomain')
+            ->with('order.subdomain') // Eager load untuk pembayaran langganan
             ->latest('updated_at')
             ->get();
 
@@ -42,28 +49,42 @@ class CustomerNotificationController extends Controller
             ->get();
 
         // 4. Buat notifikasi untuk pembaruan profil
-        $profileUpdateActivity = new Collection(); // Gunakan new Collection()
-        // Cek apakah user pernah update profil (selain saat registrasi)
+        $profileUpdateActivity = new Collection();
         if ($user->updated_at > $user->created_at->addSeconds(10)) {
             $profileUpdateActivity->push((object) [
                 'type' => 'Profil',
                 'title' => 'Profil Diperbarui',
                 'message' => 'Data profil Anda telah berhasil diperbarui.',
                 'date' => $user->updated_at,
-                'status' => 'profile', // Status kustom untuk styling
-                'link' => route('tenant.account.profile', ['subdomain' => $currentSubdomain ?? 'default']),
+                'status' => 'profile',
+                'link' => route('tenant.account.profile', ['subdomain' => $currentSubdomain]),
             ]);
         }
 
         // 5. Ubah setiap data menjadi format "notifikasi" yang seragam
-        $paymentActivities = $successfulPayments->map(function ($payment) {
+        $paymentActivities = $successfulPayments->map(function ($payment) use ($currentSubdomain) {
+
+            $order = $payment->order; // Ini hanya akan ada untuk pembayaran langganan
+
+            if ($order) {
+                // KASUS 1: Ini adalah pembayaran untuk satu order (misal: langganan)
+                $message = 'Pembayaran untuk pesanan #' . $order->id . ' telah kami terima.';
+                $subdomainName = optional($order->subdomain)->subdomain_name;
+                $link = $subdomainName ? route('tenant.account.orders', ['subdomain' => $subdomainName]) : '#';
+            } else {
+                // KASUS 2: Ini adalah pembayaran untuk grup order (pembelian produk)
+                $message = 'Pembayaran untuk pesanan #' . Str::limit($payment->order_group_id, 8) . '... telah kami terima.';
+                // Arahkan ke halaman "Pesanan Saya" di subdomain saat ini
+                $link = route('tenant.account.orders', ['subdomain' => $currentSubdomain]);
+            }
+
             return (object) [
                 'type' => 'Pembayaran',
                 'title' => 'Pembayaran Berhasil',
-                'message' => 'Pembayaran untuk pesanan #' . $payment->order_id . ' telah kami terima.',
+                'message' => $message,
                 'date' => $payment->updated_at,
                 'status' => 'success',
-                'link' => optional($payment->order->subdomain)->subdomain_name ? route('tenant.account.orders', ['subdomain' => $payment->order->subdomain->subdomain_name]) : '#',
+                'link' => $link,
             ];
         });
 
@@ -78,7 +99,7 @@ class CustomerNotificationController extends Controller
                 'title' => $statusText[$order->status] ?? 'Status Pesanan',
                 'message' => 'Pesanan Anda dengan ID #' . $order->id . ' telah ' . strtolower(str_replace('Pesanan ', '', $statusText[$order->status] ?? 'diproses')) . '.',
                 'date' => $order->updated_at,
-                'status' => 'cancelled', // Menggunakan status 'cancelled' untuk styling (merah)
+                'status' => 'cancelled',
                 'link' => optional($order->subdomain)->subdomain_name ? route('tenant.account.orders', ['subdomain' => $order->subdomain->subdomain_name]) : '#',
             ];
         });
@@ -88,19 +109,19 @@ class CustomerNotificationController extends Controller
                 'type' => 'Pesanan',
                 'title' => 'Menunggu Pembayaran',
                 'message' => 'Pesanan Anda dengan ID #' . $order->id . ' menunggu pembayaran.',
-                'date' => $order->created_at, // Gunakan created_at untuk pesanan baru
-                'status' => 'pending', // Status kustom baru
+                'date' => $order->created_at,
+                'status' => 'pending',
                 'link' => optional($order->subdomain)->subdomain_name ? route('tenant.account.orders', ['subdomain' => $order->subdomain->subdomain_name]) : '#',
             ];
         });
 
-        // 6. Gabungkan semua aktivitas menjadi satu koleksi dasar
+        // 6. Gabungkan semua aktivitas
         $allActivities = $paymentActivities->toBase()
             ->merge($orderActivities)
             ->merge($pendingOrderActivities)
             ->merge($profileUpdateActivity);
 
-        // 7. Urutkan semua aktivitas berdasarkan tanggal, dari yang terbaru
+        // 7. Urutkan semua aktivitas berdasarkan tanggal
         $sortedActivities = $allActivities->sortByDesc('date');
 
         // 8. Buat paginasi secara manual
@@ -112,6 +133,9 @@ class CustomerNotificationController extends Controller
             'path' => route('tenant.account.notifications', ['subdomain' => $currentSubdomain]),
         ]);
 
-        return view('customer.notifications', ['notifications' => $paginatedActivities]);
+        return view('customer.notifications', [
+            'notifications' => $paginatedActivities,
+            'subdomain' => $currentSubdomain
+        ]);
     }
 }
