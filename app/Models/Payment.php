@@ -28,6 +28,7 @@ class Payment extends Model
      */
     protected $fillable = [
         'user_id',
+        'order_group_id',
         'order_id',
         'subs_package_id',
         'midtrans_order_id',

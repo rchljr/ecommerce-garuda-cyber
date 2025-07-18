@@ -1,8 +1,8 @@
 <section id="tema" class="py-16 md:py-24">
     <div class="container mx-auto px-6">
         <div class="text-center mb-12">
-            <h3 class="text-3xl md:text-5xl font-bold text-gray-900">Tema Toko Online Anda</h3>
-            <p class="mt-4 text-lg text-gray-600">Pilih beragam desain profesional yang siap pakai untuk bisnis Anda.</p>
+            <h3 class="text-3xl md:text-5xl font-bold text-gray-900">Pilih Tampilan Profesional Untuk Bisnis Anda</h3>
+            <p class="mt-4 text-lg text-gray-600">Ini adalah koleksi template yang tersedia. Pilih salah satu untuk memulai kustomisasi dan meluncurkan toko online Anda.</p>
         </div>
         <div class="border-2 border-red-300 rounded-3xl p-4 md:p-8">
             <div class="relative">
@@ -14,7 +14,7 @@
                                 
                                 <!-- Image and Link -->
                                 <a href="{{ $template->status === 'active' ? route('template.preview', $template) : '#' }}" 
-                                   target="_blank" 
+                                target="_blank" 
                                    class="block {{ $template->status !== 'active' ? 'pointer-events-none' : '' }}">
                                     <img src="{{ asset('storage/' . $template->image_preview) }}"
                                          onerror="this.onerror=null;this.src='https://placehold.co/400x300/f1f5f9/cbd5e1?text=No+Image';"

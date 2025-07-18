@@ -56,14 +56,7 @@
             @yield('content')
         </main>
 
-        <!-- Footer Sederhana -->
-        <footer class="bg-gray-800 text-white">
-            <div class="container mx-auto py-6 px-4 sm:px-6 lg:px-8 text-center">
-                <p class="text-sm text-gray-400">&copy; {{ date('Y') }}
-                    {{ config('app.name', 'Garuda Cyber Indonesia') }}. All rights reserved.
-                </p>
-            </div>
-        </footer>
+        @include('layouts._partials.customer-footer')
     </div>
 
     @stack('scripts')

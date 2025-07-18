@@ -1,6 +1,7 @@
 @php
     $isPreview = $isPreview ?? false;
-    $currentSubdomain = !$isPreview ? request()->route('subdomain') : null;
+    // Ambil subdomain saat ini sekali saja dari parameter rute agar lebih efisien.
+    $currentSubdomain = request()->route('subdomain');
     $logoPath = (isset($currentShop) && $currentShop) ? optional($currentShop->customTema)->shop_logo : null;
     $logoUrl = $logoPath ? asset('storage/' . $logoPath) : asset('template1/img/logo.png');
     $cartCount = 0;
@@ -40,7 +41,7 @@
                 <div class="col-lg-6 col-md-7">
                     <div class="header__top__left">
                         <div class="header__top__links">
-                            <a href="{{ !$isPreview ? route('tenants.index') : '#' }}">Lihat Toko Mitra Lainnya</a>
+                            <a href="{{ !$isPreview ? route('tenants.index') : '#' }}">Lihat Toko Lainnya</a>
                         </div>
                     </div>
                 </div>
@@ -144,19 +145,19 @@
             </div>
             <div class="col-lg-3 col-md-3">
                 <div class="header__nav__option">
-                    <a href="#" class="search-switch"><img src="{{ asset('template1/img/icon/search.png') }}"
-                            alt=""></a>
-                    <a href="{{ !$isPreview ? route('tenant.wishlist', ['subdomain' => $currentSubdomain]) : '#' }}"><img
-                            src="{{ asset('template1/img/icon/heart.png') }}" alt=""></a>
+                    {{-- PERBAIKAN: Mengganti semua ikon gambar dengan Font Awesome --}}
+                    <a href="#" class="search-switch"><i class="fa fa-search"></i></a>
+                    <a href="{{ !$isPreview ? route('tenant.wishlist', ['subdomain' => $currentSubdomain]) : '#' }}"><i
+                            class="fa fa-heart-o"></i></a>
                     <a class="notification-icon"
                         href="{{ !$isPreview ? route('tenant.account.notifications', ['subdomain' => $currentSubdomain]) : '#' }}">
-                        <i class="fa fa-bell"></i>
+                        <i class="fa fa-bell-o"></i>
                         @if ($notificationCount > 0)
                             <span id="notification-count">{{ $notificationCount }}</span>
                         @endif
                     </a>
-                    <a href="{{ !$isPreview ? route('tenant.cart.index', ['subdomain' => $currentSubdomain]) : '#' }}"><img
-                            src="{{ asset('template1/img/icon/cart.png') }}" alt="">
+                    <a href="{{ !$isPreview ? route('tenant.cart.index', ['subdomain' => $currentSubdomain]) : '#' }}">
+                        <i class="fa fa-shopping-bag"></i>
                         <span id="cart-count">{{ $cartCount }}</span>
                     </a>
                 </div>
@@ -172,35 +173,37 @@
         cursor: not-allowed;
     }
 
-    .header__nav__option .fa-bell {
-        color: #111111;
+    /* PERBAIKAN: Menyesuaikan style untuk ikon Font Awesome */
+    .header__nav__option a i {
         font-size: 20px;
+        color: #111111;
     }
 
-    /* Perbaikan untuk ikon notifikasi */
+    .header__nav__option a {
+        position: relative;
+        /* Diperlukan untuk badge */
+    }
+
+    /* Perbaikan untuk ikon notifikasi dan keranjang */
     .notification-icon {
         position: relative;
         display: inline-block;
-        /* Memastikan posisi relatif bekerja */
     }
 
-    #notification-count {
+    #notification-count,
+    #cart-count {
+        /* Menggabungkan style untuk kedua badge */
         position: absolute;
         top: -6px;
-        /* Posisikan lencana di atas ikon */
         right: -9px;
-        /* Posisikan lencana di kanan ikon */
         height: 18px;
         width: 18px;
         background: #ca1515;
-        /* Warna latar merah untuk notifikasi */
         color: #ffffff;
         border-radius: 50%;
-        /* Membuat lencana menjadi bulat */
         font-size: 11px;
         font-weight: 700;
         line-height: 18px;
-        /* Menengahkan angka secara vertikal */
         text-align: center;
     }
 </style>
