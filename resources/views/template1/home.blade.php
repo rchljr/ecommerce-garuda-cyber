@@ -2,6 +2,9 @@
 @extends('template1.layouts.template')
 
 @section('content')
+    @php
+        $isPreview = $isPreview ?? false;
+    @endphp
 
     <!-- Hero Section Begin -->
     <section class="hero">
@@ -46,8 +49,7 @@
                                     <h6>Selamat Datang!</h6>
                                     <h2>Toko Fashion Terbaik Anda</h2>
                                     <p>Atur tampilan hero section Anda melalui dashboard editor.</p>
-                                    <a href="#" class="primary-btn">Telusuri Sekarang <span
-                                            class="arrow_right"></span></a>
+                                    <a href="#" class="primary-btn">Telusuri Sekarang <span class="arrow_right"></span></a>
                                 </div>
                             </div>
                         </div>
@@ -136,17 +138,16 @@
                                     <span class="label">Sale</span>
                                 @endif
                                 <ul class="product__hover">
-                                    <li><a href="#"><img src="{{ asset('template1/img/icon/heart.png') }}"
-                                                alt=""></a></li>
-                                    {{-- PERBAIKAN: Tambahkan parameter subdomain ke rute tenant.product.details --}}
+                                    <li><a href="#"><img src="{{ asset('template1/img/icon/heart.png') }}" alt=""></a></li>
+                                    {{-- Tambahkan parameter subdomain ke rute tenant.product.details --}}
                                     <li><a
-                                            href="{{ route('tenant.product.details', ['subdomain' => $subdomainName, 'product' => $product->slug]) }}"><img
+                                            href="{{  !$isPreview ? route('tenant.product.details', ['subdomain' => $subdomainName, 'product' => $product->slug]) : '#' }}"><img
                                                 src="{{ asset('template1/img/icon/search.png') }}" alt=""></a></li>
                                 </ul>
                             </div>
                             <div class="product__item__text">
                                 <h6>{{ $product->name }}</h6>
-                                {{-- PERBAIKAN: Tambahkan parameter subdomain ke rute tenant.cart.add --}}
+                                {{-- Tambahkan parameter subdomain ke rute tenant.cart.add --}}
                                 <a href="#" class="add-cart add-cart-button" data-product-id="{{ $product->id }}"
                                     data-product-name="{{ $product->name }}" data-product-price="{{ $product->price }}"
                                     data-product-image="{{ asset('storage/' . $product->main_image) }}"
@@ -155,8 +156,7 @@
                                 </a>
                                 <div class="rating">
                                     @for ($i = 1; $i <= 5; $i++)
-                                        <i
-                                            class="fa {{ ($product->rating_product ?? 0) >= $i ? 'fa-star' : 'fa-star-o' }}"></i>
+                                        <i class="fa {{ ($product->rating_product ?? 0) >= $i ? 'fa-star' : 'fa-star-o' }}"></i>
                                     @endfor
                                 </div>
                                 <h5>Rp {{ number_format($product->price, 0, ',', '.') }}</h5>

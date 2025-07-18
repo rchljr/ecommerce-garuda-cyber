@@ -15,11 +15,6 @@ return new class extends Migration
     {
         Schema::create('shop_settings', function (Blueprint $table) {
             $table->id();
-
-            // GANTI INI:
-            // $table->foreignId('shop_id')->constrained()->onDelete('cascade');
-
-            // MENJADI INI:
             $table->uuid('shop_id'); // Pastikan tipenya sama (uuid)
             $table->foreign('shop_id')->references('id')->on('shops')->onDelete('cascade');
 

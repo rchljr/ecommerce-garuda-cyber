@@ -14,7 +14,7 @@ class DashboardMitraController extends Controller
     public function index()
     {
         $user = Auth::user();
-      
+
         $thirtyDaysAgo = Carbon::now()->subDays(30);
 
         // 1. Metrik Utama (dengan pengaman)
@@ -33,9 +33,11 @@ class DashboardMitraController extends Controller
             ->get();
 
         // 3. Tabel Produk (Ini juga sudah aman)
-        $topSellingProducts = Product::withCount(['orderItems as sold_count' => function ($query) {
-            $query->select(DB::raw('SUM(quantity)'));
-        }])
+        $topSellingProducts = Product::withCount([
+            'orderItems as sold_count' => function ($query) {
+                $query->select(DB::raw('SUM(quantity)'));
+            }
+        ])
             ->orderBy('sold_count', 'desc')
             ->limit(10)
             ->get();

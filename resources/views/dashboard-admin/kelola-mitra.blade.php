@@ -64,7 +64,7 @@
                         <tr class="text-gray-700 text-center">
                             <td class="px-6 py-4 text-left">
                                 <div class="font-bold text-black">{{ optional($mitra->shop)->shop_name ?? 'N/A' }}</div>
-                                <a href="http://ecommercegaruda.my.id/tenant/{{ optional($mitra->subdomain)->subdomain_name }}" target="_blank" class="text-sm text-gray-500 underline">
+                                <a href="http://ecommercegaruda.my.id/tenant/{{ optional($mitra->subdomain)->subdomain_name }}/home" target="_blank" class="text-sm text-gray-500 underline">
                                     ecommercegaruda.my.id/tenant/{{ optional($mitra->subdomain)->subdomain_name }}
                                 </a>
                             </td>
