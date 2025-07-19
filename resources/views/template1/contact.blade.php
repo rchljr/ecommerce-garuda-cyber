@@ -136,8 +136,7 @@
                         <div class="section-title">
                             <span>Informasi</span>
                             <h2>Hubungi Kami</h2>
-                            <p>Kami selalu siap membantu. Hubungi kami melalui detail di bawah ini atau kirimkan pesan
-                                langsung melalui formulir.</p>
+                            <p>Kami selalu siap membantu. Hubungi kami melalui detail di bawah ini.</p>
                         </div>
                         <div class="contact__details">
                             @if (isset($contact) && $contact)
