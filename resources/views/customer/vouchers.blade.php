@@ -148,8 +148,8 @@
                                             <div class="w-px border-l border-dashed border-gray-300"></div>
                                             <div class="flex-grow p-4">
                                                 <p class="font-bold text-gray-800">{{ $voucher->name }}</p>
-                                                <p class="text-xs text-gray-500 mt-1">Gunakan kode: <span
-                                                        class="font-semibold text-green-600">{{ $voucher->code }}</span></p>
+                                                <p class="text-xs text-gray-500 mt-1"><span
+                                                        class="font-semibold text-green-600">{{ $voucher->voucher_code }}</span></p>
                                                 <div class="mt-2 pt-2 border-t border-dashed text-xs text-gray-600 space-y-1">
                                                     <p>• Min. belanja: {{ format_rupiah($voucher->min_spending) }}</p>
                                                     <p>• Berlaku hingga: {{ format_tanggal($voucher->expired_date) }}</p>

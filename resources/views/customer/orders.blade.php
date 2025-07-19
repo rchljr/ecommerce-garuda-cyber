@@ -168,6 +168,11 @@
             </div>
 
             <div id="detail-shipping-info" class="mt-4 border-t pt-4"></div>
+
+            <div id="detail-notes-info" class="mt-4 border-t pt-4" style="display: none;">
+                <h4 class="font-semibold text-sm mb-1">Catatan:</h4>
+                <p id="detail-notes-text" class="text-sm text-gray-600 bg-gray-50 p-3 rounded-md"></p>
+            </div>
         </div>
     </div>
 @endsection
@@ -211,14 +216,14 @@
                         const itemTotal = (item.quantity || 0) * (item.unit_price || 0);
                         calculatedSubtotal += itemTotal;
                         itemListEl.innerHTML += `
-                                        <div class="flex justify-between text-sm">
-                                            <div>
-                                                <p>${item.product ? item.product.name : 'Produk Dihapus'}</p>
-                                                <p class="text-xs text-gray-500">${item.quantity} x ${formatRupiah(item.unit_price)}</p>
-                                            </div>
-                                            <p>${formatRupiah(itemTotal)}</p>
-                                        </div>
-                                    `;
+                                                <div class="flex justify-between text-sm">
+                                                    <div>
+                                                        <p>${item.product ? item.product.name : 'Produk Dihapus'}</p>
+                                                        <p class="text-xs text-gray-500">${item.quantity} x ${formatRupiah(item.unit_price)}</p>
+                                                    </div>
+                                                    <p>${formatRupiah(itemTotal)}</p>
+                                                </div>
+                                            `;
                     });
 
                     const subtotal = parseFloat(order.subtotal) > 0 ? parseFloat(order.subtotal) : calculatedSubtotal;
@@ -244,16 +249,23 @@
 
                     const shippingInfoEl = document.getElementById('detail-shipping-info');
                     if (order.shipping) {
-                        // === PERUBAHAN 2: AMBIL ALAMAT DARI DATA PENGIRIMAN ===
                         // Alamat ini adalah alamat yang digunakan saat checkout, bukan alamat terbaru customer.
                         const address = order.shipping.shipping_address || 'Alamat tidak diisi saat checkout.';
                         const estimate = order.shipping.estimated_delivery ?? 'Estimasi tidak tersedia';
                         shippingInfoEl.innerHTML = `
-                                        <h4 class="font-semibold text-sm mb-1">Info Pengiriman</h4>
-                                        <p class="text-xs text-gray-500 mt-1">${order.shipping.delivery_service || ''}</p>
-                                    `;
+                                                <h4 class="font-semibold text-sm mb-1">Info Pengiriman</h4>
+                                                <p class="text-xs text-gray-500 mt-1">${order.shipping.delivery_service || ''}</p>
+                                            `;
                     } else {
                         shippingInfoEl.innerHTML = `<h4 class="font-semibold text-sm">Metode Pengambilan: Ambil di Toko</h4>`;
+                    }
+
+                    const notesInfoEl = document.getElementById('detail-notes-info');
+                    if (order.notes && order.notes.trim() !== '') {
+                        document.getElementById('detail-notes-text').textContent = order.notes;
+                        notesInfoEl.style.display = 'block';
+                    } else {
+                        notesInfoEl.style.display = 'none';
                     }
 
                     detailModal.style.display = 'block';

@@ -1,6 +1,5 @@
 @php
     $isPreview = $isPreview ?? false;
-    // Ambil subdomain saat ini sekali saja dari parameter rute agar lebih efisien.
     $currentSubdomain = request()->route('subdomain');
     $logoPath = (isset($currentShop) && $currentShop) ? optional($currentShop->customTema)->shop_logo : null;
     $logoUrl = $logoPath ? asset('storage/' . $logoPath) : asset('template1/img/logo.png');
@@ -10,23 +9,17 @@
     if (Auth::guard('customers')->check()) {
         $user = Auth::guard('customers')->user();
 
-        // Hitung Keranjang Belanja
-        $cart = $user->cart;
-        if ($cart) {
-            $cartCount = $cart->items()->sum('quantity');
-        }
+        // 1. Logika Hitung Keranjang (menggunakan service yang sudah ada)
+        $cartService = app(\App\Services\CartService::class);
+        $cartCount = $cartService->getCartCount();
 
-        // Hitung Notifikasi
-        // Notifikasi dari pembayaran yang berhasil
+        // 2. Logika Hitung Notifikasi (disesuaikan dengan controller Anda)
         $successfulPaymentsCount = \App\Models\Payment::where('user_id', $user->id)
             ->whereIn('midtrans_transaction_status', ['settlement', 'capture'])
             ->count();
-
-        // Notifikasi dari pesanan dengan status tertentu
         $ordersCount = \App\Models\Order::where('user_id', $user->id)
             ->whereIn('status', ['failed', 'cancelled', 'expired', 'pending'])
             ->count();
-
         $notificationCount = $successfulPaymentsCount + $ordersCount;
 
     } elseif (session()->has('cart')) {
@@ -41,49 +34,53 @@
                 <div class="col-lg-6 col-md-7">
                     <div class="header__top__left">
                         <div class="header__top__links">
-                            <a href="{{ !$isPreview ? route('tenants.index') : '#' }}">Lihat Toko Lainnya</a>
+                            <a href="{{ !$isPreview ? route('tenants.index') : '#' }}"
+                                class="font-semibold text-white bg-red-600 px-3 py-1 rounded-full text-xs hover:bg-red-700 transition-colors">
+                                <i class="fa fa-store mr-1"></i> Jelajahi Toko Lain
+                            </a>
                         </div>
                     </div>
                 </div>
                 <div class="col-lg-6 col-md-5">
                     <div class="header__top__right">
                         <div class="header__top__links">
-                            {{-- Tampilkan link ini jika pengguna adalah tamu (belum login) --}}
                             @guest('customers')
-                                <a href="#">FAQs</a>
+                                <a href="#">Bantuan</a>
                                 @if(!$isPreview)
                                     <a
-                                        href="{{ !$isPreview ? route('tenant.customer.login.form', ['subdomain' => $currentSubdomain]) : '#'}}">Login</a>
+                                        href="{{ route('tenant.customer.login.form', ['subdomain' => $currentSubdomain]) }}">Login</a>
                                     <a
-                                        href="{{ !$isPreview ? route('tenant.customer.register.form', ['subdomain' => $currentSubdomain]) : '#'}}">Daftar</a>
+                                        href="{{ route('tenant.customer.register.form', ['subdomain' => $currentSubdomain]) }}">Daftar</a>
                                 @else
                                     <a href="#" class="disabled-link">Login</a>
                                     <a href="#" class="disabled-link">Daftar</a>
                                 @endif
                             @endguest
 
-                            {{-- Tampilkan menu ini jika pengguna sudah login --}}
                             @auth('customers')
-                                <a href="#">FAQs</a>
+                                <a href="#">Bantuan</a>
                                 <div class="header__top__dropdown">
-                                    <a href="#"><i class="fa fa-user"></i> Hi,
-                                        {{ strtok(Auth::guard('customers')->user()->name, ' ') }}</a>
+                                    @php $customer = Auth::guard('customers')->user(); @endphp
+                                    {{-- PERBAIKAN: Mengganti foto profil dengan ikon --}}
+                                    <a href="#">
+                                        <i class="fa fa-user"></i> Hi, {{ strtok($customer->name, ' ') }}
+                                    </a>
                                     <span class="arrow_carrot-down"></span>
                                     <ul>
                                         @if(!$isPreview)
                                             <li><a
-                                                    href="{{ !$isPreview ? route('tenant.account.profile', ['subdomain' => $currentSubdomain]) : '#' }}">Akun
+                                                    href="{{ route('tenant.account.profile', ['subdomain' => $currentSubdomain]) }}">Akun
                                                     Saya</a></li>
                                             <li><a
-                                                    href="{{ !$isPreview ? route('tenant.account.orders', ['subdomain' => $currentSubdomain]) : '#' }}">Pesanan
+                                                    href="{{ route('tenant.account.orders', ['subdomain' => $currentSubdomain]) }}">Pesanan
                                                     Saya</a></li>
                                             <li>
-                                                <a href="{{ !$isPreview ? route('tenant.customer.logout', ['subdomain' => $currentSubdomain]) : '#' }}"
+                                                <a href="{{ route('tenant.customer.logout', ['subdomain' => $currentSubdomain]) }}"
                                                     onclick="event.preventDefault(); document.getElementById('logout-form-header').submit();">
-                                                    Log Out
+                                                    Keluar
                                                 </a>
                                                 <form id="logout-form-header"
-                                                    action="{{ !$isPreview ? route('tenant.customer.logout', ['subdomain' => $currentSubdomain]) : '#' }}"
+                                                    action="{{ route('tenant.customer.logout', ['subdomain' => $currentSubdomain]) }}"
                                                     method="POST" style="display: none;">
                                                     @csrf
                                                 </form>
@@ -110,43 +107,21 @@
             <div class="col-lg-6 col-md-6">
                 <nav class="header__menu mobile-menu">
                     <ul>
-                        {{-- Home --}}
                         <li class="{{ request()->routeIs('tenant.home') ? 'active' : '' }}"><a
                                 href="{{ !$isPreview ? route('tenant.home', ['subdomain' => $currentSubdomain]) : '#' }}">Beranda</a>
                         </li>
-
-                        {{-- Shop --}}
                         <li class="{{ request()->routeIs('tenant.shop') ? 'active' : '' }}">
                             <a
-                                href="{{ !$isPreview ? route('tenant.shop', ['subdomain' => $currentSubdomain]) : '#' }}">Produk</a>
+                                href="{{ !$isPreview ? route('tenant.shop', ['subdomain' => $currentSubdomain]) : '#' }}">Toko</a>
                         </li>
-
-                        {{-- Pages Dropdown --}}
-                        <li
-                            class="{{ request()->routeIs('tenant.contact', 'tenant.product.details', 'tenant.cart.index') ? 'active' : '' }}">
-                            <a href="#">Halaman</a>
-                            <ul class="dropdown">
-                                <li><a
-                                        href="{{ !$isPreview ? route('tenant.contact', ['subdomain' => $currentSubdomain]) : '#' }}">Tentang
-                                        Kami</a>
-                                </li>
-                                <li><a href="{{ !$isPreview ? route('tenant.cart.index', ['subdomain' => $currentSubdomain]) : '#' }}"
-                                        class="{{ request()->routeIs('cart.index') ? 'active' : '' }}">Keranjang
-                                        Belanja</a></li>
-                            </ul>
-                        </li>
-
-                        {{-- Contacts --}}
                         <li class="{{ request()->routeIs('tenant.contact') ? 'active' : '' }}"><a
-                                href="{{ !$isPreview ? route('tenant.contact', ['subdomain' => $currentSubdomain]) : '#' }}">Kontak</a>
+                                href="{{ !$isPreview ? route('tenant.contact', ['subdomain' => $currentSubdomain]) : '#' }}">Kontak Kami</a>
                         </li>
                     </ul>
                 </nav>
             </div>
             <div class="col-lg-3 col-md-3">
                 <div class="header__nav__option">
-                    {{-- PERBAIKAN: Mengganti semua ikon gambar dengan Font Awesome --}}
-                    <a href="#" class="search-switch"><i class="fa fa-search"></i></a>
                     <a href="{{ !$isPreview ? route('tenant.wishlist', ['subdomain' => $currentSubdomain]) : '#' }}"><i
                             class="fa fa-heart-o"></i></a>
                     <a class="notification-icon"
@@ -157,8 +132,10 @@
                         @endif
                     </a>
                     <a href="{{ !$isPreview ? route('tenant.cart.index', ['subdomain' => $currentSubdomain]) : '#' }}">
-                        <i class="fa fa-shopping-bag"></i>
-                        <span id="cart-count">{{ $cartCount }}</span>
+                        <i class="fa fa-shopping-basket"></i>
+                        @if ($cartCount > 0)
+                            <span id="cart-count">{{ $cartCount }}</span>
+                        @endif
                     </a>
                 </div>
             </div>
@@ -173,7 +150,6 @@
         cursor: not-allowed;
     }
 
-    /* PERBAIKAN: Menyesuaikan style untuk ikon Font Awesome */
     .header__nav__option a i {
         font-size: 20px;
         color: #111111;
@@ -181,10 +157,8 @@
 
     .header__nav__option a {
         position: relative;
-        /* Diperlukan untuk badge */
     }
 
-    /* Perbaikan untuk ikon notifikasi dan keranjang */
     .notification-icon {
         position: relative;
         display: inline-block;
@@ -192,7 +166,6 @@
 
     #notification-count,
     #cart-count {
-        /* Menggabungkan style untuk kedua badge */
         position: absolute;
         top: -6px;
         right: -9px;

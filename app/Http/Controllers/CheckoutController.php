@@ -121,6 +121,7 @@ class CheckoutController extends Controller
             'shops.*.shippingCost' => 'required_if:delivery_method,ship|numeric',
             'shops.*.shippingService' => 'required_if:delivery_method,ship|nullable|string',
             'shops.*.voucherId' => 'nullable|string',
+            'shops.*.notes' => 'nullable|string|max:500',
         ]);
 
         $orderGroupId = Str::uuid();
@@ -214,7 +215,8 @@ class CheckoutController extends Controller
                     'shipping_cost' => $shopShippingCost,
                     'discount_amount' => $shopDiscount,
                     'order_date' => now(),
-                    'status' => 'pending'
+                    'status' => 'pending',
+                    'notes' => $shopDataFromRequest['notes'] ?? null,
                 ]);
 
                 foreach ($items as $item)
@@ -232,11 +234,8 @@ class CheckoutController extends Controller
                 throw new Exception('Midtrans response is invalid: ' . json_encode($response));
             }
 
-            // ====================================================================
-            // PERBAIKAN: Simpan ke kolom order_group_id yang benar
-            // ====================================================================
             Payment::create([
-                'order_group_id' => $orderGroupId, // <-- PERUBAHAN DI SINI
+                'order_group_id' => $orderGroupId,
                 'user_id' => $customer->id,
                 'midtrans_order_id' => $response->order_id,
                 'midtrans_transaction_status' => $response->transaction_status,

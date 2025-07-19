@@ -51,10 +51,14 @@ class ShopController extends Controller
 
         // 7. Terapkan filter harga
         if ($request->filled('min_price')) {
-            $query->where('price', '>=', $request->min_price);
+            // Membersihkan nilai non-numerik dari input harga
+            $minPrice = preg_replace('/[^0-9]/', '', $request->min_price);
+            $query->where('price', '>=', $minPrice);
         }
         if ($request->filled('max_price')) {
-            $query->where('price', '<=', $request->max_price);
+            // Membersihkan nilai non-numerik dari input harga
+            $maxPrice = preg_replace('/[^0-9]/', '', $request->max_price);
+            $query->where('price', '<=', $maxPrice);
         }
 
         // 8. Terapkan pengurutan
@@ -68,11 +72,10 @@ class ShopController extends Controller
 
         $products = $query->paginate(9)->withQueryString();
 
-        // dd($products);
-
         // 9. Kirim data yang sudah difilter ke view yang benar
         return view($tenant->template->path . '.shop', [
             'tenant' => $tenant,
+            'shop' => $shop, // <--- VARIABEL INI DITAMBAHKAN
             'products' => $products,
             'categories' => $sidebarCategories,
         ]);
@@ -81,35 +84,36 @@ class ShopController extends Controller
     /**
      * Menampilkan halaman detail produk.
      */
-    public function show(Request $request, string $productSlug, string $a)
+    public function show(Request $request, string $subdomain, string $productSlug)
     {
         $tenant = $request->get('tenant');
         $templatePath = $tenant->template->path;
 
-        // ✅ Ambil produk berdasarkan slug
-        $product = Product::where('slug', $a)->first();
-        
-        if (!$product) {
-            abort(404, 'Produk tidak ditemukan.');
+        $shop = $tenant->user->shop;
+        if (!$shop) {
+            abort(404, 'Toko tidak ditemukan untuk tenant ini.');
         }
 
-        if ($product->status !== 'active') {
-            abort(404, 'Produk tidak aktif.');
+        // Mencari produk berdasarkan slug DAN memastikan shop_id-nya cocok
+        $product = Product::where('slug', $productSlug)
+            ->where('shop_id', $shop->id)
+            ->where('status', 'active')
+            ->first();
+
+        if (!$product) {
+            abort(404, 'Produk tidak ditemukan atau tidak aktif.');
         }
-        // Load relasi jika diperlukan
-        
+
+        // Load relasi
         $product->load('subCategory.category', 'variants', 'gallery', 'tags');
 
-        $relatedProducts = Product::where('sub_category_id', $product->sub_category_id)
-
-
+        // Ambil produk terkait
+        $relatedProducts = Product::where('shop_id', $shop->id) // Pastikan produk terkait juga dari toko yang sama
+            ->where('sub_category_id', $product->sub_category_id)
             ->where('id', '!=', $product->id)
             ->where('status', 'active')
             ->limit(4)
             ->get();
-            
-
-        // ✅ Kirim $product ke view!
 
         return view($templatePath . '.details', compact('tenant', 'product', 'relatedProducts'));
     }

@@ -78,7 +78,7 @@
                                 </div>
                                 <input type="search" name="search"
                                     class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-full focus:ring-red-500 focus:border-red-500 transition"
-                                    placeholder="Cari produk atau toko...">
+                                    placeholder="Cari toko...">
                             </div>
                         </form>
                     </div>
@@ -127,7 +127,6 @@
                                 @endphp
                                 <button id="customer-menu-button"
                                     class="flex items-center gap-2 text-sm font-medium text-gray-700 rounded-full hover:bg-gray-100 p-1 transition">
-                                    {{-- PERBAIKAN: Menampilkan foto profil --}}
                                     <img src="{{ $photoUrl }}" alt="Foto Profil"
                                         class="w-8 h-8 rounded-full object-cover border-2 border-gray-200">
                                     <span class="hidden lg:inline">Hi, {{ Str::words($customer->name, 1, '') }}</span>
@@ -142,7 +141,7 @@
                                     {{-- PERBAIKAN: Header dropdown baru --}}
                                     <div class="px-4 py-3 border-b">
                                         <p class="text-sm font-semibold text-gray-900">{{ $customer->name }}</p>
-                                        <p class="text-xs text-gray-500 truncate">{{ $customer->email }}</p>
+                                        <p class="text-xs text-gray-500 truncate">{{ $customer->phone }}</p>
                                     </div>
                                     <div class="py-1">
                                         <a href="{{ route('tenant.account.profile', ['subdomain' => $currentSubdomain]) }}"
