@@ -52,7 +52,7 @@
             <h1 class="text-4xl sm:text-5xl font-bold tracking-tight text-gray-900">Mengenal Tim Kami</h1>
             <p class="mt-4 max-w-2xl mx-auto text-lg text-gray-600">Kami adalah duo developer di balik platform
                 E-commerce Garuda, berkolaborasi untuk menciptakan pengalaman terbaik bagi mitra dan pelanggan.</p>
-        </header>
+        </header>s
 
         <!-- Grid Profil Tim -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-12 lg:gap-16 max-w-5xl mx-auto">
