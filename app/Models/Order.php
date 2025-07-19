@@ -27,6 +27,7 @@ class Order extends Model
         'discount_amount',
         'voucher_id',
         'order_date',
+        'notes'
     ];
     protected $casts = ['order_date' => 'datetime'];
 

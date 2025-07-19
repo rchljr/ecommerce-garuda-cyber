@@ -1,8 +1,8 @@
 <section id="tema" class="py-16 md:py-24">
     <div class="container mx-auto px-6">
         <div class="text-center mb-12">
-            <h3 class="text-3xl md:text-5xl font-bold text-gray-900">Pilih Tampilan Profesional Untuk Bisnis Anda</h3>
-            <p class="mt-4 text-lg text-gray-600">Ini adalah koleksi template yang tersedia. Pilih salah satu untuk memulai kustomisasi dan meluncurkan toko online Anda.</p>
+            <h3 class="text-3xl md:text-5xl font-bold text-gray-900">Pilihan Tampilan Profesional Untuk Bisnis Anda</h3>
+            <p class="mt-4 text-lg text-gray-600">Ini adalah koleksi tema yang tersedia. Pilih salah satu untuk memulai kustomisasi dan meluncurkan toko online Anda.</p>
         </div>
         <div class="border-2 border-red-300 rounded-3xl p-4 md:p-8">
             <div class="relative">

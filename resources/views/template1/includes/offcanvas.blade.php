@@ -1,23 +1,24 @@
 @php
-    // Cek apakah ini mode preview.
+    // Logika ini disamakan dengan header utama untuk konsistensi data
     $isPreview = $isPreview ?? false;
-
-    // Ambil subdomain saat ini jika bukan mode preview.
-    $currentSubdomain = !$isPreview ? request()->route('subdomain') : null;
-
-    // Ambil data tenant yang sedang aktif dari request (disediakan oleh middleware).
-    $tenant = $tenant ?? (!$isPreview ? request()->get('tenant') : null);
-
-    // Inisialisasi variabel
+    $currentSubdomain = request()->route('subdomain');
     $cartCount = 0;
-    $cartTotal = 0;
+    $notificationCount = 0;
 
-    $cartCount = 0;
     if (Auth::guard('customers')->check()) {
-        $cart = Auth::guard('customers')->user()->cart;
-        if ($cart) {
-            $cartCount = $cart->items()->sum('quantity');
-        }
+        $user = Auth::guard('customers')->user();
+        $cartService = app(\App\Services\CartService::class);
+        $cartCount = $cartService->getCartCount();
+
+        // Logika Hitung Notifikasi dari controller notifikasi Anda
+        $successfulPaymentsCount = \App\Models\Payment::where('user_id', $user->id)
+            ->whereIn('midtrans_transaction_status', ['settlement', 'capture'])
+            ->count();
+        $ordersCount = \App\Models\Order::where('user_id', $user->id)
+            ->whereIn('status', ['failed', 'cancelled', 'expired', 'pending'])
+            ->count();
+        $notificationCount = $successfulPaymentsCount + $ordersCount;
+
     } elseif (session()->has('cart')) {
         $cartCount = collect(session('cart'))->sum('quantity');
     }
@@ -50,7 +51,7 @@
                             <li>
                                 <a href="{{ route('tenant.customer.logout', ['subdomain' => $currentSubdomain]) }}"
                                     onclick="event.preventDefault(); document.getElementById('logout-form-offcanvas').submit();">
-                                    Log Out
+                                    Logout
                                 </a>
                                 <form id="logout-form-offcanvas"
                                     action="{{ route('tenant.customer.logout', ['subdomain' => $currentSubdomain]) }}"
@@ -62,20 +63,54 @@
                     </ul>
                 </div>
             @endauth
-            {{-- <a href="#">FAQs</a> --}}
         </div>
     </div>
     <div class="offcanvas__nav__option">
-        <a href="#" class="search-switch"><img src="{{ asset('template1/img/icon/search.png') }}" alt=""></a>
-        <a href="{{ !$isPreview ? route('tenant.wishlist', ['subdomain' => $currentSubdomain]) : '#' }}"><img
-                src="{{ asset('template1/img/icon/heart.png') }}" alt=""></a>
-        <a href="{{ !$isPreview ? route('tenant.cart.index', ['subdomain' => $currentSubdomain]) : '#' }}"><img
-                src="{{ asset('template1/img/icon/cart.png') }}" alt="">
-            {{-- PERBAIKAN: Gunakan variabel cartCount --}}
-            <span>{{ $cartCount }}</span>
+        <a href="{{ !$isPreview ? route('tenant.wishlist', ['subdomain' => $currentSubdomain]) : '#' }}"><i
+                class="fa fa-heart-o"></i></a>
+        <a class="notification-icon"
+            href="{{ !$isPreview ? route('tenant.account.notifications', ['subdomain' => $currentSubdomain]) : '#' }}">
+            <i class="fa fa-bell-o"></i>
+            @if ($notificationCount > 0)
+                <span id="notification-count-mobile">{{ $notificationCount }}</span>
+            @endif
         </a>
-        {{-- PERBAIKAN: Gunakan variabel cartTotal --}}
-        {{-- <div class="price">{{ format_rupiah($cartTotal) }}</div> --}}
+        <a href="{{ !$isPreview ? route('tenant.cart.index', ['subdomain' => $currentSubdomain]) : '#' }}">
+            <i class="fa fa-shopping-basket"></i>
+            @if ($cartCount > 0)
+                <span id="cart-count-mobile">{{ $cartCount }}</span>
+            @endif
+        </a>
     </div>
     <div id="mobile-menu-wrap"></div>
+    <div class="offcanvas__text">
+        <p>Platform E-commerce Terbaik untuk Bisnis Anda.</p>
+    </div>
 </div>
+
+{{-- Menambahkan style untuk badge dan perbaikan warna ikon di menu mobile --}}
+<style>
+    .offcanvas__nav__option a {
+        position: relative;
+    }
+
+    .offcanvas__nav__option a i {
+        color: #111111;
+    }
+
+    #notification-count-mobile,
+    #cart-count-mobile {
+        position: absolute;
+        top: -6px;
+        right: -9px;
+        height: 18px;
+        width: 18px;
+        background: #ca1515;
+        color: #ffffff;
+        border-radius: 50%;
+        font-size: 11px;
+        font-weight: 700;
+        line-height: 18px;
+        text-align: center;
+    }
+</style>

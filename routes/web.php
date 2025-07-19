@@ -159,8 +159,6 @@ Route::prefix('register')->name('register.')->group(function () {
 });
 //preview template
 Route::get('/{template:name}/beranda', [TemplateController::class, 'preview'])->name('template.preview');
-
-//Mitra Sementara
 // Route::prefix('dashboard-mitra')->name('mitra.')->group(function () {
 //     // Rute dashboard utama
 //     Route::get('/', function () {
@@ -208,6 +206,12 @@ Route::get('/template1/beranda', [HomeController::class, 'index'])->name('home')
 Route::get('/fruit', function () {
     return view('template2.home');
 });
+
+// Route untuk halaman tim developer
+Route::get('/tim-pengembang', function () {
+    // Pastikan file blade Anda ada di resources/views/layouts/tim-developer.blade.php
+    return view('layouts.tim-developer');
+})->name('tim.developer');
 
 // == GRUP RUTE UNTUK PENGGUNA YANG SUDAH LOGIN ==
 Route::middleware(['auth'])->group(function () {

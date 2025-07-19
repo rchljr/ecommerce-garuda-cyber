@@ -88,8 +88,10 @@
         </div>
 
         <div class="mt-12 border-t border-gray-700 pt-8 text-center">
-            <p class="text-base text-gray-400">&copy; {{ date('Y') }}
-                {{ config('app.name', 'Garuda Cyber Indonesia') }}. All rights reserved.
+            <p class="text-base text-gray-300">
+                Copyright &copy; <script>document.write(new Date().getFullYear())</script> All rights reserved | Ditenagai oleh
+                <a href="{{ route('tim.developer') }}" target="_blank" class="text-red-600 hover:underline font-medium">Tim E-Commerce Garuda</a>
+                by <a href="https://garudacyber.co.id" target="_blank" class="text-red-600 hover:underline font-medium">PT. Garuda Cyber Indonesia</a>.
             </p>
         </div>
     </div>

@@ -1,18 +1,27 @@
 @extends('layouts.customer')
 @section('title', 'Keranjang Belanja')
 
+@push('styles')
+    <style>
+        /* Style untuk tombol hapus agar lebih terlihat */
+        .remove-item-btn {
+            transition: color 0.2s ease-in-out;
+        }
+        .remove-item-btn:hover {
+            color: #dc2626; /* red-600 */
+        }
+    </style>
+@endpush
+
 @section('content')
     @php
         // Ambil subdomain saat ini untuk digunakan di dalam rute
         $currentSubdomain = request()->route('subdomain');
         // Kelompokkan item berdasarkan ID toko pemilik produk
         $groupedItems = $cartItems->groupBy(function($item) {
-            // $item adalah instance dari ProductCart
-            // Kita cek setiap langkah relasi untuk memastikan tidak ada yang null
             if ($item->product && $item->product->shopOwner && $item->product->shopOwner->shop) {
                 return $item->product->shopOwner->shop->id;
             }
-            // Jika ada produk tanpa toko, kelompokkan ke 'unknown_shop'
             return 'unknown_shop';
         });
     @endphp
@@ -37,37 +46,34 @@
                                         <span class="ml-3 text-sm font-medium">Pilih Semua</span>
                                     </label>
                                     <button type="button" id="remove-selected-btn"
-                                        class="text-sm text-red-600 hover:underline">Hapus yang Dipilih</button>
+                                        class="text-sm text-red-600 hover:underline disabled:text-gray-400 disabled:cursor-not-allowed" disabled>Hapus yang Dipilih</button>
                                 </div>
                             @endif
 
                             @forelse ($groupedItems as $shopId => $items)
                                 @php
-                                    // Ambil informasi toko dari item pertama di grup ini
                                     $shopOwner = optional($items->first()->product)->shopOwner;
                                     $shop = optional($shopOwner)->shop;
-                                    // Ambil model subdomain dari shopOwner
                                     $subdomainModel = optional($shopOwner)->subdomain;
-                                    // Ambil nama subdomain dari model tersebut
                                     $shopSubdomain = optional($subdomainModel)->subdomain_name;
                                 @endphp
 
                                 <!-- Header Toko -->
-                                <div class="shop-container border rounded-lg p-4">
+                                <div class="shop-container border rounded-lg">
                                     <div class="bg-gray-50 p-3 rounded-t-lg flex justify-between items-center border-b">
                                         <div class="flex items-center gap-3">
-                                            <i class="fa fa-store text-gray-500"></i>
+                                            <i class="fas fa-store text-gray-500"></i>
                                             <span class="font-bold text-gray-800">{{ optional($shop)->shop_name ?? 'Toko Tidak Dikenal' }}</span>
                                         </div>
                                         @if($shopSubdomain)
                                             <a href="{{ route('tenant.home', ['subdomain' => $shopSubdomain]) }}" class="text-sm font-semibold text-red-600 hover:underline flex items-center gap-1">
-                                                Kunjungi Toko <i class="fa fa-arrow-right"></i>
+                                                Kunjungi Toko <i class="fas fa-arrow-right"></i>
                                             </a>
                                         @endif
                                     </div>
 
                                     <!-- Daftar Produk per Toko -->
-                                    <div class="space-y-4">
+                                    <div class="p-4 space-y-4">
                                         @foreach ($items as $item)
                                             @php
                                                 $product = $item->product;
@@ -78,17 +84,18 @@
                                                 $size = optional($variant)->size ?? 'N/A';
                                                 $slug = optional($product)->slug;
                                             @endphp
-                                            {{-- Item Keranjang --}}
-                                            <div class="cart-item flex flex-col sm:flex-row items-start border-t pt-4 gap-4" data-id="{{ $itemId }}">
-                                                <div class="flex items-start w-full">
+                                            {{-- PERBAIKAN: Struktur HTML item keranjang diubah agar responsif --}}
+                                            <div class="cart-item flex flex-col sm:flex-row gap-4 border-b pb-4" data-id="{{ $itemId }}">
+                                                <!-- Bagian Kiri: Checkbox, Gambar, Info Produk -->
+                                                <div class="flex-grow flex items-start gap-4">
                                                     <input type="checkbox" name="items[]" value="{{ $itemId }}"
-                                                        class="item-checkbox h-5 w-5 rounded border-gray-300 text-red-600 focus:ring-red-500 mt-1"
+                                                        class="item-checkbox h-5 w-5 rounded border-gray-300 text-red-600 focus:ring-red-500 mt-1 flex-shrink-0"
                                                         data-price="{{ $product->price ?? 0 }}">
 
                                                     <img src="{{ asset('storage/' . ($product->main_image ?? 'images/placeholder.png')) }}"
                                                         onerror="this.onerror=null;this.src='https://placehold.co/80x80/f1f5f9/cbd5e1?text=No+Image';"
                                                         alt="{{ $product->name ?? 'Produk tidak ditemukan' }}"
-                                                        class="w-20 h-20 rounded-md object-cover mx-4">
+                                                        class="w-20 h-20 rounded-md object-cover">
 
                                                     <div class="flex-grow">
                                                         @if($slug)
@@ -100,22 +107,22 @@
                                                         <p class="text-sm text-gray-500">
                                                             Varian: {{ $color }} / {{ $size }}
                                                         </p>
-                                                        <p class="text-lg font-bold text-gray-800 mt-1 sm:hidden">
+                                                        <p class="text-lg font-bold text-gray-800 mt-1">
                                                             {{ format_rupiah($product->price ?? 0) }}
                                                         </p>
                                                     </div>
                                                 </div>
 
-                                                <div class="w-full sm:w-auto flex justify-between items-center">
-                                                    <p class="text-lg font-bold text-gray-800 mt-1 hidden sm:block mr-4">
-                                                        {{ format_rupiah($product->price ?? 0) }}
-                                                    </p>
-                                                    <div class="flex items-center border border-gray-300 rounded-md ml-auto">
+                                                <!-- Bagian Kanan: Kontrol Kuantitas & Hapus -->
+                                                <div class="flex-shrink-0 w-full sm:w-auto flex sm:flex-col items-center justify-between">
+                                                    <div class="flex items-center border border-gray-300 rounded-md">
                                                         <button type="button" class="quantity-btn px-3 py-1 text-lg" data-action="decrease">-</button>
                                                         <input type="number" class="w-12 text-center border-l border-r border-gray-300 quantity-input" value="{{ $quantity }}" min="1">
                                                         <button type="button" class="quantity-btn px-3 py-1 text-lg" data-action="increase">+</button>
                                                     </div>
-                                                    <button type="button" class="remove-item-btn text-xs text-gray-500 hover:text-red-600 hover:underline ml-4 sm:hidden">Hapus</button>
+                                                    <button type="button" class="remove-item-btn text-gray-400 hover:text-red-600 sm:mt-4" title="Hapus item">
+                                                        <i class="fas fa-trash-alt"></i>
+                                                    </button>
                                                 </div>
                                             </div>
                                         @endforeach
@@ -177,12 +184,14 @@
 @endsection
 
 @push('scripts')
-    {{-- Kode JavaScript Anda tidak perlu diubah dan tetap sama --}}
+    <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const csrfTokenEl = document.querySelector('meta[name="csrf-token"]');
             const csrfToken = csrfTokenEl ? csrfTokenEl.getAttribute('content') : null;
             const checkoutBtn = document.getElementById('checkout-btn');
+            const removeSelectedBtn = document.getElementById('remove-selected-btn');
 
             function formatRupiah(number) {
                 return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(number);
@@ -209,6 +218,9 @@
 
                 if (checkoutBtn) {
                     checkoutBtn.disabled = (selectedCount === 0);
+                }
+                if (removeSelectedBtn) {
+                    removeSelectedBtn.disabled = (selectedCount === 0);
                 }
             }
 
@@ -329,7 +341,6 @@
                 });
             });
 
-            const removeSelectedBtn = document.getElementById('remove-selected-btn');
             if (removeSelectedBtn) {
                 removeSelectedBtn.addEventListener('click', () => {
                     const selectedItems = Array.from(document.querySelectorAll('.item-checkbox:checked'));

@@ -14,7 +14,6 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('vouchers', function (Blueprint $table) {
-            // --- STRUKTUR LAMA ANDA YANG DIPERTAHANKAN ---
             $table->uuid('id')->primary();
             $table->uuid('user_id'); // ID Mitra Pembuat
             $table->uuid('subdomain_id')->nullable(); // ID Toko
@@ -25,10 +24,9 @@ return new class extends Migration
             $table->date('expired_date');
 
             // --- KOLOM BARU YANG DISARANKAN UNTUK FITUR LENGKAP ---
-            $table->enum('type', ['percentage', 'fixed_amount'])->default('fixed_amount'); // Menentukan jenis diskon
-            $table->decimal('discount', 15, 2); // Mengganti 'discount' agar lebih jelas. Ini bisa jadi 10 (untuk 10%) atau 10000 (untuk Rp10.000)
+            $table->decimal('discount', 15, 2)->comment('Diskon harus dalam bentuk persen'); 
             $table->integer('max_uses')->nullable()->comment('Berapa kali voucher ini bisa digunakan secara total');
-            $table->integer('max_uses_per_customer')->default(1)->comment('Berapa kali satu customer bisa pakai voucher ini');
+            $table->integer('max_uses_per_customer')->nullable()->comment('Berapa kali satu customer bisa pakai voucher ini');
             $table->boolean('is_for_new_customer')->default(false)->comment('Tandai jika ini voucher khusus customer baru');
             $table->enum('status', ['active', 'inactive'])->default('active'); // Status voucher
 
