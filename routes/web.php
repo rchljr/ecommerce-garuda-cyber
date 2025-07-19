@@ -208,7 +208,7 @@ Route::get('/fruit', function () {
 });
 
 // Route untuk halaman tim developer
-Route::get('/tim-pengembang', function () {
+Route::get('/developer', function () {
     // Pastikan file blade Anda ada di resources/views/layouts/tim-developer.blade.php
     return view('layouts.tim-developer');
 })->name('tim.developer');

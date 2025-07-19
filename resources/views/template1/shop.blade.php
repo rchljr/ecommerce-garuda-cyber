@@ -1,7 +1,7 @@
 @extends('template1.layouts.template')
 
 {{-- Menggunakan variabel $shop yang dikirim dari controller --}}
-@section('title', 'Daftar Produk - ' . optional($shop)->name)
+@section('title', 'Daftar Produk' . optional($shop)->name)
 
 @push('styles')
     {{-- CSS untuk Price Slider, Notifikasi, dan Modal --}}
