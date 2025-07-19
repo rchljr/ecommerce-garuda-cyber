@@ -12,7 +12,6 @@
                 <div id="testimoni-carousel" class="flex overflow-x-auto space-x-8 pb-8 no-scrollbar scroll-smooth">
                     
                     @foreach ($testimonials as $testimonial)
-                        {{-- PERUBAIKAN: Menambahkan min-h-[360px] untuk tinggi yang seragam --}}
                         <div class="flex-shrink-0 w-80 min-h-[360px] border-2 border-yellow-400 rounded-2xl p-6 bg-white shadow-lg flex flex-col">
                             <p class="text-gray-600 mb-6 flex-grow">"{{ $testimonial->content }}"</p>
                             

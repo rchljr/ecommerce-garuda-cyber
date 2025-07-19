@@ -7,6 +7,17 @@ use Illuminate\Http\Request;
 
 class TestimonialService
 {
+    /**
+     * Metode ini hanya akan mengambil testimoni yang statusnya 'published'
+     * dan yang tidak terikat pada produk manapun (product_id is null).
+     */
+    public function getPublishedLandingPageTestimonials()
+    {
+        return Testimoni::where('status', 'published')
+            ->whereNull('product_id')
+            ->latest()
+            ->get();
+    }
     public function getPaginatedTestimonials(Request $request)
     {
         $search = $request->input('search');
