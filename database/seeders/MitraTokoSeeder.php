@@ -138,8 +138,8 @@ class MitraTokoSeeder extends Seeder
                 ],
                 'vouchers' => [
                     ['code' => 'GAYA10', 'discount' => 10, 'min_spending' => 200000, 'description' => 'Diskon 10% untuk semua produk fashion.'],
-                    ['code' => 'ONGKIRGRATIS', 'discount' => 15000, 'min_spending' => 300000, 'description' => 'Potongan ongkir Rp 15.000.'],
-                    ['code' => 'NUSANTARA50', 'discount' => 50000, 'min_spending' => 500000, 'description' => 'Potongan langsung Rp 50.000.'],
+                    ['code' => 'ONGKIRGRATIS', 'discount' => 15, 'min_spending' => 300000, 'description' => 'Potongan ongkir 15%'],
+                    ['code' => 'NUSANTARA50', 'discount' => 30, 'min_spending' => 500000, 'description' => 'Potongan langsung 30%'],
                 ]
             ],
             // =================================================================
@@ -183,7 +183,7 @@ class MitraTokoSeeder extends Seeder
                 ],
                 'vouchers' => [
                     ['code' => 'CHIC15', 'discount' => 15, 'min_spending' => 250000, 'description' => 'Diskon 15% untuk koleksi terbaru.'],
-                    ['code' => 'NEWLOOK', 'discount' => 50000, 'min_spending' => 300000, 'description' => 'Potongan Rp 50.000 untuk pelanggan baru.'],
+                    ['code' => 'NEWLOOK', 'discount' => 50, 'min_spending' => 300000, 'description' => 'Potongan 50% untuk pelanggan baru.'],
                     ['code' => 'WEEKENDDEAL', 'discount' => 20, 'min_spending' => 400000, 'description' => 'Diskon 20% khusus Sabtu & Minggu.'],
                 ]
             ],
@@ -228,8 +228,8 @@ class MitraTokoSeeder extends Seeder
                 ],
                 'vouchers' => [
                     ['code' => 'MAKANENAK10', 'discount' => 10, 'min_spending' => 100000, 'description' => 'Diskon 10% untuk semua menu makanan.'],
-                    ['code' => 'PESANANTAR', 'discount' => 10000, 'min_spending' => 150000, 'description' => 'Gratis ongkir, maks. potongan Rp 10.000.'],
-                    ['code' => 'HEMAT25', 'discount' => 25000, 'min_spending' => 200000, 'description' => 'Potongan langsung Rp 25.000.'],
+                    ['code' => 'PESANANTAR', 'discount' => 30, 'min_spending' => 150000, 'description' => 'Gratis ongkir, maks. potongan 30%'],
+                    ['code' => 'HEMAT25', 'discount' => 25, 'min_spending' => 200000, 'description' => 'Potongan langsung 25%'],
                 ]
             ],
         ];
