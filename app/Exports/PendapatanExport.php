@@ -10,13 +10,19 @@ use Maatwebsite\Excel\Concerns\WithMapping;
 class PendapatanExport implements FromCollection, WithHeadings, WithMapping
 {
     /**
-    * Mengambil koleksi data yang akan diekspor.
-    * @return \Illuminate\Support\Collection
-    */
+     * Mengambil koleksi data yang akan diekspor.
+     * @return \Illuminate\Support\Collection
+     */
     public function collection()
     {
-        // Ambil semua data pembayaran dengan relasi yang dibutuhkan
-        return Payment::with(['user.userPackage', 'subscriptionPackage'])->latest()->get();
+        // ====================================================================
+        //  Filter untuk hanya mengambil data pembayaran langganan
+        // ====================================================================
+        return Payment::with(['user.userPackage', 'subscriptionPackage'])
+            ->whereNull('order_group_id')      // Hanya ambil jika BUKAN pembayaran produk
+            ->whereNotNull('subs_package_id')  // Hanya ambil jika INI adalah pembayaran langganan
+            ->latest()
+            ->get();
     }
 
     /**
