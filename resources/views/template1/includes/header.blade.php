@@ -29,7 +29,7 @@
 
     // Ambil data customTema dari user pemilik toko
     $customTema = isset($currentShop) ? optional($currentShop->user)->customTema : null;
-   
+
     // --- Definisi Variabel Tema Kustom ---
     // Gunakan nilai dari $customTema jika ada, jika tidak, gunakan default.
     $logoPath = optional($customTema)->shop_logo;
@@ -41,12 +41,13 @@
 
     $primaryColor = optional($customTema)->primary_color ?? '#007bff'; // Default Bootstrap blue
     $secondaryColor = optional($customTema)->secondary_color ?? '#6c757d'; // Default Bootstrap gray
-    // dd($currentShop, $customTema, $logoUrl, $shopName, $primaryColor);
-     
+
+
     // --- Logika Keranjang Belanja ---
     // (Kode ini sudah cukup baik, tidak ada perubahan signifikan di sini)
     $cartCount = 0;
-    $notificationCount = 0;
+    if (!$isPreview && $tenant) {
+        $shopOwnerId = $tenant->user_id;
 
         if (Auth::guard('customers')->check()) {
             $cart = Auth::guard('customers')->user()->cart;
@@ -71,22 +72,6 @@
                 })->sum('quantity');
             }
         }
-
-        // Hitung Notifikasi
-        // Notifikasi dari pembayaran yang berhasil
-        $successfulPaymentsCount = \App\Models\Payment::where('user_id', $user->id)
-            ->whereIn('midtrans_transaction_status', ['settlement', 'capture'])
-            ->count();
-
-        // Notifikasi dari pesanan dengan status tertentu
-        $ordersCount = \App\Models\Order::where('user_id', $user->id)
-            ->whereIn('status', ['failed', 'cancelled', 'expired', 'pending'])
-            ->count();
-
-        $notificationCount = $successfulPaymentsCount + $ordersCount;
-
-    } elseif (session()->has('cart')) {
-        $cartCount = collect(session('cart'))->sum('quantity');
     }
 @endphp
 
@@ -162,12 +147,12 @@
                                             <li><a href="{{ route('tenant.account.profile', ['subdomain' => $currentSubdomain]) }}">Akun Saya</a></li>
                                             <li><a href="{{ route('tenant.account.orders', ['subdomain' => $currentSubdomain]) }}">Pesanan Saya</a></li>
                                             <li>
-                                                <a href="{{ !$isPreview ? route('tenant.customer.logout', ['subdomain' => $currentSubdomain]) : '#' }}"
+                                                <a href="{{ route('tenant.customer.logout', ['subdomain' => $currentSubdomain]) }}"
                                                     onclick="event.preventDefault(); document.getElementById('logout-form-header').submit();">
                                                     Log Out
                                                 </a>
                                                 <form id="logout-form-header"
-                                                    action="{{ !$isPreview ? route('tenant.customer.logout', ['subdomain' => $currentSubdomain]) : '#' }}"
+                                                    action="{{ route('tenant.customer.logout', ['subdomain' => $currentSubdomain]) }}"
                                                     method="POST" style="display: none;">
                                                     @csrf
                                                 </form>
@@ -220,13 +205,6 @@
                             alt=""></a>
                     <a href="{{ !$isPreview ? route('tenant.wishlist', ['subdomain' => $currentSubdomain]) : '#' }}"><img
                             src="{{ asset('template1/img/icon/heart.png') }}" alt=""></a>
-                    <a class="notification-icon"
-                        href="{{ !$isPreview ? route('tenant.account.notifications', ['subdomain' => $currentSubdomain]) : '#' }}">
-                        <i class="fa fa-bell"></i>
-                        @if ($notificationCount > 0)
-                            <span id="notification-count">{{ $notificationCount }}</span>
-                        @endif
-                    </a>
                     <a href="{{ !$isPreview ? route('tenant.cart.index', ['subdomain' => $currentSubdomain]) : '#' }}"><img
                             src="{{ asset('template1/img/icon/cart.png') }}" alt="">
                         <span id="cart-count">{{ $cartCount }}</span>

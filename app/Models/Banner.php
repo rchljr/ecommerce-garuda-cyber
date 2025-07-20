@@ -11,6 +11,8 @@ class Banner extends Model
     use HasFactory;
 
     protected $fillable = [
+        'shop_id',
+        'user_id',
         'title',
         'subtitle',
         'image',
