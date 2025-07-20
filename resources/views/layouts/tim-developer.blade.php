@@ -60,7 +60,7 @@
             <!-- Profil 1: Rachel Jeflisa -->
             <div class="card flex flex-col items-center text-center p-8 lg:p-12">
                 <img class="w-32 h-32 rounded-full object-cover mb-6 border-4 border-white shadow-lg"
-                    src="{{ asset('images/rachel.jpg') }}"
+                    src="{{ asset('images/rachel.png') }}"
                     onerror="this.onerror=null; this.src='https://placehold.co/200x200/E2E8F0/4A5568?text=RJ'"
                     alt="Foto profil Rachel Jeflisa">
 
@@ -137,7 +137,7 @@
             <p class="text-gray-500">
                 Copyright &copy;
                 <script>document.write(new Date().getFullYear())</script> All rights reserved | Ditenagai oleh
-                <a href="{{ route('tim.developer') }}" target="_blank"
+                <a href="{{ route('landing') }}" target="_blank"
                     class="text-indigo-600 hover:underline font-medium">Tim E-Commerce
                     Garuda</a>
                 by <a href="https://garudacyber.co.id" target="_blank"
