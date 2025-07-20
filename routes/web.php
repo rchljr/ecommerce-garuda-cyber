@@ -106,6 +106,13 @@ Route::prefix('tenant/{subdomain}')
                 Route::post('/detail', [CheckoutController::class, 'getDetails'])->name('get_details');
             });
 
+            //review
+            Route::prefix('customer/reviews')->name('customer.reviews.')->group(function () {
+                Route::post('/submit', [TestimoniController::class, 'submitReview'])->name('submit');
+                Route::get('/{testimonial}/json', [TestimoniController::class, 'getReviewJson'])->name('json');
+                Route::put('/{testimonial}/update', [TestimoniController::class, 'updateReview'])->name('update');
+            });
+
             // Dasbor Pelanggan
             Route::prefix('account')->name('account.')->group(function () {
                 Route::get('/profile', [CustomerProfileController::class, 'show'])->name('profile');
@@ -128,7 +135,6 @@ Route::prefix('tenant/{subdomain}')
 Route::get('/', [LandingPageController::class, 'home'])->name('landing');
 Route::get('/tenant', [LandingPageController::class, 'allTenants'])->name('tenants.index');
 Route::post('/testimonials', [TestimoniController::class, 'submitFromLandingPage'])->name('testimonials.store');
-Route::post('/review/submit', [TestimoniController::class, 'submitReview'])->name('review.submit')->middleware('auth:customers');
 
 
 Route::get('/review/{testimonial}', [TestimoniController::class, 'getReviewJson'])->name('review.get')->middleware('auth:customers');
