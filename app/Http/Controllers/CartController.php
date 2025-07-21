@@ -24,7 +24,7 @@ class CartController extends Controller
         return view('customer.cart', compact('cartItems'));
     }
 
-    public function add(Request $request)
+    public function add(Request $request, $subdomain)
     {
         $request->validate([
             'product_id' => 'required|exists:products,id',
@@ -43,7 +43,6 @@ class CartController extends Controller
                     'cart_count' => $this->cartService->getCartCount(),
                 ]);
             }
-            // PERBAIKAN: Gunakan flash session untuk notifikasi helper
             return back()->with('success', 'Produk berhasil ditambahkan ke keranjang.');
 
         } catch (ModelNotFoundException $e) {
@@ -65,45 +64,22 @@ class CartController extends Controller
     public function update(Request $request, $subdomain, $productCartId)
     {
         $validated = $request->validate(['quantity' => 'required|integer|min:1']);
-
         $isSuccess = $this->cartService->update($productCartId, $validated['quantity']);
-
         if (!$isSuccess) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal memperbarui kuantitas. Item tidak ditemukan atau tidak sah.',
-            ], 404);
+            return response()->json(['success' => false, 'message' => 'Gagal memperbarui kuantitas.'], 404);
         }
-
-        $cartCount = $this->cartService->getCartCount($request);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Kuantitas berhasil diperbarui.',
-            'cart_count' => $cartCount,
-        ]);
+        return response()->json(['success' => true, 'message' => 'Kuantitas berhasil diperbarui.', 'cart_count' => $this->cartService->getCartCount()]);
     }
 
     public function removeItems(Request $request)
     {
-        $validated = $request->validate([
-            'ids' => 'required|array',
-            'ids.*' => 'string',
-        ]);
-
+        $validated = $request->validate(['ids' => 'required|array', 'ids.*' => 'string']);
         try {
             $this->cartService->removeItems($validated['ids']);
-            return response()->json([
-                'success' => true,
-                'message' => 'Item yang dipilih berhasil dihapus.',
-                'cart_count' => $this->cartService->getCartCount(),
-            ]);
+            return response()->json(['success' => true, 'message' => 'Item berhasil dihapus.', 'cart_count' => $this->cartService->getCartCount()]);
         } catch (Exception $e) {
             Log::error('Cart Deletion Error: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Terjadi kesalahan saat menghapus item.',
-            ], 500);
+            return response()->json(['success' => false, 'message' => 'Terjadi kesalahan.'], 500);
         }
     }
 }

@@ -17,6 +17,7 @@ class EnsureTenantExists
      */
     public function handle(Request $request, Closure $next)
     {
+        // dd('Middleware TenantExists BERHASIL dijalankan!');
         // 1. Ambil parameter 'subdomain' dari rute
         $subdomainName = $request->route('subdomain');
 

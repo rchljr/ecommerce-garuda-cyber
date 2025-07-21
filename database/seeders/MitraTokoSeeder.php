@@ -16,8 +16,12 @@ use App\Models\Contact;
 use App\Models\Hero;
 use App\Models\Banner;
 use App\Models\Product;
+use App\Models\CustomTema;
+use App\Models\ShopSetting;
+use App\Models\Category;
 use App\Models\SubCategory;
 use App\Models\Voucher;
+use App\Models\Customer; // Import model Customer
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
@@ -33,122 +37,253 @@ class MitraTokoSeeder extends Seeder
     {
         // Hapus data lama untuk menghindari duplikasi saat seeder dijalankan ulang
         DB::statement('SET FOREIGN_KEY_CHECKS=0;');
-        $emails = ['mitra1@gmail.com', 'mitra2@gmail.com', 'mitra3@gmail.com'];
-        $users = User::whereIn('email', $emails)->get();
-        foreach ($users as $user) {
-            Order::where('user_id', $user->id)->delete();
-            Payment::where('user_id', $user->id)->delete();
-            $user->shop()->delete();
-            $user->subdomain()->delete();
-            $user->tenant()->delete();
-            $user->userPackage()->delete();
-            $user->contact()->delete();
-            $user->heroes()->delete();
-            $user->banners()->delete();
-            $user->products()->delete();
-            $user->vouchers()->delete();
+
+        // Daftar email mitra yang akan dihapus
+        $mitraEmailsToDelete = ['hilmi21ti@mahasiswa.pcr.ac.id', 'rachel21ti@mahasiswa.pcr.ac.id', 'chef.anton@example.com'];
+        $usersToDelete = User::whereIn('email', $mitraEmailsToDelete)->get();
+
+        foreach ($usersToDelete as $user) {
+            // Hapus pesanan dan item pesanan terkait (jika ada)
+            if ($user->orders) {
+                foreach ($user->orders as $order) {
+                    $order->items()->forceDelete();
+                }
+                $user->orders()->forceDelete();
+            }
+
+            // Hapus produk yang dimiliki user ini
+            $user->products()->forceDelete();
+
+            // Hapus voucher yang dimiliki user ini
+            // Asumsi model User memiliki relasi hasMany ke Voucher
+            $user->vouchers()->forceDelete();
+
+            // Hapus data toko dan terkait lainnya
+            if ($user->shop) {
+                $user->shop->heroes()->forceDelete();
+                $user->shop->banners()->forceDelete();
+                $user->shop->settings()->forceDelete();
+                if ($user->customTema) {
+                    $user->customTema()->forceDelete();
+                }
+                if ($user->contact) {
+                    $user->contact()->forceDelete();
+                }
+                if ($user->shop->subdomain) {
+                    $user->shop->subdomain()->forceDelete();
+                }
+                $user->shop->forceDelete();
+            }
+            $user->tenant()->forceDelete();
+            $user->userPackage()->forceDelete();
+            $user->payments()->forceDelete();
             $user->forceDelete();
         }
+
+        // Hapus pelanggan spesifik yang dibuat di seeder ini
+        User::where('email', 'customer@gmail.com')->forceDelete();
         DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        $this->command->info('Data lama mitra dan pelanggan dummy dibersihkan.');
+
 
         // 1. Ambil data master yang akan digunakan bersama
-        $businessPackage = SubscriptionPackage::where('package_name', 'Business Plan')->first();
-        $template1 = Template::where('path', 'template1')->first();
-        $template2 = Template::where('path', 'template2')->first();
-        $catBajuWanita = SubCategory::where('slug', 'baju-wanita')->first();
-        $catAksesoris = SubCategory::where('slug', 'aksesoris-lainnya')->first();
-        $catSepatu = SubCategory::where('slug', 'sepatu')->first();
+        $businessPackage = SubscriptionPackage::where('package_name', 'Business Plan')->firstOrFail();
+        $template1 = Template::where('path', 'template1')->firstOrFail();
 
-        if (!$businessPackage || !$template1 || !$template2 || !$catBajuWanita || !$catAksesoris || !$catSepatu) {
-            $this->command->error('Pastikan SubscriptionPackage, Template (1&2), dan SubCategory (Baju Wanita, Aksesoris, Sepatu) sudah ada di database.');
-            return;
-        }
+        // Gunakan firstOrCreate untuk membuat kategori jika belum ada
+        $this->command->info('Membuat kategori & subkategori jika belum ada...');
 
-        // 2. Definisikan data untuk setiap mitra
+        // Buat Kategori Utama
+        $pakaianCategory = Category::firstOrCreate(
+            ['slug' => 'pakaian-aksesoris'],
+            ['name' => 'Pakaian & Aksesoris', 'description' => 'Kategori untuk semua jenis pakaian dan aksesoris fashion.']
+        );
+        $kulinerCategory = Category::firstOrCreate(
+            ['slug' => 'kuliner'],
+            ['name' => 'Kuliner', 'description' => 'Kategori untuk berbagai jenis makanan dan minuman.']
+        );
+
+        // Buat SubKategori
+        $catBajuWanita = SubCategory::firstOrCreate(['slug' => 'baju-wanita'], ['name' => 'Baju Wanita', 'category_id' => $pakaianCategory->id]);
+        $catBajuPria = SubCategory::firstOrCreate(['slug' => 'baju-pria'], ['name' => 'Baju Pria', 'category_id' => $pakaianCategory->id]);
+        $catAksesoris = SubCategory::firstOrCreate(['slug' => 'aksesoris-lainnya'], ['name' => 'Aksesoris Lainnya', 'category_id' => $pakaianCategory->id]);
+        $catSepatu = SubCategory::firstOrCreate(['slug' => 'sepatu'], ['name' => 'Sepatu', 'category_id' => $pakaianCategory->id]);
+        $catTas = SubCategory::firstOrCreate(['slug' => 'tas'], ['name' => 'Tas', 'category_id' => $pakaianCategory->id]);
+
+        $catMakananBerat = SubCategory::firstOrCreate(['slug' => 'makanan-berat'], ['name' => 'Makanan Berat', 'category_id' => $kulinerCategory->id]);
+        $catMinuman = SubCategory::firstOrCreate(['slug' => 'minuman'], ['name' => 'Minuman', 'category_id' => $kulinerCategory->id]);
+        $catCamilan = SubCategory::firstOrCreate(['slug' => 'camilan'], ['name' => 'Camilan', 'category_id' => $kulinerCategory->id]);
+        $catKue = SubCategory::firstOrCreate(['slug' => 'kue-roti'], ['name' => 'Kue & Roti', 'category_id' => $kulinerCategory->id]);
+        $catSambal = SubCategory::firstOrCreate(['slug' => 'bumbu-masak'], ['name' => 'Bumbu Masak', 'category_id' => $kulinerCategory->id]);
+
+        // URL dasar untuk gambar (hanya untuk referensi di seeder, simpan path relatif ke DB)
+        $imageUrlBase = 'https://ecommercegaruda.my.id/storage/';
+
+        // 2. Buat satu Pelanggan (Customer) spesifik yang akan digunakan oleh OrderSeeder
+        User::firstOrCreate(
+            ['email' => 'customer@gmail.com'],
+            [
+                'name' => 'Pelanggan Setia',
+                'password' => Hash::make('customer123'),
+                'phone' => '6281211112222',
+                'email_verified_at' => now(),
+                'status' => 'active',
+            ]
+        );
+        $this->command->info('Pelanggan spesifik customer@gmail.com dibuat/diperbarui.');
+
+
+        // 3. Definisikan data untuk setiap mitra
         $mitraDataArray = [
+            // =================================================================
+            // MITRA 1: FASHION ETNIK
+            // =================================================================
             [
-                'user' => ['name' => 'Budi Santoso', 'email' => 'mitra1@gmail.com', 'password' => 'mitra123'],
-                // --- PERUBAHAN DI SINI ---
-                'shop' => ['shop_name' => 'Toko Busana Kita', 'shop_address' => 'Jl. Pahlawan No. 123, Jakarta', 'postal_code' => '12190', 'product_categories' => 'pakaian-aksesoris'],
-                'subdomain' => 'toko-busana-kita',
-                'template' => $template1,
-                'contact' => ['phone' => '6281298765432', 'email' => 'support@tokomajujaya.com'],
+                'user' => ['name' => 'Hilmi Ramadhan', 'email' => 'hilmi21ti@mahasiswa.pcr.ac.id', 'password' => 'mitra123'],
+                'shop' => ['shop_name' => 'Gaya Nusantara', 'shop_address' => 'Jl. Jenderal Sudirman No. 25, Jakarta Pusat', 'postal_code' => '10220', 'product_categories' => 'pakaian-aksesoris'],
+                'subdomain_name' => 'gayanusantara', // Menggunakan subdomain_name
+                'contact' => [
+                    'address_line1' => 'Jl. Jenderal Sudirman No. 25, Jakarta Pusat, DKI Jakarta, 10220',
+                    'phone' => '081234567890',
+                    'email' => 'cs@gayanusantara.com',
+                    'working_hours' => "Senin - Jumat: 09:00 - 20:00\nSabtu - Minggu: 10:00 - 18:00",
+                    'map_embed_code' => '<iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3966.521209531891!2d106.81938231534957!3d-6.194420195514931!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e69f41a9c381c51%3A0x1c3a2f6b4c1e4b0!2sPlaza%20Indonesia!5e0!3m2!1sen!2sid!4v1678886300000!5m2!1sen!2sid" width="100%" height="450" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>'
+                ],
+                'custom_tema' => [
+                    'shop_logo' => 'seeders/logos/gaya-nusantara-logo.png', // Path relatif
+                    'primary_color' => '#8B4513',
+                    'secondary_color' => '#6c757d',
+                ],
+                'shop_settings' => [
+                    ['key' => 'theme_color', 'value' => '#8B4513'], // Coklat tua
+                ],
                 'heroes' => [
-                    ['title' => 'Koleksi Musim Panas', 'subtitle' => 'Diskon Hingga 30%', 'image' => 'template1/img/hero/hero-1.jpg'],
-                    ['title' => 'Gaya Kasual Terbaik', 'subtitle' => 'Tampil Beda Setiap Hari', 'image' => 'template1/img/hero/hero-2.jpg'],
+                    ['title' => 'Pesona Batik Warisan', 'subtitle' => 'Koleksi Premium Terbaru', 'image' => 'seeders/heroes/batik-hero.jpg', 'button_text' => 'Lihat Koleksi', 'button_url' => '/shop'],
+                    ['title' => 'Keanggunan Tenun Indonesia', 'subtitle' => 'Diskon Spesial 20%', 'image' => 'seeders/heroes/tenun-hero.jpg', 'button_text' => 'Belanja Sekarang', 'button_url' => '/shop'],
+                    ['title' => 'Gaya Kasual Modern', 'subtitle' => 'Nyaman & Tetap Trendi', 'image' => 'seeders/heroes/casual-hero.jpg', 'button_text' => 'Jelajahi', 'button_url' => '/shop'],
                 ],
                 'banners' => [
-                    ['title' => 'Aksesoris Wajib Punya', 'image' => 'template1/img/banner/banner-1.jpg'],
-                    ['title' => 'Tas & Dompet Terbaru', 'image' => 'template1/img/banner/banner-2.jpg'],
+                    ['title' => 'Kemeja Pria', 'image' => 'seeders/banners/kemeja-pria-banner.jpg', 'link_url' => '/shop?category=baju-pria'],
+                    ['title' => 'Dress Wanita', 'image' => 'seeders/banners/dress-wanita-banner.jpg', 'link_url' => '/shop?category=baju-wanita'],
+                    ['title' => 'Aksesoris Etnik', 'image' => 'seeders/banners/aksesoris-banner.jpg', 'link_url' => '/shop?category=aksesoris-lainnya'],
+                    ['title' => 'Sepatu Kulit', 'image' => 'seeders/banners/sepatu-banner.jpg', 'link_url' => '/shop?category=sepatu'],
+                    ['title' => 'Tas Tangan', 'image' => 'seeders/banners/tas-banner.jpg', 'link_url' => '/shop?category=tas'],
                 ],
                 'products' => [
-                    ['name' => 'Blouse Wanita Elegan', 'price' => 185000, 'is_best_seller' => true, 'sub_category_id' => $catBajuWanita->id, 'main_image' => 'template1/img/product/product-1.jpg'],
-                    ['name' => 'Kemeja Pria Lengan Panjang', 'price' => 220000, 'is_new_arrival' => true, 'sub_category_id' => $catBajuWanita->id, 'main_image' => 'template1/img/product/product-2.jpg'],
-                    ['name' => 'Gaun Pesta Malam', 'price' => 350000, 'is_hot_sale' => true, 'sub_category_id' => $catBajuWanita->id, 'main_image' => 'template1/img/product/product-3.jpg'],
+                    ['name' => 'Kemeja Batik Pria Lengan Panjang', 'modal_price' => 200000, 'profit_percentage' => 25, 'is_best_seller' => true, 'sub_category_id' => $catBajuPria->id, 'main_image' => 'seeders/products/kemeja-batik.jpg'],
+                    ['name' => 'Dress Tenun Wanita Modern', 'modal_price' => 280000, 'profit_percentage' => 25, 'is_new_arrival' => true, 'sub_category_id' => $catBajuWanita->id, 'main_image' => 'seeders/products/dress-tenun.jpg'],
+                    ['name' => 'Kalung Etnik Kayu Jati', 'modal_price' => 68000, 'profit_percentage' => 25, 'sub_category_id' => $catAksesoris->id, 'main_image' => 'seeders/products/kalung-etnik.jpg'],
+                    ['name' => 'Sepatu Pantofel Kulit Asli', 'modal_price' => 360000, 'profit_percentage' => 25, 'sub_category_id' => $catSepatu->id, 'main_image' => 'seeders/products/sepatu-pantofel.jpg'],
+                    ['name' => 'Tas Bahu Anyaman Rotan', 'modal_price' => 120000, 'profit_percentage' => 50, 'is_hot_sale' => true, 'sub_category_id' => $catTas->id, 'main_image' => 'seeders/products/tas-rotan.jpg'],
                 ],
                 'vouchers' => [
-                    ['code' => 'MAJUJAYA10', 'discount' => 10, 'min_spending' => 150000, 'description' => 'Diskon 10% untuk semua produk.'],
-                    ['code' => 'DISKONHEBOH', 'discount' => 25, 'min_spending' => 500000, 'description' => 'Diskon spesial Rp 25% untuk pembelanjaan di atas Rp 500.000.'],
+                    ['code' => 'GAYA10', 'discount' => 10, 'min_spending' => 200000, 'description' => 'Diskon 10% untuk semua produk fashion.'],
+                    ['code' => 'ONGKIRGRATIS', 'discount' => 15, 'min_spending' => 300000, 'description' => 'Potongan ongkir 15%'],
+                    ['code' => 'NUSANTARA50', 'discount' => 30, 'min_spending' => 500000, 'description' => 'Potongan langsung 30%'],
                 ]
             ],
+            // =================================================================
+            // MITRA 2: FASHION MODERN
+            // =================================================================
             [
-                'user' => ['name' => 'Siti Aminah', 'email' => 'mitra2@gmail.com', 'password' => 'mitra123'],
-                // --- PERUBAHAN DI SINI ---
-                'shop' => ['shop_name' => 'Gaya Modern', 'shop_address' => 'Jl. Merdeka No. 45, Bandung', 'postal_code' => '40117', 'product_categories' => 'pakaian-aksesoris'],
-                'subdomain' => 'gaya-modern',
-                'template' => $template1,
-                'contact' => ['phone' => '6285712345678', 'email' => 'cs@gayamodern.com'],
+                'user' => ['name' => 'Rachel Jeflisa', 'email' => 'rachel21ti@mahasiswa.pcr.ac.id', 'password' => 'mitra123'],
+                'shop' => ['shop_name' => 'Chic & Style Boutique', 'shop_address' => 'Jl. Riau No. 18, Bandung', 'postal_code' => '40115', 'product_categories' => 'pakaian-aksesoris'],
+                'subdomain_name' => 'chicstyle',
+                'contact' => [
+                    'address_line1' => 'Jl. Riau No. 18, Citarum, Bandung Wetan, Kota Bandung, Jawa Barat, 40115',
+                    'phone' => '085712345678',
+                    'email' => 'hello@chicstyle.com',
+                    'working_hours' => "Setiap Hari: 10:00 - 21:00",
+                    'map_embed_code' => '<iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3960.902878996167!2d107.6161933153521!3d-6.902201995012501!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e68e64c5e8a753f%3A0x4538a0a5f23e6b19!2sJl.%20L.L.R.E.%20Martadinata%20No.18%2C%20Citarum%2C%20Kec.%20Bandung%20Wetan%2C%20Kota%20Bandung%2C%20Jawa%20Barat%2040115!5e0!3m2!1sen!2sid!4v1678886400000!5m2!1sen!2sid" width="100%" height="450" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>'
+                ],
+                'custom_tema' => [
+                    'shop_logo' => 'seeders/logos/chic-style-logo.png',
+                    'primary_color' => '#333333',
+                    'secondary_color' => '#6c757d',
+                ],
+                'shop_settings' => [
+                    ['key' => 'theme_color', 'value' => '#333333'], // Hitam lembut
+                ],
                 'heroes' => [
-                    ['title' => 'Denim Never Dies', 'subtitle' => 'Koleksi Jeans Terbaru', 'image' => 'template2/img/hero/hero-a.jpg'],
+                    ['title' => 'Minimalist Wardrobe', 'subtitle' => 'Esensi Gaya Modern', 'image' => 'seeders/heroes/minimalist-hero.jpg', 'button_text' => 'Jelajahi', 'button_url' => '/shop'],
+                    ['title' => 'Koleksi Musim Semi', 'subtitle' => 'Warna-Warna Cerah Terbaru', 'image' => 'seeders/heroes/spring-hero.jpg', 'button_text' => 'Lihat Produk', 'button_url' => '/shop'],
+                    ['title' => 'Flash Sale Akhir Pekan', 'subtitle' => 'Diskon Hingga 50%!', 'image' => 'seeders/heroes/sale-hero.jpg', 'button_text' => 'Belanja Sekarang', 'button_url' => '/shop'],
                 ],
                 'banners' => [
-                    ['title' => 'Diskon Akhir Pekan', 'image' => 'template2/img/banner/banner-a.jpg'],
+                    ['title' => 'Blouse Wanita', 'image' => 'seeders/banners/blouse-banner.jpg', 'link_url' => '/shop?category=baju-wanita'],
+                    ['title' => 'Celana Pria', 'image' => 'seeders/banners/celana-pria-banner.jpg', 'link_url' => '/shop?category=baju-pria'],
+                    ['title' => 'Tas Selempang', 'image' => 'seeders/banners/tas-selempang-banner.jpg', 'link_url' => '/shop?category=tas'],
+                    ['title' => 'Sneakers Putih', 'image' => 'seeders/banners/sneakers-banner.jpg', 'link_url' => '/shop?category=sepatu'],
+                    ['title' => 'Promo Beli 1 Gratis 1', 'image' => 'seeders/banners/bogo-banner.jpg', 'link_url' => '/shop'],
                 ],
                 'products' => [
-                    ['name' => 'Jaket Denim Pria', 'price' => 299000, 'is_best_seller' => true, 'sub_category_id' => $catAksesoris->id, 'main_image' => 'template2/img/product/product-4.jpg'],
-                    ['name' => 'Celana Chino Slim-Fit', 'price' => 199000, 'is_new_arrival' => true, 'sub_category_id' => $catAksesoris->id, 'main_image' => 'template2/img/product/product-5.jpg'],
+                    ['name' => 'Blouse Sutra Wanita Kerah Pita', 'modal_price' => 176000, 'profit_percentage' => 25, 'is_new_arrival' => true, 'sub_category_id' => $catBajuWanita->id, 'main_image' => 'seeders/products/blouse-sutra.jpg'],
+                    ['name' => 'Celana Chino Pria Slim Fit', 'modal_price' => 220000, 'profit_percentage' => 25, 'is_best_seller' => true, 'sub_category_id' => $catBajuPria->id, 'main_image' => 'seeders/products/celana-chino.jpg'],
+                    ['name' => 'Tas Selempang Kanvas Unisex', 'modal_price' => 100000, 'profit_percentage' => 50, 'sub_category_id' => $catTas->id, 'main_image' => 'seeders/products/tas-kanvas.jpg'],
+                    ['name' => 'Sneakers Kanvas Putih Klasik', 'modal_price' => 256000, 'profit_percentage' => 25, 'sub_category_id' => $catSepatu->id, 'main_image' => 'seeders/products/sneakers-putih.jpg'],
+                    ['name' => 'Scarf Polos Bahan Premium', 'modal_price' => 76000, 'profit_percentage' => 25, 'sub_category_id' => $catAksesoris->id, 'main_image' => 'seeders/products/scarf-polos.jpg'],
                 ],
                 'vouchers' => [
-                    ['code' => 'GAYABARU15', 'discount' => 15, 'min_spending' => 200000, 'description' => 'Diskon 15% untuk pelanggan baru.'],
+                    ['code' => 'CHIC15', 'discount' => 15, 'min_spending' => 250000, 'description' => 'Diskon 15% untuk koleksi terbaru.'],
+                    ['code' => 'NEWLOOK', 'discount' => 50, 'min_spending' => 300000, 'description' => 'Potongan 50% untuk pelanggan baru.'],
+                    ['code' => 'WEEKENDDEAL', 'discount' => 20, 'min_spending' => 400000, 'description' => 'Diskon 20% khusus Sabtu & Minggu.'],
                 ]
             ],
+            // =================================================================
+            // MITRA 3: KULINER
+            // =================================================================
             [
-                'user' => ['name' => 'Rina Melati', 'email' => 'mitra3@gmail.com', 'password' => 'mitra123'],
-                // --- PERUBAHAN DI SINI ---
-                'shop' => ['shop_name' => 'Fashionista Corner', 'shop_address' => 'Jl. Sudirman Kav. 5, Surabaya', 'postal_code' => '60271', 'product_categories' => 'pakaian-aksesoris'],
-                'subdomain' => 'fashionista-corner',
-                'template' => $template1,
-                'contact' => ['phone' => '6281122334455', 'email' => 'info@fashionistacorner.id'],
+                'user' => ['name' => 'Chef Anton', 'email' => 'chef.anton@example.com', 'password' => 'mitra123'],
+                'shop' => ['shop_name' => 'Dapur Lezat Nusantara', 'shop_address' => 'Jl. Malioboro No. 50, Yogyakarta', 'postal_code' => '55213', 'product_categories' => 'kuliner'],
+                'subdomain_name' => 'dapurlezat',
+                'contact' => [
+                    'address_line1' => 'Jl. Malioboro No. 50, Sosromenduran, Gedong Tengen, Kota Yogyakarta, DIY, 55213',
+                    'phone' => '087755501234',
+                    'email' => 'pesan@dapurlezat.id',
+                    'working_hours' => "Senin - Minggu: 08:00 - 22:00",
+                    'map_embed_code' => '<iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3952.903907578238!2d110.3631983153571!3d-7.79971899437905!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e7a5788a5e5c5d7%3A0x1d3d3a33a4e9e1c!2sJl.%20Malioboro%2C%20Kota%20Yogyakarta%2C%20Daerah%20Istimewa%20Yogyakarta!5e0!3m2!1sen!2sid!4v1678886500000!5m2!1sen!2sid" width="100%" height="450" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>'
+                ],
+                'custom_tema' => [
+                    'shop_logo' => 'seeders/logos/dapur-lezat-logo.png',
+                    'primary_color' => '#E53E3E',
+                    'secondary_color' => '#6c757d',
+                ],
+                'shop_settings' => [
+                    ['key' => 'theme_color', 'value' => '#E53E3E'], // Merah
+                ],
                 'heroes' => [
-                    ['title' => 'Luxury Handbags', 'subtitle' => 'Edisi Terbatas', 'image' => 'template1/img/hero/hero-3.jpg'],
+                    ['title' => 'Cita Rasa Asli Indonesia', 'subtitle' => 'Resep Warisan Keluarga', 'image' => 'seeders/heroes/rendang-hero.jpg', 'button_text' => 'Lihat Menu', 'button_url' => '/shop'],
+                    ['title' => 'Paket Makan Siang Hemat', 'subtitle' => 'Mulai dari Rp 25.000', 'image' => 'seeders/heroes/paket-nasi-hero.jpg', 'button_text' => 'Pesan Sekarang', 'button_url' => '/shop'],
+                    ['title' => 'Pesan Antar, Gratis Ongkir!', 'subtitle' => 'Untuk Area Yogyakarta', 'image' => 'seeders/heroes/delivery-hero.jpg', 'button_text' => 'Hubungi Kami', 'button_url' => '/contact'],
                 ],
                 'banners' => [
-                    ['title' => 'Sepatu Impian Anda', 'image' => 'template1/img/banner/banner-3.jpg'],
+                    ['title' => 'Nasi Kotak Spesial', 'image' => 'seeders/banners/nasi-kotak-banner.jpg', 'link_url' => '/shop?category=makanan-berat'],
+                    ['title' => 'Aneka Sambal Pedas', 'image' => 'seeders/banners/sambal-banner.jpg', 'link_url' => '/shop?category=bumbu-masak'],
+                    ['title' => 'Minuman Segar', 'image' => 'seeders/banners/minuman-banner.jpg', 'link_url' => '/shop?category=minuman'],
+                    ['title' => 'Jajanan Pasar', 'image' => 'seeders/banners/jajanan-banner.jpg', 'link_url' => '/shop?category=camilan'],
+                    ['title' => 'Kue Tampah Acara', 'image' => 'seeders/banners/kue-tampah-banner.jpg', 'link_url' => '/shop?category=kue-roti'],
                 ],
                 'products' => [
-                    ['name' => 'Tas Kulit Premium', 'price' => 750000, 'is_hot_sale' => true, 'sub_category_id' => $catAksesoris->id, 'main_image' => 'template1/img/product/product-6.jpg'],
-                    ['name' => 'Sepatu Hak Tinggi', 'price' => 450000, 'is_best_seller' => true, 'sub_category_id' => $catSepatu->id, 'main_image' => 'template1/img/product/product-7.jpg'],
+                    ['name' => 'Nasi Rendang Daging Sapi Komplit', 'modal_price' => 28000, 'profit_percentage' => 25, 'is_best_seller' => true, 'sub_category_id' => $catMakananBerat->id, 'main_image' => 'seeders/products/nasi-rendang.jpg'],
+                    ['name' => 'Es Cendol Durian Medan', 'modal_price' => 12000, 'profit_percentage' => 50, 'sub_category_id' => $catMinuman->id, 'main_image' => 'seeders/products/es-cendol.jpg'],
+                    ['name' => 'Risoles Ragout Ayam (Isi 5)', 'modal_price' => 20000, 'profit_percentage' => 25, 'is_new_arrival' => true, 'sub_category_id' => $catCamilan->id, 'main_image' => 'seeders/products/risoles.jpg'],
+                    ['name' => 'Bolu Kukus Gula Merah', 'modal_price' => 36000, 'profit_percentage' => 25, 'sub_category_id' => $catKue->id, 'main_image' => 'seeders/products/bolu-kukus.jpg'],
+                    ['name' => 'Sambal Bawang Botol Premium', 'modal_price' => 20000, 'profit_percentage' => 50, 'is_hot_sale' => true, 'sub_category_id' => $catSambal->id, 'main_image' => 'seeders/products/sambal-bawang.jpg'],
                 ],
                 'vouchers' => [
-                    ['code' => 'FASHION5', 'discount' => 5, 'min_spending' => 0, 'description' => 'Diskon 5% tanpa minimum pembelian.'],
-                    ['code' => 'CORNER100K', 'discount' => 20, 'min_spending' => 500000, 'description' => 'Diskon 20% untuk pembelanjaan di atas Rp 500.000.'],
+                    ['code' => 'MAKANENAK10', 'discount' => 10, 'min_spending' => 100000, 'description' => 'Diskon 10% untuk semua menu makanan.'],
+                    ['code' => 'PESANANTAR', 'discount' => 30, 'min_spending' => 150000, 'description' => 'Gratis ongkir, maks. potongan 30%'],
+                    ['code' => 'HEMAT25', 'discount' => 25, 'min_spending' => 200000, 'description' => 'Potongan langsung 25%'],
                 ]
             ],
         ];
 
-        // 3. Loop dan buat data untuk setiap mitra
+        // 4. Loop dan buat data untuk setiap mitra
         foreach ($mitraDataArray as $data) {
             $this->createMitraData(
-                $data['user'],
-                $data['shop'],
-                $data['subdomain'],
-                $data['template'],
-                $businessPackage,
-                $data['contact'],
-                $data['heroes'],
-                $data['banners'],
-                $data['products'],
-                $data['vouchers']
+                $data,
+                $template1,
+                $businessPackage
             );
         }
 
@@ -158,32 +293,48 @@ class MitraTokoSeeder extends Seeder
     /**
      * Fungsi privat untuk membuat satu set data lengkap untuk seorang mitra.
      */
-    private function createMitraData(array $userData, array $shopData, string $subdomainName, Template $template, SubscriptionPackage $package, array $contactData, array $heroesData, array $bannersData, array $productsData, array $vouchersData)
+    private function createMitraData(array $data, Template $template, SubscriptionPackage $package)
     {
         // 1. Buat User Mitra
         $mitra = User::create([
-            'name' => $userData['name'],
-            'email' => $userData['email'],
-            'password' => Hash::make($userData['password']),
-            'phone' => $contactData['phone'],
+            'name' => $data['user']['name'],
+            'email' => $data['user']['email'],
+            'password' => Hash::make($data['user']['password']),
+            'phone' => $data['contact']['phone'],
             'position' => 'Pemilik Usaha',
             'status' => 'active',
         ]);
         $mitra->assignRole('mitra');
+        $this->command->info("Mitra {$mitra->email} dibuat.");
 
-        // 2. Buat Toko (Shop)
-        // Tidak perlu perubahan di sini, karena $shopData sudah mengandung postal_code
-        $shop = Shop::create(array_merge($shopData, [
+        // 2. Buat Subdomain
+        $subdomain = Subdomain::create([
             'user_id' => $mitra->id,
-            'shop_photo' => 'seeders/shop_photo.jpg',
-            'ktp' => 'seeders/ktp.jpg',
-        ]));
+            'subdomain_name' => $data['subdomain_name'], // Menggunakan subdomain_name
+            'status' => 'active'
+        ]);
+        // Perbarui kolom 'url' setelah pembuatan
+        // $subdomain->url = $data['subdomain_name'] . '.ecommercegaruda.my.id'; // Baris ini dihapus
+        // $subdomain->save(); // Baris ini dihapus
+        $this->command->info("Subdomain {$subdomain->subdomain_name} dibuat."); // Menggunakan subdomain_name untuk info
 
-        // 3. Buat Subdomain
-        $subdomain = Subdomain::create(['user_id' => $mitra->id, 'subdomain_name' => $subdomainName, 'status' => 'active']);
+        // 3. Buat Toko (Shop)
+        $shop = Shop::create(array_merge($data['shop'], [
+            'user_id' => $mitra->id,
+            'subdomain_id' => $subdomain->id, // Tautkan ke subdomain yang baru dibuat
+            'shop_photo' => 'seeders/defaults/shop_photo.jpg',
+            'ktp' => 'seeders/defaults/ktp.jpg',
+        ]));
+        $this->command->info("Toko {$shop->shop_name} dibuat.");
+
 
         // 4. Buat Tenant
-        Tenant::create(['user_id' => $mitra->id, 'subdomain_id' => $subdomain->id, 'template_id' => $template->id]);
+        Tenant::create([
+            'user_id' => $mitra->id,
+            'template_id' => $template->id,
+            'subdomain_id' => $subdomain->id,
+        ]);
+        $this->command->info("Tenant untuk {$mitra->email} dibuat.");
 
         // 5. Buat Paket Langganan Aktif
         $userPackage = UserPackage::create([
@@ -195,71 +346,122 @@ class MitraTokoSeeder extends Seeder
             'expired_date' => now()->addYear(),
             'status' => 'active',
         ]);
-
+        // Order untuk pembelian paket oleh mitra
         $order = Order::create([
             'user_id' => $mitra->id,
-            'subdomain_id' => null,
-            'status' => 'completed',
-            'order_date' => now(),
+            'subdomain_id' => $subdomain->id,
             'total_price' => $userPackage->price_paid,
+            'status' => 'completed',
+            'order_date' => now(), // Pastikan order_date ada
+            'shipping_address' => 'N/A',
+            'shipping_city' => 'N/A',
+            'shipping_zip_code' => 'N/A',
+            'shipping_phone' => 'N/A',
         ]);
-
         Payment::create([
             'user_id' => $mitra->id,
             'order_id' => $order->id,
             'subs_package_id' => $package->id,
-            'midtrans_order_id' => 'SUB-' . $mitra->id . '-' . time(),
+            'midtrans_order_id' => 'SUB-' . Str::uuid(),
             'midtrans_transaction_status' => 'settlement',
             'midtrans_payment_type' => 'bank_transfer',
-            'total_payment' => $userPackage->price_paid,
+            'total_payment' => $userPackage->price_paid
         ]);
+        $this->command->info("Paket langganan untuk {$mitra->email} dibuat.");
+
 
         // 6. Buat Data Kontak Toko
-        Contact::create(array_merge($contactData, ['user_id' => $mitra->id]));
+        Contact::create(array_merge($data['contact'], ['user_id' => $mitra->id]));
+        $this->command->info("Kontak untuk {$mitra->email} dibuat.");
 
-        // 7. Buat Hero Sliders
-        foreach ($heroesData as $index => $hero) {
-            Hero::create(array_merge($hero, ['user_id' => $mitra->id, 'order' => $index + 1, 'is_active' => true]));
+        // 7. Buat Custom Tema dan Shop Settings
+        CustomTema::create(array_merge($data['custom_tema'], [
+            'user_id' => $mitra->id,
+            'subdomain_id' => $subdomain->id,
+            'shop_name' => $shop->shop_name,
+            'shop_logo' => $data['custom_tema']['shop_logo'], // Gunakan path relatif dari data
+            'primary_color' => $data['custom_tema']['primary_color'],
+            'secondary_color' => $data['custom_tema']['secondary_color'],
+        ]));
+        $this->command->info("Tema kustom untuk {$mitra->email} dibuat.");
+
+        foreach ($data['shop_settings'] as $setting) {
+            ShopSetting::create([
+                'shop_id' => $shop->id,
+                'key' => $setting['key'],
+                'value' => $setting['value'],
+            ]);
         }
+        $this->command->info("Pengaturan toko untuk {$mitra->email} dibuat.");
 
-        // 8. Buat Banner Promosi
-        foreach ($bannersData as $index => $banner) {
-            Banner::create(array_merge($banner, ['user_id' => $mitra->id, 'order' => $index + 1, 'is_active' => true]));
+        // 8. Buat Hero Sliders
+        foreach ($data['heroes'] as $index => $hero) {
+            Hero::create(array_merge($hero, [
+                'shop_id' => $shop->id,
+                'order' => $index + 1,
+                'is_active' => true,
+                'image' => $hero['image'] // Pastikan path gambar relatif
+            ]));
         }
+        $this->command->info("Hero sliders untuk {$mitra->email} dibuat.");
 
-        // 9. Buat Produk
-        foreach ($productsData as $productData) {
-            $product = Product::create([
-                'user_id' => $mitra->id,
+        // 9. Buat Banner Promosi
+        foreach ($data['banners'] as $index => $banner) {
+            Banner::create(array_merge($banner, [
+                'shop_id' => $shop->id,
+                'order' => $index + 1,
+                'is_active' => true,
+                'image' => $banner['image'] // Pastikan path gambar relatif
+            ]));
+        }
+        $this->command->info("Banners untuk {$mitra->email} dibuat.");
+
+        // 10. Buat Produk
+        // Variabel ini tidak lagi diperlukan di sini karena OrderSeeder yang akan membuat pesanan
+        // dan mengambil produk langsung dari database.
+        // Namun, produk tetap perlu dibuat di sini agar ada data produk untuk OrderSeeder.
+        foreach ($data['products'] as $productData) {
+            Product::create([
+                'user_id' => $mitra->id, // Penting: Produk dimiliki oleh mitra ini
+                'shop_id' => $shop->id,
                 'name' => $productData['name'],
                 'slug' => Str::slug($productData['name']) . '-' . uniqid(),
-                'short_description' => 'Deskripsi singkat untuk ' . $productData['name'],
-                'price' => $productData['price'],
+                'short_description' => 'Deskripsi singkat yang menarik untuk ' . $productData['name'],
+                'description' => 'Deskripsi lengkap dan detail mengenai ' . $productData['name'] . ', menjelaskan bahan, ukuran, dan keunggulannya.',
+                'modal_price' => $productData['modal_price'], // Tambahkan ini
+                'profit_percentage' => $productData['profit_percentage'], // Tambahkan ini
+                // 'price' => $productData['price'], // Hapus atau biarkan mutator yang mengisi
                 'sub_category_id' => $productData['sub_category_id'],
-                'main_image' => $productData['main_image'],
+                'main_image' => $productData['main_image'], // Pastikan path gambar relatif
                 'is_best_seller' => $productData['is_best_seller'] ?? false,
                 'is_new_arrival' => $productData['is_new_arrival'] ?? false,
                 'is_hot_sale' => $productData['is_hot_sale'] ?? false,
                 'status' => 'active',
             ]);
-            $product->variants()->create(['color' => 'Merah', 'size' => 'M', 'stock' => 10]);
-            $product->variants()->create(['color' => 'Biru', 'size' => 'L', 'stock' => 15]);
+            // Varian produk akan dibuat di sini, tetapi tidak perlu disimpan ke $createdProducts
+            // karena OrderSeeder akan mengambil produk langsung dari database.
+            // $product->variants()->create(['color' => 'Merah', 'size' => 'M', 'stock' => 20]);
+            // $product->variants()->create(['color' => 'Biru', 'size' => 'L', 'stock' => 15]);
+            // $product->variants()->create(['color' => 'Hitam', 'size' => 'All Size', 'stock' => 25]);
         }
+        $this->command->info("Produk untuk {$mitra->email} dibuat.");
 
-        // 10. Buat Voucher
-        foreach ($vouchersData as $voucher) {
-            Voucher::updateOrCreate(
-                ['voucher_code' => strtolower($voucher['code'])],
-                [
-                    'user_id' => $mitra->id,
-                    'subdomain_id' => $subdomain->id,
-                    'description' => $voucher['description'],
-                    'discount' => $voucher['discount'],
-                    'min_spending' => $voucher['min_spending'],
-                    'start_date' => now(),
-                    'expired_date' => now()->addYear(),
-                ]
-            );
+        // 11. Buat Voucher
+        foreach ($data['vouchers'] as $voucherData) {
+            Voucher::create([
+                'user_id' => $mitra->id,
+                'subdomain_id' => $subdomain->id,
+                'voucher_code' => strtoupper($voucherData['code']),
+                'description' => $voucherData['description'],
+                'discount' => $voucherData['discount'],
+                'min_spending' => $voucherData['min_spending'],
+                'start_date' => now(),
+                'expired_date' => now()->addYear(),
+            ]);
         }
+        $this->command->info("Voucher untuk {$mitra->email} dibuat.");
+
+        // Catatan: Logika pembuatan pesanan (Order dan OrderItem) telah dipindahkan
+        // sepenuhnya ke OrderSeeder terpisah.
     }
 }

@@ -30,13 +30,17 @@ class Voucher extends Model
      */
     protected $fillable = [
         'user_id',
-        'subdomain_id', // Relasi ke subdomain
+        'subdomain_id', // Relasi ke subdomain utk voucher mitra
         'voucher_code',
         'description',
-        'discount',
         'min_spending',
         'start_date',
         'expired_date',
+        'discount',
+        'max_uses',
+        'max_uses_per_customer',
+        'is_for_new_customer',
+        'status'
     ];
 
     /**
@@ -68,6 +72,12 @@ class Voucher extends Model
     public function subdomain()
     {
         return $this->belongsTo(Subdomain::class);
+    }
+    public function products()
+    {
+        // Mendefinisikan relasi many-to-many ke model Product
+        // melalui tabel pivot 'product_voucher'.
+        return $this->belongsToMany(Product::class, 'product_voucher', 'voucher_id', 'product_id');
     }
 }
 

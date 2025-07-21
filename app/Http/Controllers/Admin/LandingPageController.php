@@ -2,31 +2,33 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Models\Category;
 use App\Models\Template;
 use App\Models\Testimoni;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use App\Models\SubscriptionPackage;
 use App\Services\LandingPageService;
+use App\Services\TestimonialService;
 use App\Http\Controllers\BaseController;
 use App\Services\SubscriptionPackageService;
-use App\Models\Category;
 
 class LandingPageController extends BaseController
 {
     protected $landingPageService;
     protected $subscriptionPackageService;
 
-    public function __construct(LandingPageService $landingPageService, SubscriptionPackageService $subscriptionPackageService)
+    public function __construct(LandingPageService $landingPageService, SubscriptionPackageService $subscriptionPackageService, TestimonialService $testimonialService)
     {
         $this->landingPageService = $landingPageService;
         $this->subscriptionPackageService = $subscriptionPackageService;
+        $this->testimonialService = $testimonialService;
     }
 
     public function home()
     {
         $stats = $this->landingPageService->getStatistics();
-        $testimonials = Testimoni::where('status', 'published')->latest()->take(10)->get();
+        $testimonials = $this->testimonialService->getPublishedLandingPageTestimonials();
         $packages = $this->subscriptionPackageService->getAllPackages();
         $sortedPackages = $packages->sortBy(function ($package) {
             if ($package->is_trial)

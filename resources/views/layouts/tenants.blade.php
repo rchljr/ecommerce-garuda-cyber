@@ -32,7 +32,7 @@
                 <div class="flex justify-between items-center py-4">
                     <!-- Logo GCI -->
                     <a href="{{ route('landing') }}" class="flex items-center" title="Kembali ke Beranda">
-                        <img class="h-8 w-auto" src="{{ asset('images/logoGCI.png') }}"
+                        <img class="h-8 w-auto" src="{{ asset('images/LogoGCI.png') }}"
                             onerror="this.onerror=null;this.src='https://placehold.co/150x40/1f2937/ffffff?text=GCI';"
                             alt="Logo Garuda Cyber Indonesia">
                     </a>
@@ -56,14 +56,7 @@
             @yield('content')
         </main>
 
-        <!-- Footer Sederhana -->
-        <footer class="bg-gray-800 text-white">
-            <div class="container mx-auto py-6 px-4 sm:px-6 lg:px-8 text-center">
-                <p class="text-sm text-gray-400">&copy; {{ date('Y') }}
-                    {{ config('app.name', 'Garuda Cyber Indonesia') }}. All rights reserved.
-                </p>
-            </div>
-        </footer>
+        @include('layouts._partials.customer-footer')
     </div>
 
     @stack('scripts')

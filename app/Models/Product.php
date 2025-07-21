@@ -10,11 +10,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Database\Eloquent\Concerns\HasUuids; // Import HasUuids
 
 class Product extends Model
 {
-    use HasFactory;
-    
+    use HasFactory, HasUuids; // Tambahkan HasUuids di sini
+
     protected $connection = 'mysql';
     protected $primaryKey = 'id';
     public $incrementing = false;
@@ -22,12 +23,15 @@ class Product extends Model
 
     protected $fillable = [
         'user_id',
-        'sub_category_id', // Changed from category_id to sub_category_id
+        'shop_id',
+        'sub_category_id',
         'name',
         'slug',
         'short_description',
         'description',
         'price',
+        'modal_price',
+        'profit_percentage',
         'sku',
         'main_image',
         'status',
@@ -43,20 +47,49 @@ class Product extends Model
      */
     protected $casts = [
         'price' => 'float',
+        'modal_price' => 'float', // Tambahkan casting untuk modal_price
+        'profit_percentage' => 'float', // Tambahkan casting untuk profit_percentage
         'is_best_seller' => 'boolean',
         'is_new_arrival' => 'boolean',
         'is_hot_sale' => 'boolean',
     ];
 
-    protected static function boot()
-    {
-        parent::boot();
+    // HAPUS ATAU KOMENTARI BLOK boot() INI
+    // protected static function boot()
+    // {
+    //     parent::boot();
+    //
+    //     static::creating(function ($model) {
+    //         if (empty($model->{$model->getKeyName()})) {
+    //             $model->{$model->getKeyName()} = (string) Str::uuid();
+    //         }
+    //     });
+    // }
 
-        static::creating(function ($model) {
-            if (empty($model->{$model->getKeyName()})) {
-                $model->{$model->getKeyName()} = (string) Str::uuid();
-            }
-        });
+    public function getSellingPriceAttribute()
+    {
+        if ($this->modal_price !== null && $this->profit_percentage !== null) {
+            return $this->modal_price * (1 + ($this->profit_percentage / 100));
+        }
+        return $this->price;
+    }
+
+    public function setModalPriceAttribute($value)
+    {
+        $this->attributes['modal_price'] = $value;
+        // Pastikan profit_percentage sudah ada sebelum menghitung price
+        if (isset($this->attributes['profit_percentage']) && $this->attributes['profit_percentage'] !== null) {
+            $this->attributes['price'] = $value * (1 + ($this->attributes['profit_percentage'] / 100));
+        }
+    }
+
+    public function setProfitPercentageAttribute($value)
+    {
+        $this->attributes['profit_percentage'] = $value;
+        // Pastikan modal_price sudah ada sebelum menghitung price
+        if (isset($this->attributes['modal_price']) && $this->attributes['modal_price'] !== null) {
+            $this->attributes['price'] = $this->attributes['modal_price'] * (1 + ($value / 100));
+        }
     }
 
     // --- QUERY SCOPES ---
@@ -86,6 +119,11 @@ class Product extends Model
     public function shopOwner(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function shop(): BelongsTo // Tambahkan relasi shop jika belum ada
+    {
+        return $this->belongsTo(Shop::class, 'shop_id');
     }
 
     public function subCategory()

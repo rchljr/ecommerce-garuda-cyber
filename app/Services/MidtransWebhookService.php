@@ -32,8 +32,8 @@ class MidtransWebhookService
             return;
         }
 
-        if ($payment->midtrans_transaction_status === $notification->transaction_status) {
-            Log::info('MidtransWebhookService: Status pembayaran sama dengan sebelumnya, diabaikan.', ['payment_id' => $payment->id, 'status' => $notification->transaction_status]);
+        if ($payment->midtrans_transaction_status === 'settlement' || $payment->midtrans_transaction_status === 'capture') {
+            Log::info('MidtransWebhookService: Pembayaran sudah berhasil diproses sebelumnya, diabaikan.', ['payment_id' => $payment->id, 'status' => $notification->transaction_status]);
             return;
         }
 
@@ -66,6 +66,7 @@ class MidtransWebhookService
                 'midtrans_response' => $notification->getResponse(),
             ]);
 
+            // Gunakan order_group_id dari payment
             if ($payment->order_group_id) {
                 $orders = Order::where('order_group_id', $payment->order_group_id)->get();
                 foreach ($orders as $order) {
@@ -91,23 +92,18 @@ class MidtransWebhookService
                     'midtrans_response' => $notification->getResponse(),
                 ]);
 
-                $order = $payment->order;
-                if (!$order) {
-                    Log::error('MidtransWebhookService: Relasi Order pada Payment tidak ditemukan.', ['payment_id' => $payment->id]);
-                    return; // Hentikan jika order tidak ada
-                }
-
-                // Langkah 2: Update status Order menjadi 'completed'
-                $order->update(['status' => 'completed']);
-                Log::info('MidtransWebhookService: Status order dan payment berhasil diupdate.', ['order_id' => $order->id]);
-
-                // Langkah 3: Jalankan logika finalisasi berdasarkan tipe pembayaran
                 if ($payment->order_group_id) {
-                    // Ini adalah pembayaran produk dari multi-toko
+                    // Ini adalah pembayaran produk (single/multi-toko)
                     $this->finalizeGroupedProductOrder($payment);
                 } elseif ($payment->subs_package_id && $payment->order) {
-                    // Ini adalah pembayaran langganan (logika lama)
-                    $this->activateSubscription($payment->order->user);
+                    // Ini adalah pembayaran langganan
+                    $order = $payment->order;
+                    if ($order) {
+                        $order->update(['status' => 'completed']);
+                        $this->activateSubscription($order->user);
+                    } else {
+                        Log::error('MidtransWebhookService: Relasi Order pada Payment langganan tidak ditemukan.', ['payment_id' => $payment->id]);
+                    }
                 } else {
                     Log::error('MidtransWebhookService: Tipe pembayaran tidak dikenali.', ['payment_id' => $payment->id]);
                 }
@@ -127,13 +123,15 @@ class MidtransWebhookService
      */
     protected function finalizeGroupedProductOrder(Payment $payment)
     {
-        Log::info('FinalizeGroupedProductOrder: Memulai finalisasi pesanan untuk grup.', ['order_group_id' => $payment->order_group_id]);
+
+        $orderGroupId = $payment->order_group_id;
+        Log::info('FinalizeGroupedProductOrder: Memulai finalisasi pesanan untuk grup.', ['order_group_id' => $orderGroupId]);
 
         // Ambil semua order yang terkait dengan grup ini
-        $orders = Order::where('order_group_id', $payment->order_group_id)->get();
+        $orders = Order::where('order_group_id', $orderGroupId)->get();
 
         if ($orders->isEmpty()) {
-            Log::error('FinalizeGroupedProductOrder: Tidak ada order yang ditemukan untuk grup.', ['order_group_id' => $payment->order_group_id]);
+            Log::error('FinalizeGroupedProductOrder: Tidak ada order yang ditemukan untuk grup.', ['order_group_id' => $orderGroupId]);
             return;
         }
 

@@ -8,3 +8,4 @@
 <script src="{{ asset('template1/js/mixitup.min.js') }}"></script>
 <script src="{{ asset('template1/js/owl.carousel.min.js') }}"></script>
 <script src="{{ asset('template1/js/main.js') }}"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>

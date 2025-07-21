@@ -1,96 +1,64 @@
 @php
-    // --- Data untuk Mode Preview dan Subdomain ---
-    // $isPreview: Diterima dari controller TemaController (saat di mode editor)
-    // Jika tidak di-pass, asumsikan bukan mode preview.
     $isPreview = $isPreview ?? false;
-
-    // $currentSubdomain: Ambil dari route parameter.
     $currentSubdomain = request()->route('subdomain');
 
-    // --- Ambil Data Toko (Shop) dan Tema Kustom (CustomTema) ---
-    // Ini adalah bagian paling KRUSIAL.
-    // Di lingkungan multi-tenant, $currentShop biasanya disediakan oleh middleware
-    // atau di-resolve dari subdomain. Kita akan mencoba mengambilnya di sini.
+    // Ambil user yang sedang login
+    $loggedInUser = Auth::user();
 
-    $currentShop = $currentShop ?? null; // Inisialisasi untuk jaga-jaga
+    // Inisialisasi currentShop dan customTema
+    $currentShop = null;
+    $customTema = null;
 
-    // Jika $currentShop belum tersedia (misal: ini adalah partial/component yang berdiri sendiri),
-    // coba ambil dari subdomain yang aktif.
-    if (!$currentShop && $currentSubdomain) {
-        // Asumsi model Shop memiliki kolom 'subdomain'
-        // dan relasi 'user' yang kemudian memiliki relasi 'customTema'
-        $currentShop = \App\Models\Shop::where('subdomain', $currentSubdomain)
-                                        ->with(['user.customTema']) // Eager load relasi yang dibutuhkan
-                                        ->first();
+    // Jika user login (mitra), coba ambil shop dan customTema
+    if ($loggedInUser) {
+        // Ambil objek shop dari user (tanpa eager loading customTema di sini)
+        $currentShop = $loggedInUser->shop;
+
+        // Ambil customTema langsung dari user
+        // Pastikan relasi 'customTema' ada di model App\Models\User
+        $customTema = $loggedInUser->customTema;
     }
 
-    // Ambil data tenant yang sedang aktif dari shop (jika ada)
-    $tenant = $tenant ?? (isset($currentShop) ? optional($currentShop->user)->tenant : null);
-
-    // Ambil data customTema dari user pemilik toko
-    $customTema = isset($currentShop) ? optional($currentShop->user)->customTema : null;
-
-    // --- Definisi Variabel Tema Kustom ---
-    // Gunakan nilai dari $customTema jika ada, jika tidak, gunakan default.
+    // Ambil logo dan warna dari customTema, dengan fallback ke default
     $logoPath = optional($customTema)->shop_logo;
-    // Jika logo kustom ada, gunakan path storage. Jika tidak, gunakan logo default template.
     $logoUrl = $logoPath ? asset('storage/' . $logoPath) : asset('template1/img/logo.png');
 
-    $shopName = optional($customTema)->shop_name ?? optional($currentShop)->shop_name ?? 'Nama Toko Anda';
-    $shopDescription = optional($customTema)->shop_description ?? 'Selamat datang di toko kami!';
+    $primaryColor = optional($customTema)->primary_color ?? '#4F46E5'; // Default dari form Anda
+    $secondaryColor = optional($customTema)->secondary_color ?? '#D946EF'; // Default dari form Anda
 
-    $primaryColor = optional($customTema)->primary_color ?? '#007bff'; // Default Bootstrap blue
-    $secondaryColor = optional($customTema)->secondary_color ?? '#6c757d'; // Default Bootstrap gray
-
-
-    // --- Logika Keranjang Belanja ---
-    // (Kode ini sudah cukup baik, tidak ada perubahan signifikan di sini)
+    // Logika Keranjang Belanja dan Notifikasi
     $cartCount = 0;
-    if (!$isPreview && $tenant) {
-        $shopOwnerId = $tenant->user_id;
+    $notificationCount = 0;
 
-        if (Auth::guard('customers')->check()) {
-            $cart = Auth::guard('customers')->user()->cart;
-            if ($cart) {
-                $cartCount = $cart->items()
-                    ->whereHas('product', function ($query) use ($shopOwnerId) {
-                        $query->where('user_id', $shopOwnerId);
-                    })
-                    ->sum('quantity');
-            }
-        } elseif (session()->has('cart')) {
-            $sessionCart = session('cart');
-            $productIdsInCart = array_column($sessionCart, 'product_id');
+    // Logika ini untuk customer, bukan mitra
+    if (Auth::guard('customers')->check()) {
+        $customerUser = Auth::guard('customers')->user();
 
-            if (!empty($productIdsInCart)) {
-                $tenantProductIds = \App\Models\Product::whereIn('id', $productIdsInCart)
-                    ->where('user_id', $shopOwnerId)
-                    ->pluck('id')->all();
+        // 1. Logika Hitung Keranjang (menggunakan service yang sudah ada)
+        $cartService = app(\App\Services\CartService::class);
+        $cartCount = $cartService->getCartCount();
 
-                $cartCount = collect($sessionCart)->filter(function ($item) use ($tenantProductIds) {
-                    return isset($item['product_id']) && in_array($item['product_id'], $tenantProductIds);
-                })->sum('quantity');
-            }
-        }
+        // 2. Logika Hitung Notifikasi (disesuaikan dengan controller Anda)
+        $successfulPaymentsCount = \App\Models\Payment::where('user_id', $customerUser->id)
+            ->whereIn('midtrans_transaction_status', ['settlement', 'capture'])
+            ->count();
+        $ordersCount = \App\Models\Order::where('user_id', $customerUser->id)
+            ->whereIn('status', ['failed', 'cancelled', 'expired', 'pending'])
+            ->count();
+        $notificationCount = $successfulPaymentsCount + $ordersCount;
+
+    } elseif (session()->has('cart')) {
+        $cartCount = collect(session('cart'))->sum('quantity');
     }
 @endphp
 
 {{-- --- Inject Custom Colors into CSS Variables --- --}}
-{{-- PENTING: Pastikan CSS di template Anda menggunakan variabel ini --}}
 <style>
     :root {
         --primary-color: {{ $primaryColor }};
         --secondary-color: {{ $secondaryColor }};
-        /* Contoh lain: */
-        /* --header-bg-color: var(--primary-color); */
-        /* --button-text-color: var(--secondary-color); */
     }
 
-    /* CONTOH PENERAPAN VAR CSS KE ELEMEN TEMPLATE */
-    /* Anda perlu menyesuaikan ini dengan kelas CSS template Anda */
-    .header__top__links a {
-        /* color: var(--secondary-color); */
-    }
     .header__top__links a:hover {
         color: var(--primary-color) !important;
     }
@@ -98,18 +66,70 @@
     .header__menu ul li:hover > a {
         color: var(--primary-color);
     }
-    .header__nav__option a span { /* Untuk badge keranjang */
+    .header__nav__option a span {
         background: var(--primary-color);
     }
     .header__nav__option a:hover {
         color: var(--primary-color);
     }
-    /* Tambahkan lebih banyak aturan CSS di sini sesuai kebutuhan template Anda */
 
     .disabled-link {
         color: #b2b2b2 !important;
         cursor: not-allowed;
     }
+
+    .header__nav__option a i {
+        font-size: 20px;
+        color: #111111;
+    }
+
+    .header__nav__option a {
+        position: relative;
+    }
+
+    .notification-icon {
+        position: relative;
+        display: inline-block;
+    }
+
+    #notification-count,
+    #cart-count {
+        position: absolute;
+        top: -6px;
+        right: -9px;
+        height: 18px;
+        width: 18px;
+        background: #ca1515;
+        color: #ffffff;
+        border-radius: 50%;
+        font-size: 11px;
+        font-weight: 700;
+        line-height: 18px;
+        text-align: center;
+    }
+
+    /* --- CSS BARU UNTUK LOGO --- */
+    .header__logo img {
+        max-height: 40px; /* Atur tinggi maksimum logo */
+        width: auto; /* Biarkan lebar menyesuaikan proporsi */
+        object-fit: contain; /* Pastikan gambar tidak terpotong */
+        display: block; /* Menghilangkan spasi ekstra di bawah gambar */
+    }
+
+    /* Sesuaikan jika navbar Anda memiliki tinggi tetap, misalnya */
+    .header {
+        /* min-height: 80px; */ /* Contoh: jika header memiliki tinggi minimum */
+        display: flex;
+        flex-direction: column; /* BARIS PENTING: Menata item secara vertikal */
+        /* align-items: center; */ /* Hapus atau sesuaikan ini jika tidak diperlukan lagi */
+    }
+
+    .header__logo {
+        display: flex;
+        align-items: center; /* Pusatkan logo secara vertikal di dalam div-nya */
+        height: 100%; /* Agar logo mengambil tinggi penuh container */
+    }
+    /* --- AKHIR CSS BARU --- */
 </style>
 
 <header class="header">
@@ -118,18 +138,24 @@
             <div class="row">
                 <div class="col-lg-6 col-md-7">
                     <div class="header__top__left">
-                        {{-- Contoh: Tampilkan deskripsi toko di sini jika diinginkan --}}
-                        {{-- <p>{{ $shopDescription }}</p> --}}
+                        <div class="header__top__links">
+                            <a href="{{ !$isPreview ? route('tenants.index') : '#' }}"
+                                class="font-semibold text-white bg-red-600 px-3 py-1 rounded-full text-xs hover:bg-red-700 transition-colors">
+                                <i class="fa fa-store mr-1"></i> Jelajahi Toko Lain
+                            </a>
+                        </div>
                     </div>
                 </div>
                 <div class="col-lg-6 col-md-5">
                     <div class="header__top__right">
                         <div class="header__top__links">
                             @guest('customers')
-                                <a href="#">FAQs</a>
+                                <a href="#">Bantuan</a>
                                 @if(!$isPreview)
-                                    <a href="{{ route('tenant.customer.login.form', ['subdomain' => $currentSubdomain]) }}">Login</a>
-                                    <a href="{{ route('tenant.customer.register.form', ['subdomain' => $currentSubdomain]) }}">Daftar</a>
+                                    <a
+                                        href="{{ route('tenant.customer.login.form', ['subdomain' => $currentSubdomain]) }}">Login</a>
+                                    <a
+                                        href="{{ route('tenant.customer.register.form', ['subdomain' => $currentSubdomain]) }}">Daftar</a>
                                 @else
                                     <a href="#" class="disabled-link">Login</a>
                                     <a href="#" class="disabled-link">Daftar</a>
@@ -137,19 +163,26 @@
                             @endguest
 
                             @auth('customers')
-                                <a href="#">FAQs</a>
+                                <a href="#">Bantuan</a>
                                 <div class="header__top__dropdown">
-                                    <a href="#"><i class="fa fa-user"></i> Hi,
-                                        {{ strtok(Auth::guard('customers')->user()->name, ' ') }}</a>
+                                    @php $customer = Auth::guard('customers')->user(); @endphp
+                                    {{-- PERBAIKAN: Mengganti foto profil dengan ikon --}}
+                                    <a href="#">
+                                        <i class="fa fa-user"></i> Hi, {{ strtok($customer->name, ' ') }}
+                                    </a>
                                     <span class="arrow_carrot-down"></span>
                                     <ul>
                                         @if(!$isPreview)
-                                            <li><a href="{{ route('tenant.account.profile', ['subdomain' => $currentSubdomain]) }}">Akun Saya</a></li>
-                                            <li><a href="{{ route('tenant.account.orders', ['subdomain' => $currentSubdomain]) }}">Pesanan Saya</a></li>
+                                            <li><a
+                                                    href="{{ route('tenant.account.profile', ['subdomain' => $currentSubdomain]) }}">Akun
+                                                    Saya</a></li>
+                                            <li><a
+                                                    href="{{ route('tenant.account.orders', ['subdomain' => $currentSubdomain]) }}">Pesanan
+                                                    Saya</a></li>
                                             <li>
                                                 <a href="{{ route('tenant.customer.logout', ['subdomain' => $currentSubdomain]) }}"
                                                     onclick="event.preventDefault(); document.getElementById('logout-form-header').submit();">
-                                                    Log Out
+                                                    Keluar
                                                 </a>
                                                 <form id="logout-form-header"
                                                     action="{{ route('tenant.customer.logout', ['subdomain' => $currentSubdomain]) }}"
@@ -171,9 +204,8 @@
         <div class="row">
             <div class="col-lg-3 col-md-3">
                 <div class="header__logo">
-                    {{-- LOGO TOKO DISESUAIKAN DI SINI --}}
                     <a href="{{ !$isPreview ? route('tenant.home', ['subdomain' => $currentSubdomain]) : '#' }}">
-                        <img src="{{ $logoUrl }}" alt="{{ $shopName }}">
+                        <img src="{{ $logoUrl }}" alt="{{ optional($currentShop)->shop_name ?? 'Logo Toko' }}">
                     </a>
                 </div>
             </div>
@@ -184,30 +216,31 @@
                                 href="{{ !$isPreview ? route('tenant.home', ['subdomain' => $currentSubdomain]) : '#' }}">Beranda</a>
                         </li>
                         <li class="{{ request()->routeIs('tenant.shop') ? 'active' : '' }}">
-                            <a href="{{ !$isPreview ? route('tenant.shop', ['subdomain' => $currentSubdomain]) : '#' }}">Produk</a>
-                        </li>
-                        <li class="{{ request()->routeIs('tenant.contact', 'tenant.product.details', 'tenant.cart.index') ? 'active' : '' }}">
-                            <a href="#">Pages</a>
-                            <ul class="dropdown">
-                                <li><a href="{{ !$isPreview ? route('tenant.contact', ['subdomain' => $currentSubdomain]) : '#' }}">Tentang Kami</a></li>
-                                <li><a href="{{ !$isPreview ? route('tenant.cart.index', ['subdomain' => $currentSubdomain]) : '#' }}"
-                                        class="{{ request()->routeIs('cart.index') ? 'active' : '' }}">Keranjang Belanja</a></li>
-                            </ul>
+                            <a
+                                href="{{ !$isPreview ? route('tenant.shop', ['subdomain' => $currentSubdomain]) : '#' }}">Toko</a>
                         </li>
                         <li class="{{ request()->routeIs('tenant.contact') ? 'active' : '' }}"><a
-                                href="{{ !$isPreview ? route('tenant.contact', ['subdomain' => $currentSubdomain]) : '#' }}">Kontak</a></li>
+                                href="{{ !$isPreview ? route('tenant.contact', ['subdomain' => $currentSubdomain]) : '#' }}">Kontak Kami</a>
+                        </li>
                     </ul>
                 </nav>
             </div>
             <div class="col-lg-3 col-md-3">
                 <div class="header__nav__option">
-                    <a href="#" class="search-switch"><img src="{{ asset('template1/img/icon/search.png') }}"
-                            alt=""></a>
-                    <a href="{{ !$isPreview ? route('tenant.wishlist', ['subdomain' => $currentSubdomain]) : '#' }}"><img
-                            src="{{ asset('template1/img/icon/heart.png') }}" alt=""></a>
-                    <a href="{{ !$isPreview ? route('tenant.cart.index', ['subdomain' => $currentSubdomain]) : '#' }}"><img
-                            src="{{ asset('template1/img/icon/cart.png') }}" alt="">
-                        <span id="cart-count">{{ $cartCount }}</span>
+                    <a href="{{ !$isPreview ? route('tenant.wishlist', ['subdomain' => $currentSubdomain]) : '#' }}"><i
+                            class="fa fa-heart-o"></i></a>
+                    <a class="notification-icon"
+                        href="{{ !$isPreview ? route('tenant.account.notifications', ['subdomain' => $currentSubdomain]) : '#' }}">
+                        <i class="fa fa-bell-o"></i>
+                        @if ($notificationCount > 0)
+                            <span id="notification-count">{{ $notificationCount }}</span>
+                        @endif
+                    </a>
+                    <a href="{{ !$isPreview ? route('tenant.cart.index', ['subdomain' => $currentSubdomain]) : '#' }}">
+                        <i class="fa fa-shopping-basket"></i>
+                        @if ($cartCount > 0)
+                            <span id="cart-count">{{ $cartCount }}</span>
+                        @endif
                     </a>
                 </div>
             </div>
@@ -215,3 +248,40 @@
         <div class="canvas__open"><i class="fa fa-bars"></i></div>
     </div>
 </header>
+
+<style>
+    .disabled-link {
+        color: #b2b2b2 !important;
+        cursor: not-allowed;
+    }
+
+    .header__nav__option a i {
+        font-size: 20px;
+        color: #111111;
+    }
+
+    .header__nav__option a {
+        position: relative;
+    }
+
+    .notification-icon {
+        position: relative;
+        display: inline-block;
+    }
+
+    #notification-count,
+    #cart-count {
+        position: absolute;
+        top: -6px;
+        right: -9px;
+        height: 18px;
+        width: 18px;
+        background: #ca1515;
+        color: #ffffff;
+        border-radius: 50%;
+        font-size: 11px;
+        font-weight: 700;
+        line-height: 18px;
+        text-align: center;
+    }
+</style>

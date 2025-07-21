@@ -9,37 +9,36 @@ use App\Http\Controllers\TenantController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\VoucherController;
-use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\TemplateController;
 use App\Http\Controllers\WishlistController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\TestimoniController;
-use App\Http\Controllers\Mitra\TestimoniProductController;
 use App\Http\Controllers\Mitra\HeroController;
 use App\Http\Controllers\Mitra\TemaController;
-use App\Http\Controllers\Admin\LandingPageController;
-use App\Http\Controllers\Mitra\MitraController;
-use App\Http\Controllers\Mitra\TemplateEditorController;
 use App\Http\Controllers\Mitra\BannerController;
 use App\Http\Controllers\Mitra\VarianController;
-use App\Http\Controllers\Admin\VerificationController;
 use App\Http\Controllers\Mitra\ContactController;
+use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\PendapatanController;
 use App\Http\Controllers\Admin\KelolaMitraController;
+use App\Http\Controllers\Admin\LandingPageController;
 use App\Http\Controllers\Auth\CustomerAuthController;
+use App\Http\Controllers\Admin\VerificationController;
 use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\SubscriptionPackageController;
 use App\Http\Controllers\Mitra\DashboardMitraController;
+use App\Http\Controllers\Mitra\TemplateEditorController;
+use App\Http\Controllers\Mitra\VoucherProductController;
 use App\Http\Controllers\Customer\CustomerOrderController;
 use App\Http\Controllers\Customer\CustomerPointController;
+use App\Http\Controllers\Mitra\StorePublicationController;
+use App\Http\Controllers\Mitra\TestimoniProductController;
 use App\Http\Controllers\Customer\CustomerProfileController;
 use App\Http\Controllers\Customer\CustomerVoucherController;
 use App\Http\Controllers\Customer\CustomerNotificationController;
-use App\Http\Controllers\Mitra\StorePublicationController;
-use App\Http\Controllers\Mitra\VoucherProductController;
 
 
 /*
@@ -73,7 +72,7 @@ Route::prefix('tenant/{subdomain}')
         Route::post('/checkout/search-destination', [CheckoutController::class, 'searchDestination'])->name('checkout.search_destination');
         Route::post('/checkout/calculate-shipping', [CheckoutController::class, 'calculateShipping'])->name('checkout.calculate_shipping');
         // Route::get('/checkout/areas', [CheckoutController::class, 'getBiteshipAreas'])->name('checkout.areas');
-
+    
         // Wishlist
         Route::get('/wishlist', [WishlistController::class, 'index'])->name('wishlist');
         Route::post('/wishlist/toggle', [WishlistController::class, 'toggle'])->name('wishlist.toggle');
@@ -107,6 +106,13 @@ Route::prefix('tenant/{subdomain}')
                 Route::post('/detail', [CheckoutController::class, 'getDetails'])->name('get_details');
             });
 
+            //review
+            Route::prefix('customer/reviews')->name('customer.reviews.')->group(function () {
+                Route::post('/submit', [TestimoniController::class, 'submitReview'])->name('submit');
+                Route::get('/{testimonial}/json', [TestimoniController::class, 'getReviewJson'])->name('json');
+                Route::put('/{testimonial}/update', [TestimoniController::class, 'updateReview'])->name('update');
+            });
+
             // Dasbor Pelanggan
             Route::prefix('account')->name('account.')->group(function () {
                 Route::get('/profile', [CustomerProfileController::class, 'show'])->name('profile');
@@ -129,7 +135,7 @@ Route::prefix('tenant/{subdomain}')
 Route::get('/', [LandingPageController::class, 'home'])->name('landing');
 Route::get('/tenant', [LandingPageController::class, 'allTenants'])->name('tenants.index');
 Route::post('/testimonials', [TestimoniController::class, 'submitFromLandingPage'])->name('testimonials.store');
-Route::post('/review/submit', [TestimoniController::class, 'submitReview'])->name('review.submit')->middleware('auth:customers');
+
 
 Route::get('/review/{testimonial}', [TestimoniController::class, 'getReviewJson'])->name('review.get')->middleware('auth:customers');
 Route::put('/review/{testimonial}', [TestimoniController::class, 'updateReview'])->name('review.update')->middleware('auth:customers');
@@ -159,8 +165,6 @@ Route::prefix('register')->name('register.')->group(function () {
 });
 //preview template
 Route::get('/{template:name}/beranda', [TemplateController::class, 'preview'])->name('template.preview');
-
-//Mitra Sementara
 // Route::prefix('dashboard-mitra')->name('mitra.')->group(function () {
 //     // Rute dashboard utama
 //     Route::get('/', function () {
@@ -208,6 +212,12 @@ Route::get('/template1/beranda', [HomeController::class, 'index'])->name('home')
 Route::get('/fruit', function () {
     return view('template2.home');
 });
+
+// Route untuk halaman tim developer
+Route::get('/developer', function () {
+    // Pastikan file blade Anda ada di resources/views/layouts/tim-developer.blade.php
+    return view('layouts.tim-developer');
+})->name('tim.developer');
 
 // == GRUP RUTE UNTUK PENGGUNA YANG SUDAH LOGIN ==
 Route::middleware(['auth'])->group(function () {
@@ -287,9 +297,10 @@ Route::middleware(['auth'])->group(function () {
         // Rute dashboard utama
         // Route::get('/dashboard', [MitraController::class, 'index'])->name('dashboard');
         Route::get('/dashboard', [DashboardMitraController::class, 'index'])->name('dashboard');
+        // Rute untuk publikasi toko
 
-        Route::post('/store/publish', [StorePublicationController::class, 'publish'])->name('store.publish');
-        Route::post('/store/unpublish', [StorePublicationController::class, 'unpublish'])->name('store.unpublish');
+        Route::post('/editor/publish', [StorePublicationController::class, 'publish'])->name('editor.publish');
+        Route::post('/editor/unpublish', [StorePublicationController::class, 'unpublish'])->name('editor.unpublish');
 
         Route::get('/produk', [ProductController::class, 'index'])->name('produk');
         Route::get('/hero', [HeroController::class, 'index'])->name('hero');
@@ -326,9 +337,7 @@ Route::middleware(['auth'])->group(function () {
 
 
         Route::get('/orders', [OrderController::class, 'index'])->name('orders');
-        Route::get('/orders', [OrderController::class, 'show'])->name('orders.show');
-
-        // Rute untuk publikasi toko
+        Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
 
         Route::resource('products', ProductController::class)->names([
             'index' => 'products.index',    // Ini akan menjadi 'mitra.products.index'
@@ -352,16 +361,5 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/', function () {
             return redirect()->route('customer.profile');
         })->name('dashboard');
-    });
-    // routes/web.php
-
-    // Route untuk menampilkan form tes
-    Route::get('/tes-form', function () {
-        return view('tes-form');
-    });
-
-    // Route untuk menerima data POST dari form tes
-    Route::post('/tes-form-submit', function () {
-        return '<h1>BERHASIL! Form POST berfungsi.</h1>';
     });
 });

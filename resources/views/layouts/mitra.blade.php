@@ -77,7 +77,14 @@
             </main>
 
             <footer class="text-center p-4 text-gray-500 text-sm border-t bg-white z-10 flex-shrink-0">
-                Copyright 2025 PT Garuda Cyber Indonesia
+                <p>
+                    Copyright &copy;
+                    <script>document.write(new Date().getFullYear())</script> All rights reserved | Ditenagai oleh
+                    <a href="{{ route('tim.developer') }}" target="_blank"
+                        class="text-red-600 hover:underline font-medium">Tim E-Commerce Garuda</a>
+                    by <a href="https://garudacyber.co.id" target="_blank"
+                        class="text-red-600 hover:underline font-medium">PT. Garuda Cyber Indonesia</a>.
+                </p>
             </footer>
         </div>
     </div>

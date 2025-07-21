@@ -61,7 +61,15 @@
             </div>
         </div>
         <div class="border-t border-gray-700 mt-8 pt-6 text-center text-sm">
-            <p>&copy; 2025 PT. Garuda Cyber Indonesia</p>
+            <p>
+                Copyright &copy;
+                <script>document.write(new Date().getFullYear())</script> All rights reserved | Ditenagai
+                oleh
+                <a href="{{ route('tim.developer') }}" target="_blank"
+                    class="text-red-600 hover:underline font-medium">Tim E-Commerce Garuda</a>
+                by <a href="https://garudacyber.co.id" target="_blank"
+                    class="text-red-600 hover:underline font-medium">PT. Garuda Cyber Indonesia</a>.
+            </p>
         </div>
     </div>
 </footer>

@@ -96,6 +96,10 @@ class User extends Authenticatable
     {
         return $this->hasMany(Voucher::class, 'user_id');
     }
+     public function customTema()
+    {
+        return $this->hasOne(CustomTema::class);
+    }
 
     /**
      * Relasi untuk mengambil voucher yang sedang aktif saja.

@@ -12,17 +12,16 @@ class CustomerOrderController extends Controller
     /**
      * Menampilkan daftar pesanan milik pengguna yang sedang login dengan fitur pencarian.
      */
-    public function index(Request $request)
+    public function index(Request $request, $subdomain)
     {
         $search = $request->input('search');
-        $user = Auth::user();
+        $user = Auth::guard('customers')->user();
 
         // Ambil semua pesanan dari pengguna ini, dengan relasi yang diperlukan
         $orders = Order::where('user_id', $user->id)
-            // PERBAIKAN: Pastikan hanya mengambil order dengan relasi yang valid
             ->whereHas('subdomain.user.shop') // Hanya ambil order jika relasi ke toko masih lengkap
-            ->whereHas('items.product')       // Hanya ambil order jika produknya masih ada
-
+            ->whereHas('items.product')      // Hanya ambil order jika produknya masih ada
+            // Eager load testimonials yang terkait dengan order
             ->with(['subdomain.user.shop', 'items.product', 'items.variant', 'shipping', 'voucher', 'testimonials'])
             ->when($search, function ($query, $search) {
                 // Pencarian berdasarkan nama toko atau nama produk
@@ -37,7 +36,7 @@ class CustomerOrderController extends Controller
             ->latest() // Urutkan dari yang terbaru
             ->paginate(10);
 
-        // Mengembalikan view dengan data pesanan dan query pencarian
-        return view('customer.orders', compact('orders', 'search'));
+        //  Kirimkan variabel $subdomain ke view
+        return view('customer.orders', compact('orders', 'search', 'subdomain'));
     }
 }

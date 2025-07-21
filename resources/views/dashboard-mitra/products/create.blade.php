@@ -68,6 +68,12 @@
             font-weight: bold;
             border: 2px solid white;
         }
+        /* Style untuk penanda wajib isi */
+        .required-label::after {
+            content: '*';
+            color: #ef4444; /* Warna merah */
+            margin-left: 4px;
+        }
     </style>
 @endpush
 
@@ -98,28 +104,29 @@
             @csrf
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
-                {{-- Kolom Kiri (Info Utama) --}}
+                {{-- Kolom Kiri (Informasi Utama) --}}
                 <div class="lg:col-span-2 space-y-6">
 
                     {{-- Nama & Deskripsi --}}
                     <div class="bg-white p-6 rounded-lg shadow">
                         <h2 class="text-xl font-semibold mb-4">Informasi Dasar</h2>
                         <div class="mb-4">
-                            <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Nama Produk</label>
+                            <label for="name" class="block text-sm font-medium text-gray-700 mb-1 required-label">Nama Produk</label>
                             <input type="text" id="name" name="name"
+                                value="{{ old('name') }}"
                                 class="w-full border-gray-300 rounded-md shadow-sm" required>
                         </div>
                         <div class="mb-4">
                             <label for="short_description" class="block text-sm font-medium text-gray-700 mb-1">Deskripsi
                                 Singkat</label>
                             <textarea id="short_description" name="short_description" rows="3"
-                                class="w-full border-gray-300 rounded-md shadow-sm"></textarea>
+                                class="w-full border-gray-300 rounded-md shadow-sm">{{ old('short_description') }}</textarea>
                         </div>
                         <div>
                             <label for="description" class="block text-sm font-medium text-gray-700 mb-1">Deskripsi Lengkap
-                                </p>
+                                </label>
                                 {{-- Disarankan menggunakan editor WYSIWYG seperti TinyMCE atau CKEditor di sini --}}
-                                <textarea id="description" name="description" rows="8" class="w-full border-gray-300 rounded-md shadow-sm"></textarea>
+                                <textarea id="description" name="description" rows="8" class="w-full border-gray-300 rounded-md shadow-sm">{{ old('description') }}</textarea>
                         </div>
                     </div>
 
@@ -127,9 +134,9 @@
                     <div class="bg-white p-6 rounded-lg shadow">
                         <h2 class="text-xl font-semibold mb-4">Gambar Produk</h2>
                         <div class="mb-4">
-                            <label for="main_image" class="block text-sm font-medium text-gray-700 mb-1">Gambar Utama
+                            <label for="main_image" class="block text-sm font-medium text-gray-700 mb-1 required-label">Gambar Utama
                                 (Thumbnail)</label>
-                            <input type="file" id="main_image" name="main_image" class="w-full" accept="image/*">
+                            <input type="file" id="main_image" name="main_image" class="w-full" accept="image/*" required>
                             <div id="main-image-preview-container" class="image-preview-container"></div>
                         </div>
                         <div>
@@ -148,19 +155,22 @@
                             {{-- Varian pertama (contoh) --}}
                             <div class="variant-item grid grid-cols-1 md:grid-cols-4 gap-4 items-end border-b pb-4 mb-4">
                                 <div>
-                                    <label class="block text-sm font-medium text-gray-700">Warna</label>
+                                    <label class="block text-sm font-medium text-gray-700 required-label">Warna</label>
                                     <input type="text" name="variants[0][color]" placeholder="e.g., Merah"
-                                        class="w-full border-gray-300 rounded-md shadow-sm mt-1">
+                                        value="{{ old('variants.0.color') }}"
+                                        class="w-full border-gray-300 rounded-md shadow-sm mt-1" required>
                                 </div>
                                 <div>
-                                    <label class="block text-sm font-medium text-gray-700">Ukuran</label>
+                                    <label class="block text-sm font-medium text-gray-700 required-label">Ukuran</label>
                                     <input type="text" name="variants[0][size]" placeholder="e.g., XL"
-                                        class="w-full border-gray-300 rounded-md shadow-sm mt-1">
+                                        value="{{ old('variants.0.size') }}"
+                                        class="w-full border-gray-300 rounded-md shadow-sm mt-1" required>
                                 </div>
                                 <div>
-                                    <label class="block text-sm font-medium text-gray-700">Stok</label>
+                                    <label class="block text-sm font-medium text-gray-700 required-label">Stok</label>
                                     <input type="number" name="variants[0][stock]" placeholder="e.g., 50"
-                                        class="w-full border-gray-300 rounded-md shadow-sm mt-1" min="0">
+                                        value="{{ old('variants.0.stock') }}"
+                                        class="w-full border-gray-300 rounded-md shadow-sm mt-1" min="0" required>
                                 </div>
                                 <button type="button"
                                     class="remove-variant-btn bg-red-500 text-white px-3 py-2 rounded-md hover:bg-red-600 text-sm">Hapus</button>
@@ -173,27 +183,26 @@
                     </div>
                 </div>
 
-                <!-- Contoh penempatan di kolom kanan (Pengaturan) -->
-
+                {{-- Kolom Kanan (Pengaturan, Harga & SKU, Organisasi) --}}
                 <div class="space-y-6">
                     <div class="bg-white p-6 rounded-lg shadow">
                         <h2 class="text-xl font-semibold mb-4">Pengaturan Tampilan</h2>
                         <div class="space-y-4">
                             <label for="is_best_seller" class="flex items-center">
                                 <input type="checkbox" id="is_best_seller" name="is_best_seller" value="1"
-                                    {{ isset($product) && $product->is_best_seller ? 'checked' : '' }}
+                                    {{ old('is_best_seller') ? 'checked' : '' }}
                                     class="h-4 w-4 text-blue-600 border-gray-300 rounded">
                                 <span class="ml-2 text-sm text-gray-700">Tandai sebagai Best Seller</span>
                             </label>
                             <label for="is_new_arrival" class="flex items-center">
                                 <input type="checkbox" id="is_new_arrival" name="is_new_arrival" value="1"
-                                    {{ isset($product) && $product->is_new_arrival ? 'checked' : '' }}
+                                    {{ old('is_new_arrival') ? 'checked' : '' }}
                                     class="h-4 w-4 text-blue-600 border-gray-300 rounded">
                                 <span class="ml-2 text-sm text-gray-700">Tandai sebagai New Arrival</span>
                             </label>
                             <label for="is_hot_sale" class="flex items-center">
                                 <input type="checkbox" id="is_hot_sale" name="is_hot_sale" value="1"
-                                    {{ isset($product) && $product->is_hot_sale ? 'checked' : '' }}
+                                    {{ old('is_hot_sale') ? 'checked' : '' }}
                                     class="h-4 w-4 text-blue-600 border-gray-300 rounded">
                                 <span class="ml-2 text-sm text-gray-700">Tandai sebagai Hot Sale</span>
                             </label>
@@ -201,16 +210,43 @@
                     </div>
                     <div class="bg-white p-6 rounded-lg shadow">
                         <h2 class="text-xl font-semibold mb-4">Harga & SKU</h2>
+                        <!-- Input Harga Modal -->
                         <div class="mb-4">
-                            <label for="price" class="block text-sm font-medium text-gray-700 mb-1">Harga Utama
+                            <label for="modal_price" class="block text-sm font-medium text-gray-700 required-label">Harga Modal
                                 (Rp)</label>
-                            <input type="number" id="price" name="price"
-                                class="w-full border-gray-300 rounded-md shadow-sm" required min="0">
+                            <input type="number" name="modal_price" id="modal_price" step="any" min="0"
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+                                value="{{ old('modal_price') }}" required>
+                            @error('modal_price')
+                                <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <!-- Input Persentase Keuntungan -->
+                        <div class="mb-4">
+                            <label for="profit_percentage" class="block text-sm font-medium text-gray-700 required-label">Persentase
+                                Keuntungan (%)</label>
+                            <input type="number" name="profit_percentage" id="profit_percentage" step="0.01"
+                                min="0" max="100"
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+                                value="{{ old('profit_percentage') }}" required>
+                            @error('profit_percentage')
+                                <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <!-- Untuk menampilkan harga jual otomatis (opsional, bisa di JS atau hanya di show/index) -->
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700">Harga Jual (Otomatis)</label>
+                            <p class="mt-1 text-lg font-semibold text-gray-900" id="selling_price_display">
+                                Rp 0
+                                {{-- Di halaman create, $product belum ada, jadi tampilkan 0 atau kosong --}}
+                            </p>
                         </div>
                         <div>
                             <label for="sku" class="block text-sm font-medium text-gray-700 mb-1">SKU (Stock Keeping
                                 Unit)</label>
-                            <input type="text" id="sku" name="sku"
+                            <input type="text" id="sku" name="sku" value="{{ old('sku') }}"
                                 class="w-full border-gray-300 rounded-md shadow-sm">
                         </div>
                     </div>
@@ -218,23 +254,27 @@
                     <div class="bg-white p-6 rounded-lg shadow">
                         <h2 class="text-xl font-semibold mb-4">Organisasi</h2>
                         <div class="mb-4">
-                            <label for="sub_category_id">Sub Kategori:</label>
-                            <select name="sub_category_id" id="sub_category_id" required>
+                            <label for="sub_category_id" class="block text-sm font-medium text-gray-700 mb-1 required-label">Sub Kategori:</label>
+                            <select name="sub_category_id" id="sub_category_id"
+                                class="w-full border-gray-300 rounded-md shadow-sm" required>
                                 <option value="">Pilih Sub Kategori</option>
                                 @foreach ($subCategories as $subCategory)
                                     <option value="{{ $subCategory->id }}"
-                                        {{ old('sub_category_id', optional($product ?? null)->sub_category_id) == $subCategory->id ? 'selected' : '' }}>
+                                        {{ old('sub_category_id') == $subCategory->id ? 'selected' : '' }}>
                                         {{ $subCategory->name }}
                                     </option>
                                 @endforeach
                             </select>
+                            @error('sub_category_id')
+                                <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                            @enderror
                         </div>
                         <div>
                             <label for="tags-input" class="block text-sm font-medium text-gray-700 mb-1">Tag Produk
                                 (pisahkan dengan koma)</label>
                             <input type="text" id="tags-input" class="w-full border-gray-300 rounded-md shadow-sm"
                                 placeholder="e.g., Baju, Musim Panas, Katun">
-                            <input type="hidden" name="tags" id="tags-hidden">
+                            <input type="hidden" name="tags" id="tags-hidden" value="{{ old('tags') }}">
                             <div id="tags-container" class="tag-container mt-2"></div>
                         </div>
                     </div>
@@ -258,21 +298,51 @@
             // --- Logika Varian ---
             const variantsContainer = document.getElementById('variants-container');
             const addVariantBtn = document.getElementById('add-variant-btn');
-            let variantIndex = 1;
+            let variantIndex = 0; // Mulai dari 0 untuk input baru
 
-            addVariantBtn.addEventListener('click', () => {
+            // Fungsi untuk menambahkan varian baru
+            function addVariant(color = '', size = '', stock = '') {
                 const variantItem = document.createElement('div');
                 variantItem.className =
                     'variant-item grid grid-cols-1 md:grid-cols-4 gap-4 items-end border-b pb-4 mb-4';
                 variantItem.innerHTML = `
-            <div><label class="block text-sm font-medium text-gray-700">Warna</label><input type="text" name="variants[${variantIndex}][color]" class="w-full border-gray-300 rounded-md shadow-sm mt-1"></div>
-            <div><label class="block text-sm font-medium text-gray-700">Ukuran</label><input type="text" name="variants[${variantIndex}][size]" class="w-full border-gray-300 rounded-md shadow-sm mt-1"></div>
-            <div><label class="block text-sm font-medium text-gray-700">Stok</label><input type="number" name="variants[${variantIndex}][stock]" class="w-full border-gray-300 rounded-md shadow-sm mt-1" min="0"></div>
-            <button type="button" class="remove-variant-btn bg-red-500 text-white px-3 py-2 rounded-md hover:bg-red-600 text-sm">Hapus</button>
-        `;
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 required-label">Warna</label>
+                        <input type="text" name="variants[${variantIndex}][color]" placeholder="e.g., Merah"
+                            value="${color}"
+                            class="w-full border-gray-300 rounded-md shadow-sm mt-1" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 required-label">Ukuran</label>
+                        <input type="text" name="variants[${variantIndex}][size]" placeholder="e.g., XL"
+                            value="${size}"
+                            class="w-full border-gray-300 rounded-md shadow-sm mt-1" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 required-label">Stok</label>
+                        <input type="number" name="variants[${variantIndex}][stock]" placeholder="e.g., 50"
+                            value="${stock}"
+                            class="w-full border-gray-300 rounded-md shadow-sm mt-1" min="0" required>
+                    </div>
+                    <button type="button"
+                        class="remove-variant-btn bg-red-500 text-white px-3 py-2 rounded-md hover:bg-red-600 text-sm">Hapus</button>
+                `;
                 variantsContainer.appendChild(variantItem);
                 variantIndex++;
-            });
+            }
+
+            // Tambahkan varian default jika tidak ada old input
+            if ({{ count(old('variants', [])) }} === 0) {
+                addVariant(); // Tambah satu varian kosong secara default
+            } else {
+                // Isi varian dari old input jika ada error validasi
+                @foreach (old('variants', []) as $idx => $variant)
+                    addVariant('{{ $variant['color'] ?? '' }}', '{{ $variant['size'] ?? '' }}', '{{ $variant['stock'] ?? '' }}');
+                @endforeach
+            }
+
+
+            addVariantBtn.addEventListener('click', () => addVariant());
 
             variantsContainer.addEventListener('click', function(e) {
                 if (e.target.classList.contains('remove-variant-btn')) {
@@ -285,6 +355,12 @@
             const tagsContainer = document.getElementById('tags-container');
             const tagsHidden = document.getElementById('tags-hidden');
             let tags = [];
+
+            // Inisialisasi tags dari old input atau nilai yang ada
+            if (tagsHidden.value) {
+                tags = tagsHidden.value.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
+            }
+            renderTags(); // Render tags awal
 
             function renderTags() {
                 tagsContainer.innerHTML = '';
@@ -351,6 +427,32 @@
 
             createImagePreviewer('main_image', 'main-image-preview-container');
             createImagePreviewer('gallery_images', 'gallery-preview-container', true);
+
+            // --- Logika Perhitungan Harga Jual Otomatis (Opsional) ---
+            const modalPriceInput = document.getElementById('modal_price');
+            const profitPercentageInput = document.getElementById('profit_percentage');
+            const sellingPriceDisplay = document.getElementById('selling_price_display');
+
+            function calculateSellingPrice() {
+                const modalPrice = parseFloat(modalPriceInput.value) || 0;
+                const profitPercentage = parseFloat(profitPercentageInput.value) || 0;
+
+                if (modalPrice >= 0 && profitPercentage >= 0) {
+                    const sellingPrice = modalPrice * (1 + (profitPercentage / 100));
+                    sellingPriceDisplay.textContent = 'Rp ' + sellingPrice.toLocaleString('id-ID', {
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 0
+                    });
+                } else {
+                    sellingPriceDisplay.textContent = 'Rp 0';
+                }
+            }
+
+            modalPriceInput.addEventListener('input', calculateSellingPrice);
+            profitPercentageInput.addEventListener('input', calculateSellingPrice);
+
+            // Panggil sekali saat halaman dimuat untuk menampilkan nilai awal jika ada old input
+            calculateSellingPrice();
         });
     </script>
 @endpush

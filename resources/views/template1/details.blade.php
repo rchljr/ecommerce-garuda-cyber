@@ -36,8 +36,9 @@
             background-color: #dc3545;
         }
 
+        /* Gaya untuk pilihan varian yang aktif */
         .product__details__option .size label.active,
-        .product__details__option .color label.active {
+        .product__details__option__color label.active {
             border: 2px solid #111111;
         }
 
@@ -49,17 +50,24 @@
             margin-right: 10px;
             position: relative;
             cursor: pointer;
+            border: 1px solid #ccc;
         }
 
-        .product__details__option__color label input {
+        .product__details__option__color label input,
+        .product__details__option__size label input {
             position: absolute;
             visibility: hidden;
         }
 
         /* Style untuk ikon wishlist yang aktif */
-        .product__details__btns__option .toggle-wishlist.active i,
-        .product__hover .toggle-wishlist.active img {
-            filter: invert(25%) sepia(100%) saturate(5000%) hue-rotate(330deg);
+        .product__details__btns__option .toggle-wishlist.active i {
+            color: #e53636;
+        }
+
+        /* Style untuk tombol Add to Cart yang dinonaktifkan */
+        .primary-btn:disabled {
+            background-color: #b0b0b0;
+            cursor: not-allowed;
         }
     </style>
 @endpush
@@ -77,8 +85,10 @@
                 <div class="row">
                     <div class="col-lg-12">
                         <div class="product__details__breadcrumb">
-                            <a href="{{ !$isPreview ? route('tenant.home', ['subdomain' => $currentSubdomain]) : '#' }}">Home</a>
-                            <a href="{{ !$isPreview ? route('tenant.shop', ['subdomain' => $currentSubdomain]) : '#' }}">Shop</a>
+                            <a
+                                href="{{ !$isPreview ? route('tenant.home', ['subdomain' => $currentSubdomain]) : '#' }}">Home</a>
+                            <a
+                                href="{{ !$isPreview ? route('tenant.shop', ['subdomain' => $currentSubdomain]) : '#' }}">Shop</a>
                             <span>{{ $product->name ?? 'Detail Produk' }}</span>
                         </div>
                     </div>
@@ -143,44 +153,33 @@
                             <p>{{ $product->short_description ?? 'Deskripsi singkat produk akan muncul di sini.' }}</p>
 
                             <form id="add-to-cart-form"
-                                action="{{ !$isPreview ? route('tenant.cart.add', ['subdomain' => $currentSubdomain]) : '#' }}" method="POST">
+                                action="{{ !$isPreview ? route('tenant.cart.add', ['subdomain' => $currentSubdomain]) : '#' }}"
+                                method="POST">
                                 @csrf
                                 <input type="hidden" name="product_id" value="{{ $product->id }}">
+                                <input type="hidden" id="selected-variant-id" name="variant_id" value="">
 
                                 @php
                                     $uniqueColors = $product->variants->pluck('color')->unique();
-                                    $uniqueSizes = $product->variants->pluck('size')->unique();
+                                    $allVariants = $product->variants;
                                 @endphp
 
                                 <div class="product__details__option">
-                                    <div class="product__details__option__size">
-                                        <span>Size:</span>
-                                        @foreach($uniqueSizes as $size)
-                                            <label for="size-{{$size}}"><input type="radio" id="size-{{$size}}" name="size"
-                                                    value="{{$size}}"> {{$size}}</label>
-                                        @endforeach
-                                    </div>
                                     <div class="product__details__option__color">
                                         <span>Color:</span>
                                         @foreach($uniqueColors as $color)
-                                            @php
-                                                $cssColor = strtolower($color);
-                                                $colorMap = [
-                                                    'putih' => 'white',
-                                                    'hitam' => 'black',
-                                                    'merah' => 'red',
-                                                    'biru' => 'blue',
-                                                    'hijau' => 'green',
-                                                    'kuning' => 'yellow',
-                                                    'abu-abu' => 'gray',
-                                                ];
-                                                $displayColor = $colorMap[$cssColor] ?? $cssColor;
-                                            @endphp
-                                            <label for="color-{{$color}}"
-                                                style="background-color: {{ $displayColor }}; border: 1px solid #ccc;">
+                                            <label for="color-{{$color}}" style="background-color: {{ strtolower($color) }};">
                                                 <input type="radio" id="color-{{$color}}" name="color" value="{{$color}}">
                                             </label>
                                         @endforeach
+                                    </div>
+                                    <div class="product__details__option__size">
+                                        <span>Size:</span>
+                                        <div id="size-options-container">
+                                            {{-- Opsi ukuran akan di-generate oleh JavaScript --}}
+                                            <p class="text-muted small" style="display: inline-block;">Pilih warna terlebih
+                                                dahulu</p>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -190,7 +189,8 @@
                                             <input type="text" name="quantity" value="1">
                                         </div>
                                     </div>
-                                    <button type="submit" class="primary-btn">add to cart</button>
+                                    <button type="submit" class="primary-btn" id="add-to-cart-btn" disabled>add to
+                                        cart</button>
                                 </div>
                             </form>
                             <div class="product__details__btns__option">
@@ -202,8 +202,7 @@
                                 <h5><span>Guaranteed Safe Checkout</span></h5>
                                 <img src="{{ asset('template1/img/shop-details/details-payment.png') }}" alt="">
                                 <ul>
-                                    <li><span>SKU:</span> {{ $product->sku ?? 'N/A' }}</li>
-                                    {{-- PERBAIKAN: Menggunakan relasi subCategory --}}
+                                    <li><span>SKU:</span> <span id="variant-sku">{{ $product->sku ?? 'N/A' }}</span></li>
                                     <li><span>Categories:</span> {{ $product->subCategory->name ?? 'Uncategorized' }}</li>
                                     <li><span>Tag:</span>
                                         @forelse($product->tags as $tag)
@@ -217,44 +216,11 @@
                         </div>
                     </div>
                 </div>
-                <div class="row">
-                    <div class="col-lg-12">
-                        <div class="product__details__tab">
-                            <ul class="nav nav-tabs" role="tablist">
-                                <li class="nav-item">
-                                    <a class="nav-link active" data-toggle="tab" href="#tabs-description"
-                                        role="tab">Deskripsi</a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link" data-toggle="tab" href="#tabs-reviews" role="tab">Ulasan
-                                        ({{ $product->reviews_count ?? 0 }})</a>
-                                </li>
-                            </ul>
-                            <div class="tab-content">
-                                <div class="tab-pane active" id="tabs-description" role="tabpanel">
-                                    <div class="product__details__tab__content">
-                                        <div class="product__details__tab__text">
-                                            {!! $product->description ?? 'Informasi deskripsi lengkap produk belum tersedia.' !!}
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="tab-pane" id="tabs-reviews" role="tabpanel">
-                                    <div class="product__details__tab__content">
-                                        <p>Ulasan pelanggan akan ditampilkan di sini.</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                {{-- ... (Tabs Deskripsi & Ulasan) ... --}}
             </div>
         </div>
     </section>
     <!-- Shop Details Section End -->
-
-    <!-- Related Section Begin -->
-    {{-- ... (Bagian Produk Terkait tetap sama) ... --}}
-    <!-- Related Section End -->
 
     <div id="toast-notification" class="toast-notification"></div>
 @endsection
@@ -263,30 +229,82 @@
 @push('scripts')
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            // Fungsi 'pro-qty' untuk tombol kuantitas
-            var proQty = $('.pro-qty');
-            proQty.prepend('<span class="fa fa-angle-up dec qtybtn"></span>');
-            proQty.append('<span class="fa fa-angle-down inc qtybtn"></span>');
-            proQty.on('click', '.qtybtn', function () {
-                var $button = $(this);
-                var oldValue = $button.parent().find('input').val();
-                var newVal;
-                if ($button.hasClass('inc')) {
-                    newVal = parseFloat(oldValue) + 1;
+            // Data varian dari PHP ke JavaScript
+            const allVariants = @json($allVariants);
+
+            const colorRadios = document.querySelectorAll('input[name="color"]');
+            const sizeContainer = document.getElementById('size-options-container');
+            const addToCartBtn = document.getElementById('add-to-cart-btn');
+            const selectedVariantInput = document.getElementById('selected-variant-id');
+            const skuElement = document.getElementById('variant-sku');
+
+            let selectedColor = null;
+            let selectedSize = null;
+
+            function updateCartButtonState() {
+                if (selectedColor && selectedSize) {
+                    const variant = allVariants.find(v => v.color === selectedColor && v.size === selectedSize);
+                    if (variant && variant.stock > 0) {
+                        addToCartBtn.disabled = false;
+                        addToCartBtn.textContent = 'add to cart';
+                        selectedVariantInput.value = variant.id;
+                        skuElement.textContent = variant.sku || 'N/A';
+                    } else {
+                        addToCartBtn.disabled = true;
+                        addToCartBtn.textContent = 'Stok Habis';
+                        selectedVariantInput.value = '';
+                        skuElement.textContent = 'N/A';
+                    }
                 } else {
-                    if (oldValue > 1) { newVal = parseFloat(oldValue) - 1; }
-                    else { newVal = 1; }
+                    addToCartBtn.disabled = true;
+                    addToCartBtn.textContent = 'Pilih Varian';
+                    selectedVariantInput.value = '';
+                    skuElement.textContent = 'N/A';
                 }
-                $button.parent().find('input').val(newVal);
+            }
+
+            colorRadios.forEach(radio => {
+                radio.addEventListener('change', function () {
+                    // Reset active class
+                    document.querySelectorAll('.product__details__option__color label').forEach(l => l.classList.remove('active'));
+                    this.parentElement.classList.add('active');
+
+                    selectedColor = this.value;
+                    selectedSize = null; // Reset pilihan ukuran
+
+                    const availableSizes = allVariants.filter(v => v.color === selectedColor);
+
+                    sizeContainer.innerHTML = '';
+                    if (availableSizes.length > 0) {
+                        availableSizes.forEach(item => {
+                            const isDisabled = item.stock <= 0;
+                            const optionHtml = `
+                                    <label for="size-${item.size}" class="${isDisabled ? 'disabled' : ''}">
+                                        <input type="radio" id="size-${item.size}" name="size" value="${item.size}" ${isDisabled ? 'disabled' : ''}> ${item.size}
+                                    </label>
+                                `;
+                            sizeContainer.innerHTML += optionHtml;
+                        });
+                    } else {
+                        sizeContainer.innerHTML = '<p class="text-muted small">Tidak ada ukuran tersedia.</p>';
+                    }
+                    updateCartButtonState();
+                });
             });
 
-            // Fungsi untuk memilih varian
-            $('.product__details__option__size label, .product__details__option__color label').on('click', function () {
-                $(this).siblings().removeClass('active');
-                $(this).addClass('active');
+            sizeContainer.addEventListener('click', function (e) {
+                if (e.target.tagName === 'LABEL' && !e.target.classList.contains('disabled')) {
+                    sizeContainer.querySelectorAll('label').forEach(l => l.classList.remove('active'));
+                    e.target.classList.add('active');
+                    const radio = e.target.querySelector('input[name="size"]');
+                    if (radio) {
+                        radio.checked = true;
+                        selectedSize = radio.value;
+                        updateCartButtonState();
+                    }
+                }
             });
 
-            // --- Logika AJAX (Sama seperti halaman shop) ---
             const toastElement = document.getElementById('toast-notification');
             let toastTimeout;
             function showToast(message, type = 'success') {
@@ -300,85 +318,71 @@
             }
             const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
 
-            // AJAX untuk Add to Cart (menggunakan form)
             document.getElementById('add-to-cart-form').addEventListener('submit', function (e) {
                 e.preventDefault();
-
-                const selectedSize = this.querySelector('input[name="size"]:checked');
-                const selectedColor = this.querySelector('input[name="color"]:checked');
-
-                if (!selectedSize || !selectedColor) {
-                    showToast('Silakan pilih Ukuran dan Warna terlebih dahulu.', 'error');
-                    return;
-                }
-
                 const formData = new FormData(this);
                 const originalButton = this.querySelector('.primary-btn');
-                originalButton.disabled = true;
-                originalButton.textContent = 'ADDING...';
 
-                // =======================================================//
-                // ========= PERBAIKAN UTAMA ADA DI SINI ================= //
-                // =======================================================//
+                originalButton.disabled = true;
+                originalButton.innerHTML = 'ADDING...';
+
                 fetch(this.action, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json', // Beri tahu server kita mengirim JSON
                         'Accept': 'application/json',
                         'X-CSRF-TOKEN': csrfToken
                     },
-                    body: JSON.stringify(Object.fromEntries(formData)) // Ubah form data menjadi JSON
+                    body: formData
                 })
-                    .then(res => {
-                        // Cek jika response tidak OK, lalu coba parse errornya
-                        if (!res.ok) {
-                            return res.json().then(errorData => {
-                                // Buat pesan error dari validasi Laravel
-                                const errorMessages = Object.values(errorData.errors).flat().join('\n');
-                                throw new Error(errorMessages);
-                            });
+                    .then(res => res.json().then(data => ({ status: res.status, body: data })))
+                    .then(response => {
+                        const { status, body } = response;
+                        if (status >= 400) {
+                            const errorMessages = body.errors ? Object.values(body.errors).flat().join('\n') : (body.message || 'Terjadi kesalahan.');
+                            throw new Error(errorMessages);
                         }
-                        return res.json();
-                    })
-                    .then(data => {
-                        if (data.success) {
-                            showToast(data.message || 'Produk berhasil ditambahkan!', 'success');
+
+                        if (body.success) {
+                            showToast(body.message || 'Produk berhasil ditambahkan!', 'success');
                             const cartCountElement = document.getElementById('cart-count');
-                            if (cartCountElement && data.cart_count !== undefined) {
-                                cartCountElement.textContent = data.cart_count;
+                            if (cartCountElement && body.cart_count !== undefined) {
+                                cartCountElement.textContent = body.cart_count;
                             }
                         } else {
-                            // Ini seharusnya tidak terjadi jika validasi gagal, tapi sebagai fallback
-                            showToast(data.message || 'Gagal menambahkan produk.', 'error');
+                            throw new Error(body.message || 'Gagal menambahkan produk.');
                         }
                     })
                     .catch(err => {
-                        // Tampilkan pesan error validasi atau error umum
                         showToast(err.message, 'error');
                     })
                     .finally(() => {
                         originalButton.disabled = false;
-                        originalButton.textContent = 'add to cart';
+                        originalButton.innerHTML = 'add to cart';
                     });
             });
 
-            // AJAX untuk Wishlist
             document.querySelectorAll('.toggle-wishlist').forEach(button => {
                 button.addEventListener('click', function (e) {
                     e.preventDefault();
-                    if (!csrfToken) { showToast('Terjadi kesalahan. Coba refresh halaman.', 'error'); return; }
+                    if (!csrfToken) {
+                        showToast('Terjadi kesalahan. Coba refresh halaman.', 'error');
+                        return;
+                    }
 
                     const productId = this.dataset.productId;
+                    const wishlistButton = this;
 
-                    // PERBAIKAN: Tambahkan parameter subdomain ke rute tenant.wishlist.toggle
                     fetch("{{ !$isPreview ? route('tenant.wishlist.toggle', ['subdomain' => $currentSubdomain]) : '#' }}", {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken
+                        },
                         body: JSON.stringify({ product_id: productId })
                     })
                         .then(response => {
                             if (response.status === 401) {
-                                // PERBAIKAN: Tambahkan parameter subdomain ke rute tenant.customer.login.form
                                 window.location.href = "{{ !$isPreview ? route('tenant.customer.login.form', ['subdomain' => $currentSubdomain]) : '#' }}";
                                 throw new Error('Unauthorized');
                             }
@@ -388,25 +392,44 @@
                             if (data.success) {
                                 if (data.action === 'added') {
                                     showToast('Produk ditambahkan ke Wishlist!', 'success');
-                                    this.classList.add('active');
+                                    wishlistButton.classList.add('active');
                                 } else {
                                     showToast('Produk dihapus dari Wishlist.', 'success');
-                                    this.classList.remove('active');
+                                    wishlistButton.classList.remove('active');
                                 }
                                 const wishlistCountElement = document.getElementById('wishlist-count');
-                                if (wishlistCountElement) {
+                                if (wishlistCountElement && data.wishlist_count !== undefined) {
                                     wishlistCountElement.textContent = data.wishlist_count;
                                 }
                             } else {
-                                showToast(data.message || 'Operasi wishlist gagal.', 'error');
+                                throw new Error(data.message || 'Operasi wishlist gagal.');
                             }
                         }).catch(error => {
                             if (error.message !== 'Unauthorized') {
                                 console.error('Wishlist Error:', error);
-                                showToast('Terjadi kesalahan pada wishlist.', 'error');
+                                showToast(error.message || 'Terjadi kesalahan pada wishlist.', 'error');
                             }
                         });
                 });
+            });
+
+            var proQty = $('.pro-qty');
+            proQty.prepend('<span class="fa fa-angle-down dec qtybtn"></span>');
+            proQty.append('<span class="fa fa-angle-up inc qtybtn"></span>');
+            proQty.on('click', '.qtybtn', function () {
+                var $button = $(this);
+                var oldValue = $button.parent().find('input').val();
+                var newVal;
+                if ($button.hasClass('inc')) {
+                    newVal = parseFloat(oldValue) + 1;
+                } else {
+                    if (oldValue > 1) {
+                        newVal = parseFloat(oldValue) - 1;
+                    } else {
+                        newVal = 1;
+                    }
+                }
+                $button.parent().find('input').val(newVal);
             });
         });
     </script>

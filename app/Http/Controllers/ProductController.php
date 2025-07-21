@@ -2,21 +2,24 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
-use App\Models\SubCategory; // Make sure to import SubCategory model
-use Illuminate\Http\Request;
+use App\Models\Tag;
 use App\Models\Product;
 use App\Models\Category;
-use App\Models\Tag;
+use App\Traits\UploadFile;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\DB;
+use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
+use App\Models\SubCategory; // Make sure to import SubCategory model
 
 
 class ProductController extends Controller
 {
+    use UploadFile;
+
     /**
      * Menampilkan daftar semua produk.
      */
@@ -25,17 +28,13 @@ class ProductController extends Controller
         $user = Auth::user();
         $shop = $user->shop;
 
-        // PENINGKATAN: Pastikan mitra punya toko
-        if (!$shop || !$shop->product_categories) {
+        // Pastikan mitra memiliki toko yang terdaftar
+        if (!$shop) {
             abort(403, 'Profil toko Anda belum lengkap.');
         }
 
-        // Ambil ID semua sub-kategori yang dimiliki toko ini
-        $mainCategory = Category::where('slug', $shop->product_categories)->first();
-        $subCategoryIds = $mainCategory ? $mainCategory->subCategories()->pluck('id') : [];
-
-        // Tampilkan produk yang hanya memiliki sub_category_id yang diizinkan
-        $products = Product::whereIn('sub_category_id', $subCategoryIds)
+        // Ambil produk yang HANYA memiliki shop_id yang sama dengan toko mitra.
+        $products = Product::where('shop_id', $shop->id)
             ->latest()
             ->paginate(10);
 
@@ -48,18 +47,18 @@ class ProductController extends Controller
     public function create()
     {
         $user = Auth::user();
-        $subCategories = collect(); // Initialize as an empty collection
+        $shop = $user->shop;
+        $subCategories = collect();
 
-        // Assuming 'shop' relationship exists on the User model
-        // and 'product_categories' stores the slug of the main category
-        $mainCategorySlug = optional($user->shop)->product_categories;
+        // Pastikan mitra memiliki toko dan kategori produk
+        if (!$shop || !$shop->product_categories) {
+            abort(403, 'Profil toko Anda belum lengkap untuk menambahkan produk.');
+        }
 
-        if ($mainCategorySlug) {
-            $mainCategory = Category::where('slug', $mainCategorySlug)->first();
-            if ($mainCategory) {
-                // Assuming Category model has a hasMany relationship to SubCategory model named 'subCategories'
-                $subCategories = $mainCategory->subCategories()->orderBy('name', 'asc')->get();
-            }
+        // Ambil sub-kategori berdasarkan kategori utama toko
+        $mainCategory = Category::where('slug', $shop->product_categories)->first();
+        if ($mainCategory) {
+            $subCategories = $mainCategory->subCategories()->orderBy('name', 'asc')->get();
         }
 
         return view('dashboard-mitra.products.create', compact('subCategories'));
@@ -70,12 +69,24 @@ class ProductController extends Controller
      */
     public function store(Request $request)
     {
+        $user = Auth::user();
+        $shop = $user->shop;
+
+        // Validasi keberadaan toko sebelum menyimpan
+        if (!$shop) {
+            return back()->with('error', 'Profil toko tidak ditemukan.');
+        }
+
+        // --- DEBUGGING: Periksa semua data dari request sebelum validasi ---
+        // dd($request->all());
+
         $validatedData = $request->validate([
             'name' => 'required|string|max:255',
             'short_description' => 'nullable|string',
             'description' => 'nullable|string',
-            'price' => 'required|numeric|min:0',
-            'sub_category_id' => 'required|exists:sub_categories,id', // Changed to sub_category_id
+            'modal_price' => 'required|numeric|min:0', // Tambahkan validasi untuk harga modal
+            'profit_percentage' => 'required|numeric|min:0|max:100', // Tambahkan validasi untuk persentase keuntungan
+            'sub_category_id' => 'required|exists:sub_categories,id',
             'main_image' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
             'gallery_images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:2048',
             'variants' => 'required|array',
@@ -89,21 +100,27 @@ class ProductController extends Controller
             'is_hot_sale' => 'nullable',
         ]);
 
+        // --- DEBUGGING: Periksa data yang sudah divalidasi ---
+        // dd($validatedData);
+
         DB::beginTransaction();
         try {
-            $mainImagePath = $request->file('main_image')->store('products/main', 'public');
+            $mainImagePath = $this->uploadFile($request->file('main_image'), 'products/main');
 
+            // Kolom 'price' akan dihitung secara otomatis oleh mutator di model Product
             $product = Product::create([
                 'user_id' => auth::id(),
+                'shop_id' => $shop->id,
                 'name' => $validatedData['name'],
                 'slug' => Str::slug($validatedData['name']) . '-' . uniqid(),
                 'short_description' => $validatedData['short_description'],
                 'description' => $validatedData['description'],
-                'price' => $validatedData['price'],
+                'modal_price' => $validatedData['modal_price'], // Simpan harga modal
+                'profit_percentage' => $validatedData['profit_percentage'], // Simpan persentase keuntungan
                 'sku' => $validatedData['sku'],
-                'sub_category_id' => $validatedData['sub_category_id'], // Changed to sub_category_id
+                'sub_category_id' => $validatedData['sub_category_id'],
                 'main_image' => $mainImagePath,
-                'status' => 'active', // Default status
+                'status' => 'active',
                 'is_best_seller' => $request->has('is_best_seller'),
                 'is_new_arrival' => $request->has('is_new_arrival'),
                 'is_hot_sale' => $request->has('is_hot_sale'),
@@ -125,7 +142,7 @@ class ProductController extends Controller
 
             if ($request->hasFile('gallery_images')) {
                 foreach ($request->file('gallery_images') as $galleryFile) {
-                    $galleryPath = $galleryFile->store('products/gallery', 'public');
+                    $galleryPath = $this->uploadFile($galleryFile, 'products/gallery');
                     $product->gallery()->create(['image_path' => $galleryPath]);
                 }
             }
@@ -141,9 +158,12 @@ class ProductController extends Controller
     /**
      * Menampilkan detail produk tertentu.
      */
-    public function show(Request $request, string $productSlug)
+    public function show(Product $product)
     {
-        $product = Product::where('slug', $productSlug)->firstOrFail(); // Changed 'category' to 'subCategory'
+        if ($product->shop_id !== Auth::user()->shop->id) {
+            abort(403, 'Anda tidak memiliki izin untuk melihat produk ini.');
+        }
+
         return view('dashboard-mitra.products.show', compact('product'));
     }
 
@@ -152,9 +172,13 @@ class ProductController extends Controller
      */
     public function edit(Product $product)
     {
+        if ($product->shop_id !== Auth::user()->shop->id) {
+            abort(403, 'Anda tidak memiliki izin untuk mengedit produk ini.');
+        }
+
         $product->load(['tags', 'variants', 'gallery']);
         $user = Auth::user();
-        $subCategories = collect(); // Initialize as an empty collection
+        $subCategories = collect(); // Mengubah nama variabel dari $categories menjadi $subCategories
 
         $mainCategorySlug = optional($user->shop)->product_categories;
 
@@ -164,7 +188,7 @@ class ProductController extends Controller
                 $subCategories = $mainCategory->subCategories()->orderBy('name', 'asc')->get();
             }
         }
-        return view('dashboard-mitra.products.edit', compact('product', 'subCategories')); // Pass subCategories
+        return view('dashboard-mitra.products.edit', compact('product', 'subCategories')); // Menggunakan 'subCategories'
     }
 
     /**
@@ -172,12 +196,20 @@ class ProductController extends Controller
      */
     public function update(Request $request, Product $product)
     {
+        if ($product->shop_id !== Auth::user()->shop->id) {
+            abort(403, 'Anda tidak memiliki izin untuk mengedit produk ini.');
+        }
+
+        // --- DEBUGGING: Periksa semua data dari request sebelum validasi ---
+        // dd($request->all());
+
         $validatedData = $request->validate([
             'name' => 'required|string|max:255',
             'short_description' => 'nullable|string',
             'description' => 'nullable|string',
-            'price' => 'required|numeric|min:0',
-            'sub_category_id' => 'required|exists:sub_categories,id', // Changed to sub_category_id
+            'modal_price' => 'required|numeric|min:0', // Tambahkan validasi untuk harga modal
+            'profit_percentage' => 'required|numeric|min:0|max:100', // Tambahkan validasi untuk persentase keuntungan
+            'sub_category_id' => 'required|exists:sub_categories,id',
             'main_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
             'gallery_images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:2048',
             'variants' => 'required|array',
@@ -191,11 +223,14 @@ class ProductController extends Controller
             'is_hot_sale' => 'nullable',
         ]);
 
+        // --- DEBUGGING: Periksa data yang sudah divalidasi ---
+        // dd($validatedData);
+
         DB::beginTransaction();
         try {
             $updateData = $validatedData;
 
-            unset($updateData['variants'], $updateData['tags'], $updateData['gallery_images']);
+            unset($updateData['variants'], $updateData['tags']); // Hapus gallery_images karena ditangani terpisah
 
             // Add checkbox data
             $updateData['is_best_seller'] = $request->has('is_best_seller');
@@ -203,12 +238,11 @@ class ProductController extends Controller
             $updateData['is_hot_sale'] = $request->has('is_hot_sale');
 
             if ($request->hasFile('main_image')) {
-                if ($product->main_image) {
-                    Storage::disk('public')->delete($product->main_image);
-                }
-                $updateData['main_image'] = $request->file('main_image')->store('products/main', 'public');
+                $this->deleteFile($product->main_image);
+                $updateData['main_image'] = $this->uploadFile($request->file('main_image'), 'products/main');
             }
 
+            // Kolom 'price' akan dihitung otomatis oleh mutator di model Product
             $product->update($updateData);
 
             if (!empty($validatedData['tags'])) {
@@ -228,9 +262,14 @@ class ProductController extends Controller
                 $product->variants()->create($variantData);
             }
 
+            // Hapus galeri lama jika ada gambar baru yang diunggah
             if ($request->hasFile('gallery_images')) {
+                foreach ($product->gallery as $galleryImage) {
+                    $this->deleteFile($galleryImage->image_path);
+                    $galleryImage->delete();
+                }
                 foreach ($request->file('gallery_images') as $galleryFile) {
-                    $galleryPath = $galleryFile->store('products/gallery', 'public');
+                    $galleryPath = $this->uploadFile($galleryFile, 'products/gallery');
                     $product->gallery()->create(['image_path' => $galleryPath]);
                 }
             }
@@ -248,17 +287,21 @@ class ProductController extends Controller
      */
     public function destroy(Product $product)
     {
+        if ($product->shop_id !== Auth::user()->shop->id) { // Tambahkan otorisasi
+            abort(403, 'Anda tidak memiliki izin untuk menghapus produk ini.');
+        }
+
         DB::beginTransaction();
         try {
-            if ($product->main_image) {
-                Storage::disk('public')->delete($product->main_image);
-            }
+            // Hapus file utama
+            $this->deleteFile($product->main_image);
 
+            // Hapus file galeri
             foreach ($product->gallery as $galleryImage) {
-                Storage::disk('public')->delete($galleryImage->image_path);
+                $this->deleteFile($galleryImage->image_path);
             }
 
-            $product->delete();
+            $product->delete(); // Ini akan menghapus relasi seperti variants dan gallery secara otomatis jika onDelete('cascade') di migrasi
 
             DB::commit();
             return redirect()->route('mitra.products.index')->with('success', 'Produk berhasil dihapus!');

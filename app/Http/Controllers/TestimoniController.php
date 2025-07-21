@@ -135,26 +135,27 @@ class TestimoniController extends Controller
     }
 
     /**
-     * PERUBAHAN: Metode baru untuk mengambil data ulasan spesifik sebagai JSON.
+     * Metode baru untuk mengambil data ulasan spesifik sebagai JSON.
      */
-    public function getReviewJson(Testimoni $testimonial)
+    public function getReviewJson(Request $request, $subdomain, $testimonialId)
     {
+        $testimonial = Testimoni::findOrFail($testimonialId);
+
         // Pastikan user yang meminta adalah pemilik ulasan
         if ($testimonial->user_id !== Auth::guard('customers')->id()) {
             return response()->json(['message' => 'Tidak diizinkan.'], 403);
         }
-
-        // Muat relasi produk sebelum mengirimkan respons
         $testimonial->load('product');
-
         return response()->json($testimonial);
     }
 
     /**
      *  Metode baru untuk memperbarui ulasan yang sudah ada.
      */
-    public function updateReview(Request $request, Testimoni $testimonial)
+    public function updateReview(Request $request, $subdomain, $testimonialId)
     {
+        $testimonial = Testimoni::findOrFail($testimonialId);
+
         // Pastikan user yang mengupdate adalah pemilik ulasan
         if ($testimonial->user_id !== Auth::guard('customers')->id()) {
             return response()->json(['message' => 'Tidak diizinkan.'], 403);

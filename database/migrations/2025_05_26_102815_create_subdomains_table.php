@@ -13,10 +13,13 @@ return new class extends Migration {
         Schema::create('subdomains', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->uuid('user_id');
+            $table->uuid('shop_id')->nullable();
             $table->string('subdomain_name', 100);
             $table->enum('status', ['active', 'pending'])->default('pending');
             $table->timestamps();
+
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
+            $table->foreign('shop_id')->references('id')->on('shops')->onDelete('cascade');
         });
     }
 
