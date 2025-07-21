@@ -69,7 +69,7 @@
                             </div>
                             <input type="text" name="search" id="search" value="{{ request('search') }}"
                                 class="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-full shadow-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 transition duration-200"
-                                placeholder="Cari Toko atau Produk Pilihan Anda...">
+                                placeholder="Cari Toko Pilihan Anda...">
                         </div>
                     </form>
 
@@ -78,13 +78,13 @@
                             <span class="text-sm font-medium text-gray-700 mr-2">Kategori:</span>
                             <a href="{{ route('tenants.index', request()->except('category')) }}"
                                 class="px-4 py-1.5 text-sm font-medium rounded-full transition-all duration-200 ease-in-out
-                                            {{ !request('category') ? 'bg-red-600 text-white shadow-md scale-105' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
+                                                {{ !request('category') ? 'bg-red-600 text-white shadow-md scale-105' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
                                 Semua
                             </a>
                             @foreach ($categories as $category)
                                 <a href="{{ route('tenants.index', array_merge(request()->query(), ['category' => $category->slug, 'page' => 1])) }}"
                                     class="px-4 py-1.5 text-sm font-medium rounded-full transition-all duration-200 ease-in-out
-                                                    {{ request('category') == $category->slug ? 'bg-red-600 text-white shadow-md scale-105' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
+                                                            {{ request('category') == $category->slug ? 'bg-red-600 text-white shadow-md scale-105' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
                                     {{ $category->name }}
                                 </a>
                             @endforeach
