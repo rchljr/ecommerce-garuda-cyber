@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Log;
 class StorePublicationController extends Controller
 {
     /**
-     * Mengubah status subdomain menjadi 'active' (dipublikasikan).
+     * Mengubah status subdomain menjadi 'publish' (dipublikasikan).
      */
     public function publish()
     {
@@ -25,7 +25,7 @@ class StorePublicationController extends Controller
             }
 
             if ($subdomain) {
-                $subdomain->update(['status' => 'active']);
+                $subdomain->update(['publication_status' => 'published']);
                 return back()->with('success', 'Selamat! Toko Anda berhasil dipublikasikan dan kini bisa diakses publik.');
             }
 
@@ -48,7 +48,7 @@ class StorePublicationController extends Controller
 
         try {
             if ($subdomain) {
-                $subdomain->update(['status' => 'pending']);
+                $subdomain->update(['publication_status' => 'pending']);
                 return back()->with('success', 'Toko Anda berhasil disembunyikan dan kini tidak bisa diakses publik.');
             }
 

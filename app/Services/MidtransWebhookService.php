@@ -8,10 +8,8 @@ use App\Models\Payment;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use App\Jobs\ProcessSuccessfulOrderJob;
 use App\Notifications\NewOrderNotification;
 use Illuminate\Support\Facades\Notification;
-use App\Jobs\ProcessSuccessfulSubscriptionJob;
 use Midtrans\Notification as MidtransNotification;
 use App\Notifications\PartnerActivatedNotification;
 use App\Notifications\CustomerPaymentSuccessNotification;
@@ -201,6 +199,14 @@ class MidtransWebhookService
         $expiredDate = $userPackage->plan_type === 'yearly' ? $activeDate->copy()->addYear() : $activeDate->copy()->addMonth();
 
         $userPackage->update(['status' => 'active', 'active_date' => $activeDate, 'expired_date' => $expiredDate]);
+
+        $subdomain = $user->subdomain; // Asumsi relasi 'subdomain' ada di model User
+        if ($subdomain) {
+            $subdomain->update(['status' => 'active']);
+            Log::info('ActivateSubscription: Status subdomain berhasil diupdate menjadi active.', ['subdomain_id' => $subdomain->id]);
+        } else {
+            Log::warning('ActivateSubscription: Subdomain tidak ditemukan untuk user.', ['user_id' => $user->id]);
+        }
 
         $user->removeRole('calon-mitra');
         $user->assignRole('mitra');
