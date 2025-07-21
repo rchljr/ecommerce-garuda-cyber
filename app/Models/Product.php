@@ -23,7 +23,7 @@ class Product extends Model
     protected $fillable = [
         'user_id',
         'shop_id',
-        'sub_category_id', // Changed from category_id to sub_category_id
+        'sub_category_id',
         'name',
         'slug',
         'short_description',

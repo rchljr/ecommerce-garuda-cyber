@@ -29,13 +29,12 @@
                     @php
                         // Mengambil data subdomain dari user yang sedang login
                         $subdomain = Auth::user()->shop->subdomain ?? null;
-                        // Mengganti 'ecommercegaruda.my.id' dengan domain utama Anda jika berbeda
-                        $storeUrl = $subdomain ? $subdomain->url : '#';
+                        $storeUrl = $subdomain ? $subdomain->subdomain_name : '#';
                     @endphp
 
                     @if($subdomain)
                         {{-- Tombol Kunjungi Toko --}}
-                        <a href="{{ $storeUrl }}" target="_blank"
+                        <a href="{{'https://ecommercegaruda.my.id/tenant/'. $storeUrl . '/home'}}" target="_blank"
                             class="inline-flex items-center gap-2 bg-red-600 text-white font-semibold px-4 py-2 rounded-lg hover:bg-red-700 transition-colors shadow-sm">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
                                 stroke="currentColor" stroke-width="2">
@@ -48,7 +47,7 @@
                         {{-- ====================================================== --}}
                         {{-- == BAGIAN BARU: Tombol Publish / Unpublish == --}}
                         {{-- ====================================================== --}}
-                        @if ($subdomain->status == 'active')
+                        @if (Auth::user()->shop->publication_status == 'publish')
                             <form action="{{ route('mitra.editor.unpublish') }}" method="POST"
                                 onsubmit="return confirm('Apakah Anda yakin ingin menyembunyikan toko Anda dari publik?');">
                                 @csrf

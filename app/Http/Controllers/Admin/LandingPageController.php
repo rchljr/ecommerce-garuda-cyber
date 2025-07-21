@@ -54,15 +54,25 @@ class LandingPageController extends BaseController
      */
     public function allTenants(Request $request)
     {
-        // Ambil semua kategori untuk dropdown filter
-        $categories = Category::orderBy('name')->get();
-
-        // Ambil semua mitra dengan filter dan paginasi dari service
+        // Mengambil data mitra dari service
         $partners = $this->landingPageService->getAllPartners($request);
 
-        return view('landing-page.all-tenants', compact('partners', 'categories'));
-    }
+        // Mengambil data kategori untuk filter
+        $categories = Category::all();
 
+        // Mengambil data produk unggulan dari semua toko menggunakan service
+        $bestSellers = $this->landingPageService->getFeaturedProducts('best_seller');
+        $newArrivals = $this->landingPageService->getFeaturedProducts('new_arrival');
+        $hotSales = $this->landingPageService->getFeaturedProducts('hot_sale');
+
+        return view('landing-page.all-tenants', [
+            'partners' => $partners,
+            'categories' => $categories,
+            'bestSellers' => $bestSellers,
+            'newArrivals' => $newArrivals,
+            'hotSales' => $hotSales,
+        ]);
+    }
 
     /**
      * Menampilkan halaman kelola statistik.

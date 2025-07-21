@@ -104,9 +104,9 @@ class RegistrationService
      * @param SubscriptionPackage $package Paket trial yang dipilih.
      * @return void
      */
-    public function activateTrialPackage(User $user, SubscriptionPackage $package)
+    public function activateTrialPackage(User $user, SubscriptionPackage $package, Subdomain $subdomain)
     {
-        DB::transaction(function () use ($user, $package) {
+        DB::transaction(function () use ($user, $package, $subdomain)  {
             // 1. Dapatkan data UserPackage yang dibuat saat registrasi
             $userPackage = $user->userPackage;
             if (!$userPackage) {
@@ -120,6 +120,8 @@ class RegistrationService
                 'active_date' => now(),
                 'expired_date' => now()->addDays($package->trial_days ?? 14), // Gunakan data dari DB atau default 14 hari
             ]);
+
+            $subdomain->update(['status' => 'active']);
 
             // 3. Update User menjadi Mitra Aktif
             $user->status = 'active';
