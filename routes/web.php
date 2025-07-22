@@ -118,6 +118,9 @@ Route::prefix('tenant/{subdomain}')
                 Route::get('/profile', [CustomerProfileController::class, 'show'])->name('profile');
                 Route::post('/profile/update', [CustomerProfileController::class, 'update'])->name('profile.update');
                 Route::get('/orders', [CustomerOrderController::class, 'index'])->name('orders');
+                Route::post('/orders/{order}/cancel', [CustomerOrderController::class, 'cancel'])->name('orders.cancel');
+                Route::post('/orders/{order}/receive', [CustomerOrderController::class, 'receive'])->name('orders.receive');
+                Route::post('/orders/{order}/request-refund', [CustomerOrderController::class, 'requestRefund'])->name('orders.request_refund');
                 Route::get('/notifications', [CustomerNotificationController::class, 'index'])->name('notifications');
                 Route::get('/points', [CustomerPointController::class, 'index'])->name('points');
                 Route::post('/points/redeem/{rewardId}', [CustomerPointController::class, 'redeem'])->name('points.redeem');

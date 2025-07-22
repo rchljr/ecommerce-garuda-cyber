@@ -22,8 +22,6 @@ class Varian extends Model
         'status', // Contoh: 'active', 'inactive'
         'price',
         'stock',
-        // 'size',       // Field baru: Ukuran Varian (misal: 'S', 'M', 'L', 'XL')
-        // 'color', 
         'options_data',     
         'image_path', // Field baru: Path gambar varian
     ];

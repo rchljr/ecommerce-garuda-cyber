@@ -40,6 +40,7 @@ class ProductCart extends Model
     }
     public function variant()
     {
-        return $this->belongsTo(ProductVariant::class, 'product_variant_id');
+        // Menggunakan model 'Varian' dan foreign key 'product_variant_id'
+        return $this->belongsTo(Varian::class, 'product_variant_id');
     }
 }

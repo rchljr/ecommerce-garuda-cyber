@@ -14,16 +14,6 @@
         @error('code') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
     </div>
 
-    <!-- Tipe Diskon -->
-    <div>
-        <label for="type" class="block text-sm font-medium text-gray-700">Tipe Diskon</label>
-        <select name="type" id="type" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
-            <option value="percentage" @selected(old('type', $voucher->type ?? '') == 'percentage')>Persentase (%)</option>
-            <option value="fixed_amount" @selected(old('type', $voucher->type ?? '') == 'fixed_amount')>Potongan Harga Tetap (Rp)</option>
-        </select>
-        @error('type') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
-    </div>
-
     <!-- Nilai Diskon -->
     <div>
         <label for="discount" class="block text-sm font-medium text-gray-700">Nilai Diskon</label>

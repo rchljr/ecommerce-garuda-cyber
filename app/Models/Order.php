@@ -2,20 +2,27 @@
 
 namespace App\Models;
 
-use App\Models\User;
-use App\Models\Voucher;
-use Illuminate\Support\Str;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 
 class Order extends Model
 {
     use HasFactory, HasUuids;
     public $incrementing = false;
     protected $keyType = 'string';
-    //kolom baru
+
+    // Tambahkan status baru
+    const STATUS_PENDING = 'pending';
+    const STATUS_PROCESSING = 'processing';
+    const STATUS_SHIPPED = 'shipped';
+    const STATUS_READY_FOR_PICKUP = 'ready_for_pickup';
+    const STATUS_COMPLETED = 'completed';
+    const STATUS_CANCELLED = 'cancelled';
+    const STATUS_FAILED = 'failed';
+    const STATUS_REFUND_REQUESTED = 'refund_requested';
+    const STATUS_REFUNDED = 'refunded';
+
     protected $fillable = [
         'user_id',
         'shop_id',
@@ -28,6 +35,7 @@ class Order extends Model
         'discount_amount',
         'voucher_id',
         'order_date',
+        'delivery_method',
         'shipping_address',
         'shipping_city',
         'shipping_zip_code',
@@ -40,17 +48,6 @@ class Order extends Model
     {
         return $this->belongsTo(User::class);
     }
-    public function userPackage(): HasOneThrough
-    {
-        return $this->hasOneThrough(
-            UserPackage::class, // Model tujuan
-            User::class,        // Model perantara
-            'id',               // Foreign key di tabel User
-            'user_id',          // Foreign key di tabel UserPackage
-            'user_id',          // Local key di tabel Order
-            'id'                // Local key di tabel User
-        );
-    }
     public function voucher()
     {
         return $this->belongsTo(Voucher::class);
@@ -62,14 +59,10 @@ class Order extends Model
     public function subdomain()
     {
         return $this->belongsTo(Subdomain::class);
-    } // Toko tempat order dibuat
+    }
     public function items()
     {
         return $this->hasMany(OrderItem::class, 'order_id', 'id');
-    }
-    public function histories()
-    {
-        return $this->hasMany(OrderHistory::class);
     }
     public function shipping()
     {
@@ -78,5 +71,9 @@ class Order extends Model
     public function testimonials()
     {
         return $this->hasMany(Testimoni::class, 'order_id', 'id');
+    }
+    public function refundRequest()
+    {
+        return $this->hasOne(RefundRequest::class);
     }
 }

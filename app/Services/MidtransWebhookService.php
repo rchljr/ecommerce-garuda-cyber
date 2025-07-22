@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\User;
 use App\Models\Order;
 use App\Models\Payment;
+use App\Models\ProductCart;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -68,7 +69,7 @@ class MidtransWebhookService
             if ($payment->order_group_id) {
                 $orders = Order::where('order_group_id', $payment->order_group_id)->get();
                 foreach ($orders as $order) {
-                    if ($order->status !== 'completed') {
+                    if ($order->status !== 'pending') {
                         $order->update(['status' => 'failed']);
                         Log::info('MidtransWebhookService: Status order berhasil diupdate menjadi failed.', ['order_id' => $order->id]);
                     }
@@ -126,7 +127,7 @@ class MidtransWebhookService
         Log::info('FinalizeGroupedProductOrder: Memulai finalisasi pesanan untuk grup.', ['order_group_id' => $orderGroupId]);
 
         // Ambil semua order yang terkait dengan grup ini
-        $orders = Order::where('order_group_id', $orderGroupId)->get();
+        $orders = Order::where('order_group_id', $orderGroupId)->with('items')->get();
 
         if ($orders->isEmpty()) {
             Log::error('FinalizeGroupedProductOrder: Tidak ada order yang ditemukan untuk grup.', ['order_group_id' => $orderGroupId]);
@@ -134,12 +135,11 @@ class MidtransWebhookService
         }
 
         foreach ($orders as $order) {
-            // Langkah 2: Update status setiap Order menjadi 'completed'
-            $order->update(['status' => 'completed']);
-            Log::info('FinalizeGroupedProductOrder: Status order diupdate.', ['order_id' => $order->id]);
-
-            // Langkah 3: Finalisasi setiap pesanan (update shipping & kirim notif)
-            $this->finalizeSingleProductOrder($order);
+            if ($order->status === 'pending') {
+                $order->update(['status' => 'processing']); // Status menjadi "Diproses"
+                Log::info('Status order diupdate menjadi processing.', ['order_id' => $order->id]);
+                $this->finalizeSingleProductOrder($order);
+            }
         }
     }
 
@@ -155,25 +155,19 @@ class MidtransWebhookService
             Log::info('FinalizeSingleProductOrder: Status shipping diupdate.', ['order_id' => $order->id]);
         }
 
+        if ($order->shipping) {
+            $order->shipping->update(['status' => 'preparing_shipment']);
+        }
+
         try {
             $customer = $order->user;
             $shopOwner = $order->subdomain->user;
-
-            if ($customer) {
+            if ($customer)
                 Notification::send($customer, new CustomerPaymentSuccessNotification($order));
-                Log::info('Notifikasi sukses pembayaran dikirim ke pelanggan.', ['order_id' => $order->id, 'customer_id' => $customer->id]);
-            }
-
-            if ($shopOwner) {
+            if ($shopOwner)
                 Notification::send($shopOwner, new NewOrderNotification($order));
-                Log::info('Notifikasi pesanan baru dikirim ke mitra.', ['order_id' => $order->id, 'partner_id' => $shopOwner->id]);
-            }
-
         } catch (\Exception $e) {
-            Log::error('FinalizeSingleProductOrder: Gagal mengirim notifikasi.', [
-                'order_id' => $order->id,
-                'error' => $e->getMessage()
-            ]);
+            Log::error('Gagal mengirim notifikasi.', ['order_id' => $order->id, 'error' => $e->getMessage()]);
         }
     }
 

@@ -39,7 +39,7 @@
             <!-- Tombol Kembali ke Dashboard (opsional, jika ingin kembali ke dashboard mitra) -->
             <div class="mb-6">
                 <a href="{{ route('mitra.dashboard') }}"
-                   class="inline-flex items-center px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 text-sm font-medium rounded-lg transition duration-300 ease-in-out">
+                class="inline-flex items-center px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 text-sm font-medium rounded-lg transition duration-300 ease-in-out">
                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
                     Kembali ke Dashboard
                 </a>
