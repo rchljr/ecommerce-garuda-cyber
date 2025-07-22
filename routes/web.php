@@ -337,7 +337,7 @@ Route::middleware(['auth'])->group(function () {
 
 
         Route::get('/orders', [OrderController::class, 'index'])->name('orders');
-        Route::get('/orders', [OrderController::class, 'show'])->name('orders.show');
+        Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
 
         Route::resource('products', ProductController::class)->names([
             'index' => 'products.index',    // Ini akan menjadi 'mitra.products.index'

@@ -1,23 +1,48 @@
 @php
     $isPreview = $isPreview ?? false;
     $currentSubdomain = request()->route('subdomain');
-    $logoPath = (isset($currentShop) && $currentShop) ? optional($currentShop->customTema)->shop_logo : null;
+
+    // Ambil user yang sedang login
+    $loggedInUser = Auth::user();
+
+    // Inisialisasi currentShop dan customTema
+    $currentShop = null;
+    $customTema = null;
+
+    // Jika user login (mitra), coba ambil shop dan customTema
+    if ($loggedInUser) {
+        // Ambil objek shop dari user (tanpa eager loading customTema di sini)
+        $currentShop = $loggedInUser->shop;
+
+        // Ambil customTema langsung dari user
+        // Pastikan relasi 'customTema' ada di model App\Models\User
+        $customTema = $loggedInUser->customTema;
+    }
+
+    // Ambil logo dan warna dari customTema, dengan fallback ke default
+    $logoPath = optional($customTema)->shop_logo;
     $logoUrl = $logoPath ? asset('storage/' . $logoPath) : asset('template1/img/logo.png');
+
+    $primaryColor = optional($customTema)->primary_color ?? '#4F46E5'; // Default dari form Anda
+    $secondaryColor = optional($customTema)->secondary_color ?? '#D946EF'; // Default dari form Anda
+
+    // Logika Keranjang Belanja dan Notifikasi
     $cartCount = 0;
     $notificationCount = 0;
 
+    // Logika ini untuk customer, bukan mitra
     if (Auth::guard('customers')->check()) {
-        $user = Auth::guard('customers')->user();
+        $customerUser = Auth::guard('customers')->user();
 
         // 1. Logika Hitung Keranjang (menggunakan service yang sudah ada)
         $cartService = app(\App\Services\CartService::class);
         $cartCount = $cartService->getCartCount();
 
         // 2. Logika Hitung Notifikasi (disesuaikan dengan controller Anda)
-        $successfulPaymentsCount = \App\Models\Payment::where('user_id', $user->id)
+        $successfulPaymentsCount = \App\Models\Payment::where('user_id', $customerUser->id)
             ->whereIn('midtrans_transaction_status', ['settlement', 'capture'])
             ->count();
-        $ordersCount = \App\Models\Order::where('user_id', $user->id)
+        $ordersCount = \App\Models\Order::where('user_id', $customerUser->id)
             ->whereIn('status', ['failed', 'cancelled', 'expired', 'pending'])
             ->count();
         $notificationCount = $successfulPaymentsCount + $ordersCount;
@@ -26,6 +51,86 @@
         $cartCount = collect(session('cart'))->sum('quantity');
     }
 @endphp
+
+{{-- --- Inject Custom Colors into CSS Variables --- --}}
+<style>
+    :root {
+        --primary-color: {{ $primaryColor }};
+        --secondary-color: {{ $secondaryColor }};
+    }
+
+    .header__top__links a:hover {
+        color: var(--primary-color) !important;
+    }
+    .header__menu ul li.active > a,
+    .header__menu ul li:hover > a {
+        color: var(--primary-color);
+    }
+    .header__nav__option a span {
+        background: var(--primary-color);
+    }
+    .header__nav__option a:hover {
+        color: var(--primary-color);
+    }
+
+    .disabled-link {
+        color: #b2b2b2 !important;
+        cursor: not-allowed;
+    }
+
+    .header__nav__option a i {
+        font-size: 20px;
+        color: #111111;
+    }
+
+    .header__nav__option a {
+        position: relative;
+    }
+
+    .notification-icon {
+        position: relative;
+        display: inline-block;
+    }
+
+    #notification-count,
+    #cart-count {
+        position: absolute;
+        top: -6px;
+        right: -9px;
+        height: 18px;
+        width: 18px;
+        background: #ca1515;
+        color: #ffffff;
+        border-radius: 50%;
+        font-size: 11px;
+        font-weight: 700;
+        line-height: 18px;
+        text-align: center;
+    }
+
+    /* --- CSS BARU UNTUK LOGO --- */
+    .header__logo img {
+        max-height: 40px; /* Atur tinggi maksimum logo */
+        width: auto; /* Biarkan lebar menyesuaikan proporsi */
+        object-fit: contain; /* Pastikan gambar tidak terpotong */
+        display: block; /* Menghilangkan spasi ekstra di bawah gambar */
+    }
+
+    /* Sesuaikan jika navbar Anda memiliki tinggi tetap, misalnya */
+    .header {
+        /* min-height: 80px; */ /* Contoh: jika header memiliki tinggi minimum */
+        display: flex;
+        flex-direction: column; /* BARIS PENTING: Menata item secara vertikal */
+        /* align-items: center; */ /* Hapus atau sesuaikan ini jika tidak diperlukan lagi */
+    }
+
+    .header__logo {
+        display: flex;
+        align-items: center; /* Pusatkan logo secara vertikal di dalam div-nya */
+        height: 100%; /* Agar logo mengambil tinggi penuh container */
+    }
+    /* --- AKHIR CSS BARU --- */
+</style>
 
 <header class="header">
     <div class="header__top">

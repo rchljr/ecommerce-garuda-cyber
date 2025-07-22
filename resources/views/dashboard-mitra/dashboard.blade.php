@@ -10,6 +10,15 @@
             /* Atur tinggi default canvas */
             width: 100%;
         }
+        /* Style untuk kartu yang bisa diklik */
+        .clickable-card {
+            cursor: pointer;
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        .clickable-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
     </style>
 @endpush
 
@@ -32,7 +41,7 @@
                         $storeUrl = $subdomain ? $subdomain->subdomain_name : '#';
                     @endphp
 
-                    @if($subdomain)
+                    @if ($subdomain)
                         {{-- Tombol Kunjungi Toko --}}
                         <a href="{{'https://ecommercegaruda.my.id/tenant/'. $storeUrl . '/home'}}" target="_blank"
                             class="inline-flex items-center gap-2 bg-red-600 text-white font-semibold px-4 py-2 rounded-lg hover:bg-red-700 transition-colors shadow-sm">
@@ -72,23 +81,23 @@
                 </div>
             </div>
 
-            {{-- Menampilkan notifikasi sukses atau error
+            {{-- Menampilkan notifikasi sukses atau error --}}
             @if (session('success'))
-                <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6" role="alert">
+                <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6 rounded-lg" role="alert">
                     <p class="font-bold">Sukses</p>
                     <p>{{ session('success') }}</p>
                 </div>
             @endif
             @if (session('error'))
-                <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6" role="alert">
+                <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded-lg" role="alert">
                     <p class="font-bold">Error</p>
                     <p>{{ session('error') }}</p>
                 </div>
-            @endif --}}
+            @endif
 
 
             <!-- Grid untuk Kartu Metrik Utama (KPI) -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
                 <!-- Kartu Total Pendapatan -->
                 <div class="bg-white p-6 rounded-xl shadow-md flex items-center gap-6">
                     <div class="bg-blue-100 p-3 rounded-full">
@@ -107,19 +116,23 @@
                 </div>
 
                 <!-- Kartu Total Transaksi -->
-                <div class="bg-white p-6 rounded-xl shadow-md flex items-center gap-6">
-                    <div class="bg-green-100 p-3 rounded-full">
-                        {{-- Ikon Keranjang Belanja dari Heroicons --}}
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-green-500" fill="none"
-                            viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round"
-                                d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-                        </svg>
-                    </div>
-                    <div>
-                        <p class="text-sm font-medium text-gray-500">Total Transaksi</p>
-                        <p class="text-3xl font-bold text-gray-800">{{ $totalOrders }}</p>
-                    </div>
+                <div class="bg-white p-6 rounded-xl shadow-md flex items-center gap-6 clickable-card">
+                    {{-- Membungkus seluruh konten kartu dengan <a> --}}
+                    <a href="{{ route('mitra.orders') }}" class="flex items-center gap-6 w-full h-full">
+                        <div class="bg-green-100 p-3 rounded-full">
+                            {{-- Ikon Keranjang Belanja dari Heroicons --}}
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-green-500" fill="none"
+                                viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-gray-500">Total Transaksi</p>
+                            <p class="text-3xl font-bold text-gray-800">{{ $totalOrders }}</p>
+                            <p class="text-xs text-gray-400 mt-1">Klik untuk detail transaksi</p> {{-- Indikasi tambahan --}}
+                        </div>
+                    </a>
                 </div>
 
                 <!-- Kartu Nilai Pesanan Rata-rata -->
@@ -136,6 +149,20 @@
                         <p class="text-3xl font-bold text-gray-800">Rp {{ number_format($averageOrderValue) }}</p>
                     </div>
                 </div>
+
+                <!-- Kartu Keuntungan Bersih (BARU) -->
+                <div class="bg-white p-6 rounded-xl shadow-md flex items-center gap-6">
+                    <div class="bg-purple-100 p-3 rounded-full">
+                        {{-- Ikon Dompet atau Keuntungan dari Heroicons --}}
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-gray-500">Keuntungan Bersih</p>
+                        <p class="text-3xl font-bold text-gray-800">Rp {{ number_format($totalNetProfit) }}</p>
+                    </div>
+                </div>
             </div>
 
             <!-- Grid untuk Grafik dan Produk Terlaris -->
@@ -149,7 +176,7 @@
                 </div>
 
                 <!-- Kartu Produk Paling Laris -->
-                <div class="lg:col-span-1 bg-white p-6 rounded-xl shadow-md">
+                <div class="lg:col-span-1 bg-white p-6 rounded-lg shadow-md">
                     <h3 class="text-xl font-semibold text-gray-800 mb-4">10 Produk Paling Laris</h3>
                     <div class="overflow-x-auto">
                         <table class="w-full text-sm text-left text-gray-500">
@@ -171,7 +198,8 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="3" class="text-center py-10 text-gray-500">Belum ada produk yang terjual.
+                                        <td colspan="3" class="text-center py-10 text-gray-500">Belum ada produk yang
+                                            terjual.
                                         </td>
                                     </tr>
                                 @endforelse
@@ -188,7 +216,7 @@
     {{-- CDN Chart.js --}}
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
+        document.addEventListener('DOMContentLoaded', function() {
             // Data dari Controller Laravel
             const salesData = {!! json_encode($salesData) !!};
 
@@ -196,7 +224,10 @@
             const labels = salesData.map(item => {
                 // Mengubah format tanggal dari YYYY-MM-DD menjadi DD MMM
                 const date = new Date(item.date);
-                return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+                return date.toLocaleDateString('id-ID', {
+                    day: 'numeric',
+                    month: 'short'
+                });
             });
             const data = salesData.map(item => item.revenue);
 
@@ -227,7 +258,7 @@
                             beginAtZero: true,
                             ticks: {
                                 // Format angka di sumbu Y menjadi format Rupiah
-                                callback: function (value, index, values) {
+                                callback: function(value, index, values) {
                                     return 'Rp ' + new Intl.NumberFormat('id-ID').format(value);
                                 }
                             }
@@ -245,19 +276,28 @@
                         tooltip: {
                             // Kustomisasi tooltip saat di-hover
                             backgroundColor: '#1F2937',
-                            titleFont: { size: 14, weight: 'bold' },
-                            bodyFont: { size: 12 },
+                            titleFont: {
+                                size: 14,
+                                weight: 'bold'
+                            },
+                            bodyFont: {
+                                size: 12
+                            },
                             padding: 12,
                             cornerRadius: 8,
                             displayColors: false,
                             callbacks: {
-                                label: function (context) {
+                                label: function(context) {
                                     let label = context.dataset.label || '';
                                     if (label) {
                                         label += ': ';
                                     }
                                     if (context.parsed.y !== null) {
-                                        label += new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(context.parsed.y);
+                                        label += new Intl.NumberFormat('id-ID', {
+                                            style: 'currency',
+                                            currency: 'IDR',
+                                            minimumFractionDigits: 0
+                                        }).format(context.parsed.y);
                                     }
                                     return label;
                                 }

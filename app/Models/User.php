@@ -12,6 +12,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Spatie\Permission\Traits\HasRoles;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use App\Models\Product;
+use App\Models\Voucher;
 
 class User extends Authenticatable
 {
@@ -94,6 +95,10 @@ class User extends Authenticatable
     public function vouchers()
     {
         return $this->hasMany(Voucher::class, 'user_id');
+    }
+     public function customTema()
+    {
+        return $this->hasOne(CustomTema::class);
     }
 
     /**

@@ -3,11 +3,13 @@
 namespace Database\Seeders;
 
 use App\Models\Shop;
-use App\Models\Order;
+use App\Models\Order; // Diperlukan untuk dummy order
 use App\Models\Subdomain;
 use App\Models\Testimoni;
+use App\Models\Product; // Diperlukan untuk produk
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Database\Console\Seeds\WithoutModelEvents; // Tetap ada jika Anda menggunakannya
 
 class TenantProductTestimonialSeeder extends Seeder
 {
@@ -18,10 +20,15 @@ class TenantProductTestimonialSeeder extends Seeder
      */
     public function run(): void
     {
+        $this->command->info('Memulai TenantProductTestimonialSeeder...');
+
         // Hapus testimoni lama untuk menghindari duplikasi
         DB::statement('SET FOREIGN_KEY_CHECKS=0;');
         Testimoni::truncate();
+        // Anda mungkin juga ingin membersihkan dummy orders yang dibuat oleh seeder ini
+        // Order::where('user_id', /* ID user pemilik toko */)->where('total_price', 100000)->forceDelete();
         DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        $this->command->info('Tabel testimonis dikosongkan.');
 
         // Definisikan data untuk setiap tenant
         $tenantsData = [
@@ -107,7 +114,7 @@ class TenantProductTestimonialSeeder extends Seeder
         // Loop untuk setiap data tenant
         foreach ($tenantsData as $tenantInfo) {
             $targetSubdomain = $tenantInfo['subdomain'];
-            $testimonialsData = $tenantInfo['testimonials'];
+            $testimonialsForShop = $tenantInfo['testimonials']; // Ganti nama variabel agar lebih jelas
 
             // 1. Cari subdomain terlebih dahulu
             $subdomain = Subdomain::where('subdomain_name', $targetSubdomain)->first();
@@ -134,24 +141,27 @@ class TenantProductTestimonialSeeder extends Seeder
             }
 
             // 4. Buat satu order tiruan untuk tenant ini sebagai referensi
+            // Asumsi user_id di Order ini adalah user_id pemilik toko, bukan customer
             $dummyOrder = Order::firstOrCreate(
-                ['user_id' => $subdomain->user_id, 'status' => 'completed'],
-                ['total_price' => 100000, 'order_date' => now()]
+                ['user_id' => $subdomain->user_id, 'shop_id' => $shop->id, 'status' => 'completed'], // Tambahkan shop_id di dummy order
+                ['total_price' => 100000, 'order_date' => now(), 'shipping_address' => 'N/A', 'shipping_city' => 'N/A', 'shipping_zip_code' => 'N/A', 'shipping_phone' => 'N/A']
             );
 
-            // 5. Masukkan data testimoni, hubungkan dengan produk acak dan order tiruan
-            foreach ($testimonialsData as $data) {
+            // 5. Masukkan data testimoni, hubungkan dengan produk acak, order tiruan, dan SHOP ID
+            foreach ($testimonialsForShop as $data) {
                 $randomProduct = $products->random();
 
-                // PERBAIKAN: Menyesuaikan data dengan model Testimoni
+                // Menyesuaikan data dengan model Testimoni
                 $data['product_id'] = $randomProduct->id;
-                $data['user_id'] = $subdomain->user_id; // User ID pemilik toko
-                $data['order_id'] = $dummyOrder->id; // ID dari order tiruan
+                $data['user_id'] = $subdomain->user_id; // User ID pemilik toko (sesuai alur seeder Anda)
+                $data['order_id'] = $dummyOrder->id;
+                $data['shop_id'] = $shop->id; // BARIS PENTING: Menambahkan shop_id
 
                 Testimoni::create($data);
             }
 
-            $this->command->info("Berhasil menambahkan " . count($testimonialsData) . " testimoni untuk tenant '{$targetSubdomain}'.");
+            $this->command->info("Berhasil menambahkan " . count($testimonialsForShop) . " testimoni untuk toko '{$shop->shop_name}'.");
         }
+        $this->command->info('TenantProductTestimonialSeeder selesai.');
     }
 }

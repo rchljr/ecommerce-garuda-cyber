@@ -18,6 +18,7 @@ class Order extends Model
     //kolom baru
     protected $fillable = [
         'user_id',
+        'shop_id',
         'order_group_id',
         'subdomain_id',
         'status',
@@ -27,6 +28,10 @@ class Order extends Model
         'discount_amount',
         'voucher_id',
         'order_date',
+        'shipping_address',
+        'shipping_city',
+        'shipping_zip_code',
+        'shipping_phone',
         'notes'
     ];
     protected $casts = ['order_date' => 'datetime'];
@@ -60,7 +65,7 @@ class Order extends Model
     } // Toko tempat order dibuat
     public function items()
     {
-        return $this->hasMany(ProductOrder::class, 'order_id', 'id');
+        return $this->hasMany(OrderItem::class, 'order_id', 'id');
     }
     public function histories()
     {

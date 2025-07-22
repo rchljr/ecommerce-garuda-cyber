@@ -12,6 +12,7 @@ class Banner extends Model
 
     protected $fillable = [
         'shop_id',
+        'user_id',
         'title',
         'subtitle',
         'image',

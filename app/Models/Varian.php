@@ -22,9 +22,14 @@ class Varian extends Model
         'status', // Contoh: 'active', 'inactive'
         'price',
         'stock',
-        'size',       // Field baru: Ukuran Varian (misal: 'S', 'M', 'L', 'XL')
-        'color',      // Field baru: Warna Varian (misal: 'Merah', 'Biru', 'Hijau')
+        // 'size',       // Field baru: Ukuran Varian (misal: 'S', 'M', 'L', 'XL')
+        // 'color', 
+        'options_data',     
         'image_path', // Field baru: Path gambar varian
+    ];
+
+    protected $casts = [
+        'options_data' => 'array', // PENTING: Laravel akan otomatis mengonversi JSON ke array/objek PHP
     ];
 
     /**

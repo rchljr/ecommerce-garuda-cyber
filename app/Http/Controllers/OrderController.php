@@ -14,25 +14,22 @@ class OrderController extends Controller
     public function index()
     {
         $user = Auth::user();
-        $subdomain = $user->subdomain;
-       
-        // Peningkatan: Pastikan user memiliki subdomain/toko
-        if (!$subdomain) {
-            // Jika tidak, tolak akses atau redirect
-            abort(403, 'Anda tidak memiliki akses ke halaman ini.');
+        $shop = $user->shop;
+
+        if (!$shop) {
+            abort(403, 'Anda tidak memiliki akses ke halaman ini karena tidak memiliki toko.');
         }
 
-        // Ambil data order dengan relasinya (eager loading)
-        $orders = Order::where('subdomain_id', $subdomain->id)
+        $orders = Order::where('shop_id', $shop->id)
             ->with(['user', 'items.product'])
             ->latest()
             ->paginate(15);
 
-        // Kirim data ke view 'dashboard-mitra.orders.index'
         return view('dashboard-mitra.orders.index', compact('orders'));
     }
 
     /**
+     * Menampilkan detail pesanan tunggal.
      *
      * @param  \App\Models\Order  $order
      * @return \Illuminate\View\View
@@ -40,17 +37,24 @@ class OrderController extends Controller
     public function show(Order $order)
     {
         $user = Auth::user();
-        $subdomain = $user->subdomain;
+        $shop = $user->shop;
 
-        // Peningkatan Keamanan: Pastikan order ini milik toko user yang sedang login
-        if (!$subdomain || $order->subdomain_id !== $subdomain->id) {
+        if (!$shop || $order->shop_id !== $shop->id) {
             abort(403, 'Anda tidak diizinkan melihat pesanan ini.');
         }
 
         // Memuat relasi untuk ditampilkan di halaman detail
         $order->load(['user', 'items.product']);
 
-        // Kirim data order ke view 'dashboard-mitra.orders.show'
+        // Debugging: Periksa isi objek $order dan relasi 'items'
+        // Jika $order->items kosong, ini akan menunjukkan masalah.
+        //dd($order->toArray(), $order->items->toArray());
+
+        // Debugging alternatif jika $order->items->toArray() error atau kosong
+        // Ini akan langsung query database untuk order items berdasarkan order ID
+        // dd($order->id, \App\Models\OrderItem::where('order_id', $order->id)->get()->toArray());
+
+
         return view('dashboard-mitra.orders.show', compact('order'));
     }
 }
