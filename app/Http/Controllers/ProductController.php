@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 use App\Models\SubCategory; // Make sure to import SubCategory model
 
 
@@ -77,55 +78,68 @@ class ProductController extends Controller
             return back()->with('error', 'Profil toko tidak ditemukan.');
         }
 
-        // --- DEBUGGING: Periksa semua data dari request sebelum validasi ---
-        // dd($request->all());
-
+        // --- Validasi Semua Data dari Form ---
         $validatedData = $request->validate([
             'name' => 'required|string|max:255',
-            'short_description' => 'nullable|string',
+            'short_description' => 'nullable|string|max:500', // Sesuaikan max jika perlu
             'description' => 'nullable|string',
-            'modal_price' => 'required|numeric|min:0', // Tambahkan validasi untuk harga modal
-            'profit_percentage' => 'required|numeric|min:0|max:100', // Tambahkan validasi untuk persentase keuntungan
-            'sub_category_id' => 'required|exists:sub_categories,id',
+            'modal_price' => 'required|numeric|min:0',
+            'profit_percentage' => 'required|numeric|min:0|max:100',
+            'sub_category_id' => 'required|exists:sub_categories,id', // Pastikan sub_categories ada
             'main_image' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
-            'gallery_images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:2048',
-            'variants' => 'required|array',
-            'variants.*.color' => 'required|string|max:255',
-            'variants.*.size' => 'required|string|max:255',
-            'variants.*.stock' => 'required|integer|min:0',
-            'tags' => 'nullable|string',
-            'sku' => 'nullable|string|unique:products,sku',
-            'is_best_seller' => 'nullable',
-            'is_new_arrival' => 'nullable',
-            'is_hot_sale' => 'nullable',
+            'gallery_images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048', // Nullable karena mungkin tidak selalu ada galeri
+            'tags' => 'nullable|string', // Tags dikirim sebagai string koma-separated
+
+            // --- Validasi untuk VARIAN PRODUK (dari Alpine.js) ---
+            'variants' => 'required|array', // Harus ada setidaknya satu varian
+            'variants.*.name' => 'nullable|string|max:255', // Nama varian gabungan (e.g., S / Merah), dikirim dari frontend
+            'variants.*.price' => 'required|numeric|min:0', // Harga per varian
+            'variants.*.stock' => 'required|integer|min:0', // Stok per varian
+            'variants.*.options' => 'required|json', // Data opsi varian dalam format JSON string
+            // 'variants.*.image_path' => 'nullable|string', // Jika setiap varian punya path gambar sendiri
         ]);
 
-        // --- DEBUGGING: Periksa data yang sudah divalidasi ---
-        // dd($validatedData);
+        DB::beginTransaction(); // Mulai transaksi database
 
-        DB::beginTransaction();
         try {
-            $mainImagePath = $this->uploadFile($request->file('main_image'), 'products/main');
+            // --- 1. Simpan Gambar Utama dan Galeri Produk ---
+            $mainImagePath = null;
+            if ($request->hasFile('main_image')) {
+                $mainImagePath = $request->file('main_image')->store('products/main', 'public');
+            }
 
-            // Kolom 'price' akan dihitung secara otomatis oleh mutator di model Product
+            $galleryImagePaths = []; // Inisialisasi sebagai array kosong
+            if ($request->hasFile('gallery_images')) {
+                foreach ($request->file('gallery_images') as $file) {
+                    // Pastikan file valid sebelum disimpan
+                    if ($file->isValid()) {
+                        $galleryImagePaths[] = $file->store('products/gallery', 'public');
+                    }
+                }
+            }
+
+            // --- 2. Buat Produk Utama ---
             $product = Product::create([
-                'user_id' => auth::id(),
+                'user_id' => Auth::id(), // Gunakan Auth::id()
                 'shop_id' => $shop->id,
                 'name' => $validatedData['name'],
-                'slug' => Str::slug($validatedData['name']) . '-' . uniqid(),
+                'slug' => Str::slug($validatedData['name']) . '-' . uniqid(), // Pastikan Str diimport
                 'short_description' => $validatedData['short_description'],
                 'description' => $validatedData['description'],
-                'modal_price' => $validatedData['modal_price'], // Simpan harga modal
-                'profit_percentage' => $validatedData['profit_percentage'], // Simpan persentase keuntungan
-                'sku' => $validatedData['sku'],
+                'modal_price' => $validatedData['modal_price'],
+                'profit_percentage' => $validatedData['profit_percentage'],
+                'sku' => $validatedData['sku'] ?? null, // SKu bisa nullable dan tidak wajib
                 'sub_category_id' => $validatedData['sub_category_id'],
-                'main_image' => $mainImagePath,
-                'status' => 'active',
-                'is_best_seller' => $request->has('is_best_seller'),
-                'is_new_arrival' => $request->has('is_new_arrival'),
-                'is_hot_sale' => $request->has('is_hot_sale'),
+                'main_image' => $mainImagePath, // Kolom DB 'main_image'
+                'gallery_image_paths' => $galleryImagePaths, // Kolom DB 'gallery_image_paths' (tipe JSON)
+                'status' => 'active', // Default status produk
+                'is_best_seller' => $request->boolean('is_best_seller'), // Gunakan boolean()
+                'is_new_arrival' => $request->boolean('is_new_arrival'),
+                'is_hot_sale' => $request->boolean('is_hot_sale'),
+                // 'tags' tidak disimpan langsung di sini karena ada relasi Many-to-Many
             ]);
 
+            // --- 3. Sinkronkan Tags ---
             if (!empty($validatedData['tags'])) {
                 $tagsInput = explode(',', $validatedData['tags']);
                 $tagIds = [];
@@ -136,24 +150,48 @@ class ProductController extends Controller
                 $product->tags()->sync($tagIds);
             }
 
+            // --- 4. Simpan Varian Produk ---
             foreach ($validatedData['variants'] as $variantData) {
-                $product->variants()->create($variantData);
+                $optionsData = json_decode($variantData['options'], true); // Dekode JSON string ke array PHP
+
+                $product->varians()->create([
+                    'name' => $variantData['name'] ?? null, // Ambil nama varian dari frontend
+                    'price' => $variantData['price'],
+                    'stock' => $variantData['stock'],
+                    'options_data' => $optionsData, // Simpan array opsi ke kolom JSON
+                    // Kolom 'size' dan 'color' di tabel varians sekarang seharusnya null atau dihapus dari DB.
+                    'size' => null, // Atur ke null jika kolom masih ada di DB tapi tidak digunakan
+                    'color' => null, // Atur ke null jika kolom masih ada di DB tapi tidak digunakan
+                    'description' => null, // Atur ke null jika tidak ada deskripsi per varian
+                    'status' => 'active', // Atur status default varian
+                    'image_path' => null, // Jika ada gambar per varian, perlu logika upload di sini
+                ]);
             }
 
-            if ($request->hasFile('gallery_images')) {
-                foreach ($request->file('gallery_images') as $galleryFile) {
-                    $galleryPath = $this->uploadFile($galleryFile, 'products/gallery');
-                    $product->gallery()->create(['image_path' => $galleryPath]);
+            DB::commit(); // Commit transaksi jika semua berhasil
+
+            return redirect()->route('mitra.products.index')->with('success', 'Produk berhasil ditambahkan!');
+
+        } catch (\Exception $e) {
+            DB::rollBack(); // Rollback transaksi jika terjadi error
+
+            // Hapus gambar yang sudah diupload jika ada error
+            if (isset($mainImagePath) && Storage::disk('public')->exists($mainImagePath)) {
+                Storage::disk('public')->delete($mainImagePath);
+            }
+            foreach ($galleryImagePaths as $path) {
+                if (Storage::disk('public')->exists($path)) {
+                    Storage::disk('public')->delete($path);
                 }
             }
 
-            DB::commit();
-            return redirect()->route('mitra.products.index')->with('success', 'Produk berhasil ditambahkan!');
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return back()->withInput()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+            // Log error untuk debugging lebih lanjut
+            Log::error("Error saving product: " . $e->getMessage(), ['exception' => $e]);
+
+            return redirect()->back()->withInput()->with('error', 'Terjadi kesalahan saat menyimpan produk: ' . $e->getMessage());
         }
     }
+
 
     /**
      * Menampilkan detail produk tertentu.

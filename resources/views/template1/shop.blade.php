@@ -285,7 +285,6 @@
         $currentSubdomain = !$isPreview ? request()->route('subdomain') : null;
     @endphp
 
-    <!-- Breadcrumb Section Begin -->
     <section class="breadcrumb-option">
         <div class="container">
             <div class="row">
@@ -302,9 +301,6 @@
             </div>
         </div>
     </section>
-    <!-- Breadcrumb Section End -->
-
-    <!-- Product Section Begin -->
     <section class="product spad">
         <div class="container">
             <div class="row">
@@ -369,11 +365,11 @@
                                     <form id="sort-form" method="GET"
                                         action="{{ !$isPreview ? route('tenant.shop', ['subdomain' => $currentSubdomain]) : '#' }}">
                                         @if(request('category')) <input type="hidden" name="category"
-                                        value="{{ request('category') }}"> @endif
+                                            value="{{ request('category') }}"> @endif
                                         @if(request('min_price')) <input type="hidden" name="min_price"
-                                        value="{{ request('min_price') }}"> @endif
+                                            value="{{ request('min_price') }}"> @endif
                                         @if(request('max_price')) <input type="hidden" name="max_price"
-                                        value="{{ request('max_price') }}"> @endif
+                                            value="{{ request('max_price') }}"> @endif
                                         <select name="sort" id="sort-by" onchange="this.form.submit()" {{ $isPreview ? 'disabled' : '' }}>
                                             <option value="latest" {{ request('sort', 'latest') == 'latest' ? 'selected' : '' }}>Urutkan: Terbaru</option>
                                             <option value="price_asc" {{ request('sort') == 'price_asc' ? 'selected' : '' }}>
@@ -437,9 +433,6 @@
             </div>
         </div>
     </section>
-    <!-- Product Section End -->
-
-    <!-- Toast & Modal -->
     <div id="toast-notification" class="toast-notification"></div>
     <div id="variant-modal" class="modal-overlay">
         <div class="modal-content relative">
@@ -453,9 +446,24 @@
     {{-- Script tidak berubah, jadi saya singkat untuk kejelasan --}}
     <script src="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.5.1/nouislider.min.js"></script>
     <script>
+        // Menggunakan PHP untuk memuat data produk dan variannya, termasuk options_data
         const allProductData = @json($products->keyBy('id')->map(function ($product) {
-            return $product->load('variants');
+            $product->load('varians'); // Muat relasi varians
+            // Proses varian untuk membuat peta opsi agar mudah diakses di JS
+            $processedVariants = $product->varians->map(function ($varian) {
+                $optionsMap = [];
+                if (is_array($varian->options_data)) {
+                    foreach ($varian->options_data as $option) {
+                        $optionsMap[$option['name']] = $option['value'];
+                    }
+                }
+                $varian->options_map = $optionsMap; // Tambahkan peta opsi ke objek varian
+                return $varian;
+            });
+            $product->processed_varians = $processedVariants; // Lampirkan varian yang diproses ke produk
+            return $product;
         }));
+
 
         document.addEventListener('DOMContentLoaded', function () {
             const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
@@ -532,105 +540,238 @@
                 });
             }
 
+            // Fungsi utama untuk mengisi dan menampilkan modal varian
             function populateAndShowModal(product, modal, modalBody) {
-                const uniqueSizes = [...new Set(product.variants.map(v => v.size).filter(Boolean))];
-                let sizesHTML = uniqueSizes.map(size => `<option value="${size}">${size}</option>`).join('');
-
-                modalBody.innerHTML = `
-                        <div>
-                            <h4 class="font-bold text-lg">${product.name}</h4>
-                            <p class="text-red-600 font-bold text-lg">${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(product.price)}</p>
-                        </div>
-                        <form id="modal-cart-form" class="space-y-4 mt-4" novalidate>
-                            <input type="hidden" name="product_id" value="${product.id}">
-                            ${sizesHTML ? `<div>
-                                <label for="size-select" class="block text-sm font-medium text-gray-700 mb-1">Ukuran</label>
-                                <select id="size-select" name="size" class="modal-variant-select" required>
-                                    <option value="">Pilih Ukuran</option>
-                                    ${sizesHTML}
-                                </select>
-                            </div>` : ''}
-                            <div>
-                                <label for="color-select" class="block text-sm font-medium text-gray-700 mb-1">Warna</label>
-                                <select id="color-select" name="color" class="modal-variant-select" ${!sizesHTML ? '' : 'disabled'} required>
-                                    <option value="">${sizesHTML ? 'Pilih ukuran dahulu' : 'Pilih Warna'}</option>
-                                </select>
-                            </div>
-                            <div class="mt-6">
-                                <label for="quantity-input" class="block text-sm font-medium text-gray-700 mb-1">Jumlah</label>
-                                <input type="number" name="quantity" id="quantity-input" value="1" min="1" class="w-full border-gray-300 rounded-md" required>
-                            </div>
-                            <div class="flex items-center space-x-2 mt-4">
-                                <button type="submit" id="modal-add-btn" class="primary-btn w-full !bg-gray-800 !text-white hover:!bg-black" disabled>Tambah ke Keranjang</button>
-                            </div>
-                        </form>
-                    `;
-                modal.classList.add('show');
-                attachModalEventListeners(product);
-                if (!sizesHTML) {
-                    const colorSelect = document.getElementById('color-select');
-                    const availableColors = [...new Set(product.variants.map(v => v.color).filter(Boolean))];
-                    availableColors.forEach(color => colorSelect.add(new Option(color, color)));
-                    colorSelect.disabled = false;
+                // Pastikan produk memiliki varian
+                if (!product.processed_varians || product.processed_varians.length === 0) {
+                    modalBody.innerHTML = `<h4 class="font-bold text-lg mb-4">${product.name}</h4><p class="text-gray-600">Produk ini tidak memiliki varian yang tersedia.</p><button type="button" class="primary-btn mt-3" onclick="document.getElementById('variant-modal').classList.remove('show')">Tutup</button>`;
+                    modal.classList.add('show');
+                    return;
                 }
+
+                // Kumpulkan semua nama opsi unik (misal: "Ukuran", "Warna") dari semua varian
+                const allOptionNames = new Set();
+                product.processed_varians.forEach(v => {
+                    if (v.options_data && Array.isArray(v.options_data)) {
+                        v.options_data.forEach(opt => allOptionNames.add(opt.name));
+                    }
+                });
+
+                let formHTML = `
+                    <div>
+                        <h4 class="font-bold text-lg">${product.name}</h4>
+                        <p class="text-red-600 font-bold text-lg" id="modal-display-price">${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(product.price)}</p>
+                        <p class="text-gray-500 text-sm mt-1" id="modal-display-stock">Stok: -</p>
+                    </div>
+                    <form id="modal-cart-form" class="space-y-4 mt-4" novalidate>
+                        <input type="hidden" name="product_id" value="${product.id}">
+                        <input type="hidden" name="selected_variant_id" id="selected-variant-id" value="">
+                `;
+
+                // Urutan opsi: prioritaskan "Ukuran" lalu "Warna", sisanya sesuai urutan ditemukan
+                const orderedOptionNames = Array.from(allOptionNames).sort((a, b) => {
+                    if (a === 'Ukuran') return -1;
+                    if (b === 'Ukuran') return 1;
+                    if (a === 'Warna') return -1;
+                    if (b === 'Warna') return 1;
+                    return 0;
+                });
+
+                orderedOptionNames.forEach((optionName, index) => {
+                    // Ambil nilai unik untuk opsi saat ini
+                    const uniqueOptionValues = [...new Set(product.processed_varians.flatMap(v =>
+                        v.options_data.filter(opt => opt.name === optionName).map(opt => opt.value)
+                    ))].filter(Boolean); // Filter(Boolean) untuk hapus undefined/null
+
+                    if (uniqueOptionValues.length > 0) {
+                        const selectId = `option-${index}-${optionName.replace(/\s/g, '')}-select`;
+                        const isDisabled = index > 0; // Dropdown pertama aktif, sisanya disable dulu
+
+                        formHTML += `
+                            <div>
+                                <label for="${selectId}" class="block text-sm font-medium text-gray-700 mb-1">${optionName}</label>
+                                <select id="${selectId}" name="option_${optionName.toLowerCase().replace(/\s/g, '_')}"
+                                        class="modal-variant-select" data-option-name="${optionName}"
+                                        ${isDisabled ? 'disabled' : ''} required>
+                                    <option value="">Pilih ${optionName}</option>
+                                    ${uniqueOptionValues.map(value => `<option value="${value}">${value}</option>`).join('')}
+                                </select>
+                            </div>
+                        `;
+                    }
+                });
+
+                formHTML += `
+                        <div class="mt-6">
+                            <label for="quantity-input" class="block text-sm font-medium text-gray-700 mb-1">Jumlah</label>
+                            <input type="number" name="quantity" id="quantity-input" value="1" min="1" class="w-full border-gray-300 rounded-md" required>
+                        </div>
+                        <div class="flex items-center space-x-2 mt-4">
+                            <button type="submit" id="modal-add-btn" class="primary-btn w-full !bg-gray-800 !text-white hover:!bg-black" disabled>Tambah ke Keranjang</button>
+                        </div>
+                    </form>
+                `;
+
+                modalBody.innerHTML = formHTML;
+                modal.classList.add('show');
+                attachModalEventListeners(product, orderedOptionNames); // Kirim product dan urutan nama opsi
             }
 
-            function attachModalEventListeners(product) {
+            function attachModalEventListeners(product, orderedOptionNames) {
                 const form = document.getElementById('modal-cart-form');
-                const sizeSelect = document.getElementById('size-select');
-                const colorSelect = document.getElementById('color-select');
                 const modalAddBtn = document.getElementById('modal-add-btn');
-                const modalWishlistBtn = document.getElementById('modal-wishlist-btn');
+                const modalDisplayPrice = document.getElementById('modal-display-price');
+                const modalDisplayStock = document.getElementById('modal-display-stock');
+                const selectedVariantIdInput = document.getElementById('selected-variant-id');
+                const quantityInput = document.getElementById('quantity-input');
 
-                const updateColors = () => {
-                    const selectedSize = sizeSelect.value;
-                    colorSelect.innerHTML = '<option value="">Pilih Warna</option>';
-                    colorSelect.disabled = true;
-                    if (selectedSize) {
-                        const availableColors = [...new Set(product.variants.filter(v => v.size === selectedSize).map(v => v.color))];
-                        if (availableColors.length > 0) {
-                            availableColors.forEach(color => {
-                                const variant = product.variants.find(v => v.size === selectedSize && v.color === color);
-                                const option = new Option(color, color);
-                                if (variant.stock <= 0) {
+                // Dapatkan semua elemen select opsi
+                const optionSelects = orderedOptionNames.map((name, index) =>
+                    document.getElementById(`option-${index}-${name.replace(/\s/g, '')}-select`)
+                ).filter(Boolean); // Filter null jika ada
+
+                let currentSelectedOptions = {}; // { 'Ukuran': 'S', 'Warna': 'Merah' }
+                let currentSelectedVariant = null;
+
+                const updateOptionDropdowns = () => {
+                    currentSelectedOptions = {};
+                    optionSelects.forEach(select => {
+                        currentSelectedOptions[select.dataset.optionName] = select.value;
+                    });
+
+                    // Aktifkan/nonaktifkan dropdown berikutnya dan isi ulang opsinya
+                    optionSelects.forEach((currentSelect, currentIndex) => {
+                        if (currentIndex > 0) {
+                            const prevSelect = optionSelects[currentIndex - 1];
+                            currentSelect.disabled = !prevSelect || !prevSelect.value;
+                        }
+
+                        // Jika dropdown aktif dan bukan yang pertama, saring opsinya
+                        if (!currentSelect.disabled && currentSelect.value === "") {
+                            let availableValuesForCurrentSelect = new Set();
+                            
+                            // Filter varian yang cocok dengan pilihan sebelumnya
+                            const filteredVariants = product.processed_varians.filter(varian => {
+                                let matchesPrevious = true;
+                                for (let i = 0; i < currentIndex; i++) {
+                                    const prevSelect = optionSelects[i];
+                                    if (prevSelect && prevSelect.value && varian.options_map[prevSelect.dataset.optionName] !== prevSelect.value) {
+                                        matchesPrevious = false;
+                                        break;
+                                    }
+                                }
+                                return matchesPrevious;
+                            });
+
+                            // Kumpulkan nilai yang tersedia untuk dropdown saat ini dari varian yang difilter
+                            filteredVariants.forEach(varian => {
+                                if (varian.options_map[currentSelect.dataset.optionName]) {
+                                    availableValuesForCurrentSelect.add(varian.options_map[currentSelect.dataset.optionName]);
+                                }
+                            });
+
+                            const currentValue = currentSelect.value; // Simpan nilai yang dipilih
+                            currentSelect.innerHTML = `<option value="">Pilih ${currentSelect.dataset.optionName}</option>`;
+                            Array.from(availableValuesForCurrentSelect).sort().forEach(value => {
+                                // Cek stok untuk opsi ini
+                                const hasStock = product.processed_varians.some(v => {
+                                    let isMatch = true;
+                                    for(const optName in currentSelectedOptions) {
+                                        if (currentSelectedOptions[optName] && v.options_map[optName] !== currentSelectedOptions[optName]) {
+                                            isMatch = false;
+                                            break;
+                                        }
+                                    }
+                                    return isMatch && v.options_map[currentSelect.dataset.optionName] === value && v.stock > 0;
+                                });
+
+                                const option = new Option(value, value);
+                                if (!hasStock) {
                                     option.disabled = true;
                                     option.textContent += ' (Habis)';
                                 }
-                                colorSelect.add(option);
+                                currentSelect.add(option);
                             });
-                            colorSelect.disabled = false;
-                        } else {
-                            colorSelect.innerHTML = '<option value="">Warna tidak ada</option>';
+                            // Kembalikan nilai yang dipilih jika masih valid
+                            if (currentValue && Array.from(availableValuesForCurrentSelect).includes(currentValue)) {
+                                currentSelect.value = currentValue;
+                            }
                         }
-                    } else {
-                        colorSelect.innerHTML = '<option value="">Pilih ukuran dahulu</option>';
-                    }
+                    });
+
                     updateButtonState();
                 };
 
                 const updateButtonState = () => {
-                    const hasSize = !!sizeSelect;
-                    const sizeValue = hasSize ? sizeSelect.value : true;
-                    const colorValue = colorSelect.value;
-                    modalAddBtn.disabled = !(sizeValue && colorValue);
+                    currentSelectedVariant = null;
+                    let allOptionsSelected = true;
+                    let selectedOptionsMap = {}; // Untuk mencari varian yang cocok
+
+                    optionSelects.forEach(select => {
+                        if (select.value === "") {
+                            allOptionsSelected = false;
+                        }
+                        selectedOptionsMap[select.dataset.optionName] = select.value;
+                    });
+
+                    if (allOptionsSelected) {
+                        // Cari varian yang cocok dengan semua pilihan
+                        currentSelectedVariant = product.processed_varians.find(v => {
+                            let matches = true;
+                            for (const optName in selectedOptionsMap) {
+                                if (v.options_map[optName] !== selectedOptionsMap[optName]) {
+                                    matches = false;
+                                    break;
+                                }
+                            }
+                            return matches;
+                        });
+
+                        if (currentSelectedVariant && currentSelectedVariant.stock > 0) {
+                            modalAddBtn.disabled = false;
+                            selectedVariantIdInput.value = currentSelectedVariant.id;
+                            quantityInput.max = currentSelectedVariant.stock; // Set max quantity
+                            quantityInput.value = Math.min(quantityInput.value, currentSelectedVariant.stock); // Adjust current quantity if too high
+                            modalDisplayPrice.textContent = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(currentSelectedVariant.price);
+                            modalDisplayStock.textContent = `Stok: ${currentSelectedVariant.stock}`;
+                        } else {
+                            modalAddBtn.disabled = true;
+                            selectedVariantIdInput.value = '';
+                            modalDisplayPrice.textContent = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(product.price); // Kembali ke harga produk jika varian habis/tidak ditemukan
+                            modalDisplayStock.textContent = `Stok: ${currentSelectedVariant ? 'Habis' : '-'}`;
+                        }
+                    } else {
+                        modalAddBtn.disabled = true;
+                        selectedVariantIdInput.value = '';
+                        modalDisplayPrice.textContent = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(product.price); // Kembali ke harga produk
+                        modalDisplayStock.textContent = `Stok: -`;
+                    }
                 };
 
-                if (sizeSelect) sizeSelect.addEventListener('change', updateColors);
-                colorSelect.addEventListener('change', updateButtonState);
-                form.addEventListener('submit', e => handleFormSubmit(e));
-                modalWishlistBtn.addEventListener('click', () => handleToggleWishlist(modalWishlistBtn));
-                updateButtonState();
-            }
-
-            function initializeWishlist() {
-                document.querySelectorAll('.toggle-wishlist').forEach(button => {
-                    button.addEventListener('click', e => {
-                        e.preventDefault();
-                        handleToggleWishlist(button);
+                // Attach event listeners to all dynamically created select elements
+                optionSelects.forEach((select, index) => {
+                    select.addEventListener('change', () => {
+                        // Reset dropdowns setelah yang saat ini
+                        for (let i = index + 1; i < optionSelects.length; i++) {
+                            optionSelects[i].value = "";
+                            optionSelects[i].disabled = true;
+                            optionSelects[i].innerHTML = `<option value="">Pilih ${optionSelects[i].dataset.optionName} dahulu</option>`; // Reset teks placeholder
+                        }
+                        updateOptionDropdowns(); // Perbarui semua dropdown lagi
                     });
                 });
+                
+                quantityInput.addEventListener('input', updateButtonState); // Perbarui state tombol saat quantity berubah
+                
+                form.addEventListener('submit', e => handleFormSubmit(e));
+                // Modal wishlist button (if exists)
+                // const modalWishlistBtn = document.getElementById('modal-wishlist-btn');
+                // if (modalWishlistBtn) modalWishlistBtn.addEventListener('click', () => handleToggleWishlist(modalWishlistBtn));
+
+                updateOptionDropdowns(); // Panggil pertama kali untuk menginisialisasi
             }
 
+            // Fungsi ini akan menerima variant_id dari modal
             function handleFormSubmit(e) {
                 e.preventDefault();
                 const form = e.target;
@@ -638,9 +779,24 @@
                 button.disabled = true;
                 button.innerHTML = 'Memproses...';
 
-                const data = Object.fromEntries(new FormData(form).entries());
+                const productId = form.querySelector('input[name="product_id"]').value;
+                const variantId = form.querySelector('input[name="selected_variant_id"]').value;
+                const quantity = form.querySelector('input[name="quantity"]').value;
 
-                axios.post(`/tenant/${subdomain}/cart/add`, data)
+                if (!variantId) {
+                    showToast('Harap pilih varian terlebih dahulu.', 'error');
+                    button.disabled = false;
+                    button.innerHTML = 'Tambah ke Keranjang';
+                    return;
+                }
+
+                const postData = {
+                    product_id: productId,
+                    variant_id: variantId, // Kirim ID varian yang dipilih
+                    quantity: quantity
+                };
+
+                axios.post(`/tenant/${subdomain}/cart/add`, postData)
                     .then(res => {
                         if (res.data.success) {
                             showToast(res.data.message, 'success');
@@ -651,11 +807,23 @@
                             throw new Error(res.data.message);
                         }
                     })
-                    .catch(err => showToast(err.response?.data?.message || 'Terjadi kesalahan.', 'error'))
+                    .catch(err => {
+                        console.error("Cart Add Error:", err.response || err);
+                        showToast(err.response?.data?.message || 'Terjadi kesalahan.', 'error');
+                    })
                     .finally(() => {
                         button.disabled = false;
                         button.innerHTML = 'Tambah ke Keranjang';
                     });
+            }
+
+            function initializeWishlist() {
+                document.querySelectorAll('.toggle-wishlist').forEach(button => {
+                    button.addEventListener('click', e => {
+                        e.preventDefault();
+                        handleToggleWishlist(button);
+                    });
+                });
             }
 
             function handleToggleWishlist(button) {

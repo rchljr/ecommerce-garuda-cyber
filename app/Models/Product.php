@@ -150,6 +150,14 @@ class Product extends Model
     {
         return $this->hasMany(OrderItem::class);
     }
+    public function varians()
+    {
+        return $this->hasMany(Varian::class);
+    }
+
+    /**
+     * Get the tags for the product.
+     */
 
     // --- ACCESSORS ---
 
