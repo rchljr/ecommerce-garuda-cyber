@@ -13,11 +13,11 @@ class Shipping extends Model
     protected $keyType = 'string';
     protected $fillable = [
         'order_id',
-        'delivery_service',
+        'delivery_service', //ekspedisi pengirimsn, jne, jnt, sicepat
         'status',
-        'estimated_delivery',
-        'receipt_number',
-        'shipping_cost'
+        'estimated_delivery', //estimasi pengiriman 
+        'receipt_number', //no resi
+        'shipping_cost' // ongkos kirim
     ];
 
     protected static function boot()

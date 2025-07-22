@@ -26,7 +26,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             MitraTokoSeeder::class,
             TenantProductTestimonialSeeder::class,
-            OrderSeeder::class,
+            //OrderSeeder::class,
         ]);
     }
 }

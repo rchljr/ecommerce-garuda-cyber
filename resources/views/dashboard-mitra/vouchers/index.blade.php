@@ -25,8 +25,7 @@
                         <tr>
                             <th scope="col" class="px-6 py-3">Nama Voucher</th>
                             <th scope="col" class="px-6 py-3">Kode</th>
-                            <th scope="col" class="px-6 py-3">Tipe</th>
-                            <th scope="col" class="px-6 py-3">Nilai</th>
+                            <th scope="col" class="px-6 py-3">Diskon</th>
                             <th scope="col" class="px-6 py-3">Status</th>
                             <th scope="col" class="px-6 py-3">Berlaku Sampai</th>
                             <th scope="col" class="px-6 py-3 text-center">Aksi</th>
@@ -37,8 +36,7 @@
                             <tr class="bg-white border-b hover:bg-gray-50">
                                 <td class="px-6 py-4 font-medium text-gray-900">{{ $voucher->name }}</td>
                                 <td class="px-6 py-4 font-mono text-indigo-600">{{ $voucher->code }}</td>
-                                <td class="px-6 py-4">{{ $voucher->type === 'percentage' ? 'Persen' : 'Tetap' }}</td>
-                                <td class="px-6 py-4">{{ $voucher->type === 'percentage' ? $voucher->value . '%' : 'Rp ' . number_format($voucher->value) }}</td>
+                                <td class="px-6 py-4">{{  $voucher->value . '%'  }}</td>
                                 <td class="px-6 py-4">
                                     <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $voucher->status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
                                         {{ ucfirst($voucher->status) }}

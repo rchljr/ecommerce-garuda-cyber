@@ -30,21 +30,21 @@ class DashboardMitraController extends Controller
 
         // 1. Metrik Utama
         $totalRevenue = Order::where('status', 'completed')
-                             ->where('shop_id', $shopId)
-                             ->sum('total_price') ?? 0;
+            ->where('shop_id', $shopId)
+            ->sum('total_price') ?? 0;
 
         $totalOrders = Order::where('status', 'completed')
-                            ->where('shop_id', $shopId)
-                            ->count();
+            ->where('shop_id', $shopId)
+            ->count();
 
         $averageOrderValue = $totalOrders > 0 ? $totalRevenue / $totalOrders : 0;
 
         // Hitung Keuntungan Bersih (Total Net Profit)
         // Membutuhkan order yang completed, dengan item dan produk terkait (untuk modal_price)
         $completedOrders = Order::where('status', 'completed')
-                                ->where('shop_id', $shopId)
-                                ->with(['items.product']) // Eager load order items dan produknya
-                                ->get();
+            ->where('shop_id', $shopId)
+            ->with(['items.product']) // Eager load order items dan produknya
+            ->get();
 
         $totalNetProfit = 0;
         foreach ($completedOrders as $order) {

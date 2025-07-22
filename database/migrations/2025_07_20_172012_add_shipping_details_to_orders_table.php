@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('shipping_city')->nullable()->after('shipping_address');
             $table->string('shipping_zip_code')->nullable()->after('shipping_city');
             $table->string('shipping_phone')->nullable()->after('shipping_zip_code');
+            $table->string('delivery_method')->nullable()->after('shipping_phone');
         });
     }
 

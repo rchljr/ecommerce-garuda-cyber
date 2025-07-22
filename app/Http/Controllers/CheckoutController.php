@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Config;
 
 class CheckoutController extends Controller
 {
+    // ... (constructor dan metode lain seperti index, getDetails tetap sama)
     protected $cartService;
 
     public function __construct(CartService $cartService)
@@ -44,13 +45,7 @@ class CheckoutController extends Controller
     public function getDetails(Request $request)
     {
         $validated = $request->validate(['items' => 'required|array', 'items.*' => 'string']);
-        $itemIds = $validated['items'];
-        $checkoutItems = $this->cartService->getItemsByIds($itemIds, [
-            'product:id,name,price,main_image,user_id,length,width,height,weight',
-            'product.shopOwner:id,user_id,subdomain_id',
-            'product.shopOwner.shop:id,user_id,shop_name,postal_code',
-            'variant:id,color,size'
-        ]);
+        $checkoutItems = $this->cartService->getItemsByIds($validated['items']);
 
         if ($checkoutItems->isEmpty()) {
             return response()->json(['error' => 'Item tidak ditemukan.'], 404);
@@ -62,12 +57,12 @@ class CheckoutController extends Controller
 
         foreach ($groupedItems as $shopId => $items) {
             $firstItem = $items->first();
-            if (!$firstItem || !$firstItem->product || !$firstItem->product->shopOwner)
+            if (!$firstItem || !$firstItem->product || !$firstItem->product->shopOwner || !$firstItem->product->shopOwner->shop)
                 continue;
 
             $shopOwner = $firstItem->product->shopOwner;
             $shop = $shopOwner->shop;
-            $shopSubtotal = $items->sum(fn($item) => $item->product->price * $item->quantity);
+            $shopSubtotal = $items->sum(fn($item) => $item->variant->price * $item->quantity);
             $grandSubtotal += $shopSubtotal;
 
             $vouchers = Voucher::where('user_id', $shopOwner->id)
@@ -84,12 +79,11 @@ class CheckoutController extends Controller
                     return [
                         'id' => $item->id,
                         'product_name' => $item->product->name,
-                        'main_image' => $item->product->main_image,
-                        'variant_color' => optional($item->variant)->color,
-                        'variant_size' => optional($item->variant)->size,
+                        'main_image' => $item->variant->image_path ?? $item->product->main_image,
+                        'variant_name' => $item->variant->name,
                         'quantity' => $item->quantity,
-                        'price' => $item->product->price,
-                        'total_price' => $item->quantity * $item->product->price,
+                        'price' => $item->variant->price,
+                        'total_price' => $item->quantity * $item->variant->price,
                     ];
                 })->values(),
                 'subtotal' => $shopSubtotal,
@@ -99,24 +93,26 @@ class CheckoutController extends Controller
             ];
         }
 
-        $customer = Auth::guard('customers')->user() ? ['alamat' => Auth::guard('customers')->user()->alamat] : ['alamat' => ''];
+        $customer = Auth::guard('customers')->user();
 
         return response()->json([
             'shopsData' => $shopsData,
             'grandSubtotal' => $grandSubtotal,
-            'customer' => $customer,
+            'customer' => $customer ? ['alamat' => $customer->alamat] : ['alamat' => ''],
         ]);
     }
 
     public function charge(Request $request)
     {
-        // 1. Validasi Input
+        // PERBAIKAN: Tambahkan validasi untuk kota dan kode pos
         $validated = $request->validate([
             'items' => 'required|array',
             'items.*' => 'string',
             'delivery_method' => 'required|string|in:ship,pickup',
             'payment_method' => 'required|string',
             'alamat' => 'required_if:delivery_method,ship|nullable|string|max:500',
+            'shipping_city' => 'required_if:delivery_method,ship|nullable|string',
+            'shipping_zip_code' => 'required_if:delivery_method,ship|nullable|string',
             'shops' => 'present|array',
             'shops.*.shippingCost' => 'required_if:delivery_method,ship|numeric',
             'shops.*.shippingService' => 'required_if:delivery_method,ship|nullable|string',
@@ -125,22 +121,18 @@ class CheckoutController extends Controller
         ]);
 
         $orderGroupId = Str::uuid();
-        Log::info("Starting checkout process for group ID: {$orderGroupId}");
 
         try {
             $customer = Auth::guard('customers')->user();
             if (!$customer) {
-                Log::warning("Unauthorized checkout attempt for group {$orderGroupId}.");
-                return response()->json(['error' => 'Anda harus login untuk melanjutkan pembayaran.'], 401);
+                return response()->json(['error' => 'Anda harus login untuk melanjutkan.'], 401);
             }
 
-            $checkoutItems = $this->cartService->getItemsByIds($validated['items'], ['product.shopOwner.shop', 'product.shopOwner.subdomain']);
+            $checkoutItems = $this->cartService->getItemsByIds($validated['items']);
             if ($checkoutItems->isEmpty()) {
-                Log::warning("Checkout attempt for group {$orderGroupId} with no items.");
                 return response()->json(['error' => 'Item tidak ditemukan.'], 404);
             }
 
-            // 2. Kalkulasi Ulang di Server
             $totalSubtotal = 0;
             $totalShipping = 0;
             $totalDiscount = 0;
@@ -148,7 +140,7 @@ class CheckoutController extends Controller
 
             foreach ($groupedItems as $shopId => $items) {
                 $shopDataFromRequest = $validated['shops'][$shopId] ?? null;
-                $shopSubtotal = $items->sum(fn($item) => $item->product->price * $item->quantity);
+                $shopSubtotal = $items->sum(fn($item) => $item->variant->price * $item->quantity);
                 $shopShippingCost = ($validated['delivery_method'] === 'ship' && $shopDataFromRequest) ? ($shopDataFromRequest['shippingCost'] ?? 0) : 0;
                 $shopDiscount = 0;
 
@@ -163,11 +155,9 @@ class CheckoutController extends Controller
                 $totalDiscount += $shopDiscount;
             }
 
-            // 3. Persiapan Data untuk Midtrans
             $grandTotalForMidtrans = round($totalSubtotal - $totalDiscount + $totalShipping);
-            if ($grandTotalForMidtrans <= 0) {
-                $grandTotalForMidtrans = 1; // Midtrans menolak jika total 0 atau negatif
-            }
+            if ($grandTotalForMidtrans <= 0)
+                $grandTotalForMidtrans = 1;
 
             $itemDetailsForMidtrans = [];
             if ($totalSubtotal > 0)
@@ -178,7 +168,11 @@ class CheckoutController extends Controller
                 $itemDetailsForMidtrans[] = ['id' => 'DISCOUNT', 'price' => -round($totalDiscount), 'quantity' => 1, 'name' => 'Total Diskon'];
 
             $paymentTransactionId = 'PAY-' . $orderGroupId;
-            $params = ['transaction_details' => ['order_id' => $paymentTransactionId, 'gross_amount' => $grandTotalForMidtrans], 'customer_details' => ['first_name' => $customer->name, 'email' => $customer->email, 'phone' => $customer->phone], 'item_details' => $itemDetailsForMidtrans];
+            $params = [
+                'transaction_details' => ['order_id' => $paymentTransactionId, 'gross_amount' => $grandTotalForMidtrans],
+                'customer_details' => ['first_name' => $customer->name, 'email' => $customer->email, 'phone' => $customer->phone],
+                'item_details' => $itemDetailsForMidtrans
+            ];
 
             $payment_type = $validated['payment_method'];
             if ($payment_type === 'va_bca' || $payment_type === 'va_bri') {
@@ -188,16 +182,16 @@ class CheckoutController extends Controller
                 $params['payment_type'] = $payment_type;
             }
 
-            // 4. Proses Transaksi Database
             DB::beginTransaction();
-            Log::info("Database transaction started for group {$orderGroupId}.");
 
             foreach ($groupedItems as $shopId => $items) {
                 $shopDataFromRequest = $validated['shops'][$shopId] ?? null;
-                $shopSubtotal = $items->sum(fn($item) => $item->product->price * $item->quantity);
+                $firstItem = $items->first();
+                $shopSubtotal = $items->sum(fn($item) => $item->variant->price * $item->quantity);
                 $shopShippingCost = ($validated['delivery_method'] === 'ship' && $shopDataFromRequest) ? ($shopDataFromRequest['shippingCost'] ?? 0) : 0;
                 $shopDiscount = 0;
                 $voucherId = null;
+
                 if ($shopDataFromRequest && !empty($shopDataFromRequest['voucherId'])) {
                     $voucher = Voucher::find($shopDataFromRequest['voucherId']);
                     if ($voucher && $voucher->user_id == $items->first()->product->user_id && $shopSubtotal >= $voucher->min_spending) {
@@ -205,10 +199,12 @@ class CheckoutController extends Controller
                         $voucherId = $voucher->id;
                     }
                 }
+
                 $order = Order::create([
                     'order_group_id' => $orderGroupId,
                     'user_id' => $customer->id,
-                    'subdomain_id' => $items->first()->product->shopOwner->subdomain->id,
+                    'shop_id' => $shopId,
+                    'subdomain_id' => $firstItem->product->shopOwner->subdomain->id,
                     'voucher_id' => $voucherId,
                     'total_price' => ($shopSubtotal - $shopDiscount) + $shopShippingCost,
                     'subtotal' => $shopSubtotal,
@@ -216,23 +212,34 @@ class CheckoutController extends Controller
                     'discount_amount' => $shopDiscount,
                     'order_date' => now(),
                     'status' => 'pending',
+                    'delivery_method' => $validated['delivery_method'],
                     'notes' => $shopDataFromRequest['notes'] ?? null,
+                    'shipping_address' => $validated['alamat'] ?? null,
+                    'shipping_city' => $validated['shipping_city'] ?? null,
+                    'shipping_zip_code' => $validated['shipping_zip_code'] ?? null,
+                    'shipping_phone' => $customer->phone,
                 ]);
 
-                foreach ($items as $item)
-                    $order->items()->create(['product_id' => $item->product_id, 'product_variant_id' => $item->product_variant_id, 'quantity' => $item->quantity, 'unit_price' => $item->product->price]);
-                if ($validated['delivery_method'] === 'ship')
-                    Shipping::create(['order_id' => $order->id, 'shipping_address' => $validated['alamat'], 'status' => 'pending', 'shipping_cost' => $shopShippingCost, 'delivery_service' => $shopDataFromRequest['shippingService'] ?? 'N/A']);
+                foreach ($items as $item) {
+                    $order->items()->create([
+                        'product_id' => $item->product_id,
+                        'product_variant_id' => $item->product_variant_id,
+                        'quantity' => $item->quantity,
+                        'price' => $item->variant->price
+                    ]);
+                }
+
+                if ($validated['delivery_method'] === 'ship') {
+                    Shipping::create([
+                        'order_id' => $order->id,
+                        'delivery_service' => $shopDataFromRequest['shippingService'] ?? 'N/A',
+                        'status' => 'pending', // Status awal pengiriman
+                        'shipping_cost' => $shopShippingCost
+                    ]);
+                }
             }
 
-            // 5. Kirim ke Midtrans
-            Log::info("Sending charge request to Midtrans for group {$orderGroupId}", ['params' => $params]);
             $response = \Midtrans\CoreApi::charge($params);
-            Log::info("Received Midtrans response for group {$orderGroupId}", ['status_code' => $response->status_code, 'status_message' => $response->status_message]);
-
-            if (!isset($response->transaction_status)) {
-                throw new Exception('Midtrans response is invalid: ' . json_encode($response));
-            }
 
             Payment::create([
                 'order_group_id' => $orderGroupId,
@@ -243,18 +250,16 @@ class CheckoutController extends Controller
                 'total_payment' => $response->gross_amount,
                 'midtrans_response' => json_encode($response)
             ]);
+
             $this->cartService->clearCartItems($validated['items']);
 
             DB::commit();
-            Log::info("Checkout process for group {$orderGroupId} completed successfully.");
             return response()->json($response);
 
         } catch (Throwable $e) {
-            if (DB::transactionLevel() > 0) {
+            if (DB::transactionLevel() > 0)
                 DB::rollBack();
-                Log::info("Database transaction rolled back for group " . ($orderGroupId ?? 'N/A'));
-            }
-            Log::error('Checkout Charge Failed for group ' . ($orderGroupId ?? 'N/A') . ': ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            Log::error('Checkout Charge Failed: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
             return response()->json(['error' => 'Terjadi kesalahan pada server saat memproses pembayaran.'], 500);
         }
     }
@@ -262,7 +267,7 @@ class CheckoutController extends Controller
     public function searchDestination(Request $request)
     {
         $keyword = $request->input('keyword');
-        if (!$keyword)
+        if (!$keyword)  
             return response()->json(['areas' => []]);
         try {
             $apiKey = Config::get('biteship.api_key');
@@ -290,7 +295,7 @@ class CheckoutController extends Controller
             $itemsPayload = $cartItems->map(fn($item) => [
                 'name' => $item->product->name,
                 'description' => 'Varian',
-                'value' => $item->product->price,
+                'value' => $item->variant->price,
                 'length' => $item->product->length ?? 10,
                 'width' => $item->product->width ?? 10,
                 'height' => $item->product->height ?? 10,
