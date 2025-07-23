@@ -12,10 +12,12 @@ use App\Notifications\PartnerRejectedNotification;
 class VerificationService
 {
     protected $registrationService;
+    protected $orderService;
 
-    public function __construct(RegistrationService $registrationService)
+    public function __construct(RegistrationService $registrationService, OrderService $orderService)
     {
         $this->registrationService = $registrationService;
+        $this->orderService = $orderService;
     }
     /**
      * Mengambil semua pengguna dengan role 'calon-mitra' yang statusnya 'pending'.
@@ -35,7 +37,7 @@ class VerificationService
     public function approvePartner(User $user)
     {
         DB::transaction(function () use ($user) {
-            $user->load('userPackage.subscriptionPackage');
+            $user->load('userPackage.subscriptionPackage', 'subdomain'); // Muat relasi subdomain juga
 
             $userPackage = $user->userPackage;
             $package = optional($userPackage)->subscriptionPackage;
@@ -44,13 +46,24 @@ class VerificationService
                 throw new Exception("Paket langganan tidak ditemukan untuk user ID: {$user->id}");
             }
 
-            // ---  Cek apakah paketnya trial ---
+            // --- Cek apakah paketnya trial ---
             if ($package->is_trial) {
-                // Jika TRIAL, panggil metode untuk mengaktifkan semuanya
-                $this->registrationService->activateTrialPackage($user, $package);
+                // Buat pesanan terlebih dahulu untuk mencatat transaksi trial (meskipun gratis)
+                $this->orderService->createSubscriptionOrder($user);
+
+                // [PERBAIKAN] Ambil subdomain dari user dan teruskan ke service
+                $subdomain = $user->subdomain;
+                if (!$subdomain) {
+                    throw new Exception("Subdomain tidak ditemukan untuk user ID: {$user->id}");
+                }
+
+                // Panggil metode dengan tiga argumen yang benar: User, Package, dan Subdomain
+                $this->registrationService->activateTrialPackage($user, $package, $subdomain);
             } else {
                 // Jika BERBAYAR, hanya ubah status user agar bisa lanjut bayar
                 $user->update(['status' => 'active']);
+                // Buat pesanan setelah status diubah
+                $this->orderService->createSubscriptionOrder($user);
                 Notification::send($user, new PartnerApprovedNotification($user));
             }
         });

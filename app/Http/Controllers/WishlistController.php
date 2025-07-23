@@ -13,8 +13,9 @@ class WishlistController extends Controller
     {
         $tenant = $request->get('tenant');
         $templatePath = $tenant->template->path;
-        // PERBAIKAN: Menggunakan guard 'customers'
-        $wishlistItems = Wishlist::where('user_id', Auth::guard('customers')->id())->with('product')->get();
+        $wishlistItems = Wishlist::where('user_id', Auth::guard('customers')->id())
+            ->with('product.varians') // Muat produk dan variannya
+            ->get();
         return view($templatePath . '.wishlist', compact('tenant', 'wishlistItems'));
     }
 

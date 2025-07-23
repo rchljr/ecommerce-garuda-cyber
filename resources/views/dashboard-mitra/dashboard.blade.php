@@ -7,17 +7,66 @@
         .chart-container {
             position: relative;
             height: 350px;
-            /* Atur tinggi default canvas */
             width: 100%;
         }
+
         /* Style untuk kartu yang bisa diklik */
         .clickable-card {
             cursor: pointer;
             transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
         }
+
         .clickable-card:hover {
             transform: translateY(-5px);
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Kelas warna untuk kartu metrik */
+        .card-revenue {
+            border-left: 4px solid #3b82f6;
+            /* Blue-500 */
+        }
+
+        .card-orders {
+            border-left: 4px solid #22c55e;
+            /* Green-500 */
+        }
+
+        .card-avg-order {
+            border-left: 4px solid #f59e0b;
+            /* Yellow-500 */
+        }
+
+        .card-profit {
+            border-left: 4px solid #8b5cf6;
+            /* Purple-500 */
+        }
+
+        /* Ikon Font Awesome untuk kartu */
+        .card-icon {
+            font-size: 2.5rem;
+            /* Ukuran ikon */
+            color: currentColor;
+            /* Mengikuti warna teks kartu */
+        }
+
+        /* Gaya untuk mencegah overflow teks di kartu */
+        .kpi-card .text-3xl,
+        /* Angka metrik */
+        .kpi-card .text-lg.font-semibold
+
+        /* Judul kartu */
+            {
+            white-space: nowrap;
+            /* Mencegah teks/angka pindah baris */
+            overflow: hidden;
+            /* Sembunyikan jika melampaui batas */
+            text-overflow: ellipsis;
+            /* Tampilkan elipsis jika terpotong */
+            max-width: 100%;
+            /* Pastikan tidak melebihi lebar kontainer */
+            display: block;
+            /* Pastikan overflow/ellipsis bekerja */
         }
     </style>
 @endpush
@@ -26,7 +75,6 @@
 @section('content')
     <div class="bg-gray-100 min-h-screen p-4 sm:p-6 lg:p-8">
         <div class="container mx-auto">
-            <!-- Header Dashboard -->
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
                 <div>
                     <h1 class="text-3xl font-bold text-gray-800">Dashboard Penjualan</h1>
@@ -36,19 +84,18 @@
                 {{-- Grup Tombol Aksi di Header --}}
                 <div class="mt-4 sm:mt-0 flex items-center gap-3">
                     @php
-                        // Mengambil data subdomain dari user yang sedang login
                         $subdomain = Auth::user()->shop->subdomain ?? null;
                         $storeUrl = $subdomain ? $subdomain->subdomain_name : '#';
                     @endphp
 
                     @if ($subdomain)
                         {{-- Tombol Kunjungi Toko --}}
-                        <a href="{{'https://ecommercegaruda.my.id/tenant/'. $storeUrl . '/home'}}" target="_blank"
+                        <a href="{{'https://ecommercegaruda.my.id/tenant/' . $storeUrl . '/home'}}" target="_blank"
                             class="inline-flex items-center gap-2 bg-red-600 text-white font-semibold px-4 py-2 rounded-lg hover:bg-red-700 transition-colors shadow-sm">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
                                 stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round"
-                                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6l-8 8-4-4-6 6" />
                             </svg>
                             Kunjungi Toko
                         </a>
@@ -56,10 +103,12 @@
                         {{-- ====================================================== --}}
                         {{-- == BAGIAN BARU: Tombol Publish / Unpublish == --}}
                         {{-- ====================================================== --}}
-                        @if (Auth::user()->shop->publication_status == 'publish')
+                        @if ($subdomain && $subdomain->publication_status == 'published')
+                            {{-- Jika statusnya 'published', tampilkan tombol untuk UNPUBLISH --}}
                             <form action="{{ route('mitra.editor.unpublish') }}" method="POST"
-                                onsubmit="return confirm('Apakah Anda yakin ingin menyembunyikan toko Anda dari publik?');">
+                                onsubmit="return confirm('Apakah Anda yakin ingin menyembunyikan toko Anda dari publik? Pelanggan tidak akan bisa mengakses toko Anda.');">
                                 @csrf
+                                @method('PATCH') {{-- Direkomendasikan untuk update --}}
                                 <button type="submit"
                                     class="inline-flex items-center gap-2 bg-yellow-500 text-white font-semibold px-4 py-2 rounded-lg hover:bg-yellow-600 transition-colors shadow-sm">
                                     <i class="fas fa-eye-slash"></i>
@@ -67,9 +116,11 @@
                                 </button>
                             </form>
                         @else
+                            {{-- Jika statusnya 'pending' (atau lainnya), tampilkan tombol untuk PUBLISH --}}
                             <form action="{{ route('mitra.editor.publish') }}" method="POST"
-                                onsubmit="return confirm('Apakah Anda yakin ingin mempublikasikan toko Anda?');">
+                                onsubmit="return confirm('Apakah Anda yakin ingin mempublikasikan toko Anda? Toko akan bisa diakses oleh semua pelanggan.');">
                                 @csrf
+                                @method('PATCH') {{-- Direkomendasikan untuk update --}}
                                 <button type="submit"
                                     class="inline-flex items-center gap-2 bg-blue-500 text-white font-semibold px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors shadow-sm">
                                     <i class="fas fa-globe-asia"></i>
@@ -96,18 +147,11 @@
             @endif
 
 
-            <!-- Grid untuk Kartu Metrik Utama (KPI) -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
-                <!-- Kartu Total Pendapatan -->
-                <div class="bg-white p-6 rounded-xl shadow-md flex items-center gap-6">
+            {{-- UBAH: Mengatur grid agar selalu menampilkan 2 kolom pada ukuran md ke atas --}}
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 gap-6 mb-8">
+                <div class="bg-white p-6 rounded-xl shadow-md flex items-center gap-6 clickable-card card-revenue kpi-card">
                     <div class="bg-blue-100 p-3 rounded-full">
-                        {{-- Ikon Dolar dari Heroicons --}}
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-blue-500" fill="none"
-                            viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round"
-                                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v.01" />
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 18a6 6 0 100-12 6 6 0 000 12z" />
-                        </svg>
+                        <i class="fas fa-dollar-sign text-blue-500 card-icon"></i>
                     </div>
                     <div>
                         <p class="text-sm font-medium text-gray-500">Total Pendapatan</p>
@@ -115,34 +159,23 @@
                     </div>
                 </div>
 
-                <!-- Kartu Total Transaksi -->
-                <div class="bg-white p-6 rounded-xl shadow-md flex items-center gap-6 clickable-card">
-                    {{-- Membungkus seluruh konten kartu dengan <a> --}}
-                    <a href="{{ route('mitra.orders') }}" class="flex items-center gap-6 w-full h-full">
+                <div class="bg-white p-6 rounded-xl shadow-md flex items-center gap-6 clickable-card card-orders kpi-card">
+                    <a href="{{ route('mitra.orders.index') }}" class="flex items-center gap-6 w-full h-full">
                         <div class="bg-green-100 p-3 rounded-full">
-                            {{-- Ikon Keranjang Belanja dari Heroicons --}}
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-green-500" fill="none"
-                                viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round"
-                                    d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-                            </svg>
+                            <i class="fas fa-shopping-cart text-green-500 card-icon"></i>
                         </div>
                         <div>
                             <p class="text-sm font-medium text-gray-500">Total Transaksi</p>
                             <p class="text-3xl font-bold text-gray-800">{{ $totalOrders }}</p>
-                            <p class="text-xs text-gray-400 mt-1">Klik untuk detail transaksi</p> {{-- Indikasi tambahan --}}
+                            <p class="text-xs text-gray-400 mt-1">Klik untuk detail transaksi</p>
                         </div>
                     </a>
                 </div>
 
-                <!-- Kartu Nilai Pesanan Rata-rata -->
-                <div class="bg-white p-6 rounded-xl shadow-md flex items-center gap-6">
+                <div
+                    class="bg-white p-6 rounded-xl shadow-md flex items-center gap-6 clickable-card card-avg-order kpi-card">
                     <div class="bg-yellow-100 p-3 rounded-full">
-                        {{-- Ikon Grafik dari Heroicons --}}
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-yellow-500" fill="none"
-                            viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                        </svg>
+                        <i class="fas fa-chart-bar text-yellow-500 card-icon"></i>
                     </div>
                     <div>
                         <p class="text-sm font-medium text-gray-500">Nilai Pesanan Rata-rata</p>
@@ -150,13 +183,9 @@
                     </div>
                 </div>
 
-                <!-- Kartu Keuntungan Bersih (BARU) -->
-                <div class="bg-white p-6 rounded-xl shadow-md flex items-center gap-6">
+                <div class="bg-white p-6 rounded-xl shadow-md flex items-center gap-6 clickable-card card-profit kpi-card">
                     <div class="bg-purple-100 p-3 rounded-full">
-                        {{-- Ikon Dompet atau Keuntungan dari Heroicons --}}
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 11-4 0 2 2 0 014 0z" />
-                        </svg>
+                        <i class="fas fa-wallet text-purple-500 card-icon"></i>
                     </div>
                     <div>
                         <p class="text-sm font-medium text-gray-500">Keuntungan Bersih</p>
@@ -165,17 +194,31 @@
                 </div>
             </div>
 
-            <!-- Grid untuk Grafik dan Produk Terlaris -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <!-- Kartu Grafik Pendapatan -->
                 <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-md">
-                    <h3 class="text-xl font-semibold text-gray-800 mb-4">Pendapatan 30 Hari Terakhir</h3>
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-semibold text-gray-800">Pendapatan Berdasarkan Periode</h3>
+                        {{-- Filter untuk Grafik --}}
+                        <form id="chart-filter-form" method="GET" action="{{ route('mitra.dashboard') }}">
+                            <select name="chart_range" id="chart-range-select"
+                                class="mt-1 block w-auto rounded-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200"
+                                onchange="this.form.submit()">
+                                <option value="7_days" {{ $chartRange == '7_days' ? 'selected' : '' }}>7 Hari Terakhir
+                                </option>
+                                <option value="30_days" {{ $chartRange == '30_days' ? 'selected' : '' }}>30 Hari Terakhir
+                                </option>
+                                <option value="this_month" {{ $chartRange == 'this_month' ? 'selected' : '' }}>Bulan Ini
+                                </option>
+                                <option value="this_year" {{ $chartRange == 'this_year' ? 'selected' : '' }}>Tahun Ini
+                                </option>
+                            </select>
+                        </form>
+                    </div>
                     <div class="chart-container">
                         <canvas id="salesChart"></canvas>
                     </div>
                 </div>
 
-                <!-- Kartu Produk Paling Laris -->
                 <div class="lg:col-span-1 bg-white p-6 rounded-lg shadow-md">
                     <h3 class="text-xl font-semibold text-gray-800 mb-4">10 Produk Paling Laris</h3>
                     <div class="overflow-x-auto">
@@ -216,7 +259,7 @@
     {{-- CDN Chart.js --}}
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             // Data dari Controller Laravel
             const salesData = {!! json_encode($salesData) !!};
 
@@ -258,7 +301,7 @@
                             beginAtZero: true,
                             ticks: {
                                 // Format angka di sumbu Y menjadi format Rupiah
-                                callback: function(value, index, values) {
+                                callback: function (value, index, values) {
                                     return 'Rp ' + new Intl.NumberFormat('id-ID').format(value);
                                 }
                             }
@@ -287,7 +330,7 @@
                             cornerRadius: 8,
                             displayColors: false,
                             callbacks: {
-                                label: function(context) {
+                                label: function (context) {
                                     let label = context.dataset.label || '';
                                     if (label) {
                                         label += ': ';

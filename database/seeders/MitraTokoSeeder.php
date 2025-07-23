@@ -22,7 +22,7 @@ use App\Models\ShopSetting;
 use App\Models\Category;
 use App\Models\SubCategory;
 use App\Models\Voucher;
-use App\Models\Customer;
+use App\Models\Customer; // Import model Customer
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
@@ -52,11 +52,9 @@ class MitraTokoSeeder extends Seeder
                 $user->orders()->forceDelete();
             }
 
-            // Hapus produk dan varian yang dimiliki user ini
-            foreach ($user->products as $product) {
-                $product->variants()->forceDelete(); // Hapus varian terlebih dahulu
-                $product->forceDelete();
-            }
+            // Hapus produk yang dimiliki user ini
+            // Ini akan menghapus varian terkait secara otomatis jika onDelete('cascade') di relasi Product
+            $user->products()->forceDelete();
 
             // Hapus voucher yang dimiliki user ini
             $user->vouchers()->forceDelete();
@@ -168,38 +166,112 @@ class MitraTokoSeeder extends Seeder
                 'products' => [
                     [
                         'name' => 'Kemeja Batik Pria Lengan Panjang',
-                        'modal_price' => 200000,
-                        'profit_percentage' => 25,
+                        'main_image' => 'seeders/products/kemeja-batik.jpg',
                         'is_best_seller' => true,
                         'sub_category_id' => $catBajuPria->id,
-                        'main_image' => 'seeders/products/kemeja-batik.jpg',
-                        'variants' => [
-                            ['name' => 'Kemeja Batik - Merah, M', 'price' => 250000, 'stock' => 10, 'options_data' => [['name' => 'Warna', 'value' => 'Merah'], ['name' => 'Ukuran', 'value' => 'M']]],
-                            ['name' => 'Kemeja Batik - Merah, L', 'price' => 250000, 'stock' => 15, 'options_data' => [['name' => 'Warna', 'value' => 'Merah'], ['name' => 'Ukuran', 'value' => 'L']]],
-                            ['name' => 'Kemeja Batik - Biru, L', 'price' => 255000, 'stock' => 12, 'options_data' => [['name' => 'Warna', 'value' => 'Biru'], ['name' => 'Ukuran', 'value' => 'L']], 'image_path' => 'seeders/products/variants/kemeja-batik-biru.jpg'],
+                        'varians' => [ // Definisi varian untuk produk ini
+                            [
+                                'options_data' => [['name' => 'Warna', 'value' => 'Merah'], ['name' => 'Ukuran', 'value' => 'S']],
+                                'modal_price' => 200000,
+                                'profit_percentage' => 25,
+                                'stock' => 10,
+                            ],
+                            [
+                                'options_data' => [['name' => 'Warna', 'value' => 'Merah'], ['name' => 'Ukuran', 'value' => 'M']],
+                                'modal_price' => 210000,
+                                'profit_percentage' => 25,
+                                'stock' => 15,
+                            ],
+                            [
+                                'options_data' => [['name' => 'Warna', 'value' => 'Biru'], ['name' => 'Ukuran', 'value' => 'L']],
+                                'modal_price' => 220000,
+                                'profit_percentage' => 25,
+                                'stock' => 12,
+                            ],
                         ]
                     ],
                     [
                         'name' => 'Dress Tenun Wanita Modern',
-                        'modal_price' => 280000,
-                        'profit_percentage' => 25,
+                        'main_image' => 'seeders/products/dress-tenun.jpg',
                         'is_new_arrival' => true,
                         'sub_category_id' => $catBajuWanita->id,
-                        'main_image' => 'seeders/products/dress-tenun.jpg',
-                        'variants' => [
-                            ['name' => 'Dress Tenun - All Size', 'price' => 350000, 'stock' => 20, 'options_data' => [['name' => 'Ukuran', 'value' => 'All Size']]],
+                        'varians' => [
+                            [
+                                'options_data' => [['name' => 'Warna', 'value' => 'Jingga'], ['name' => 'Ukuran', 'value' => 'S']],
+                                'modal_price' => 280000,
+                                'profit_percentage' => 25,
+                                'stock' => 8,
+                            ],
+                            [
+                                'options_data' => [['name' => 'Warna', 'value' => 'Hijau'], ['name' => 'Ukuran', 'value' => 'M']],
+                                'modal_price' => 290000,
+                                'profit_percentage' => 25,
+                                'stock' => 10,
+                            ],
+                        ]
+                    ],
+                    [
+                        'name' => 'Kalung Etnik Kayu Jati',
+                        'main_image' => 'seeders/products/kalung-etnik.jpg',
+                        'sub_category_id' => $catAksesoris->id,
+                        'varians' => [
+                            [
+                                'options_data' => [['name' => 'Warna Kayu', 'value' => 'Coklat Tua']],
+                                'modal_price' => 68000,
+                                'profit_percentage' => 25,
+                                'stock' => 30,
+                            ],
+                            [
+                                'options_data' => [['name' => 'Warna Kayu', 'value' => 'Coklat Muda']],
+                                'modal_price' => 65000,
+                                'profit_percentage' => 25,
+                                'stock' => 25,
+                            ],
                         ]
                     ],
                     [
                         'name' => 'Sepatu Pantofel Kulit Asli',
-                        'modal_price' => 360000,
-                        'profit_percentage' => 25,
-                        'sub_category_id' => $catSepatu->id,
                         'main_image' => 'seeders/products/sepatu-pantofel.jpg',
-                        'variants' => [
-                            ['name' => 'Sepatu Pantofel - 40', 'price' => 450000, 'stock' => 8, 'options_data' => [['name' => 'Ukuran', 'value' => '40']]],
-                            ['name' => 'Sepatu Pantofel - 41', 'price' => 450000, 'stock' => 10, 'options_data' => [['name' => 'Ukuran', 'value' => '41']]],
-                            ['name' => 'Sepatu Pantofel - 42', 'price' => 450000, 'stock' => 7, 'options_data' => [['name' => 'Ukuran', 'value' => '42']]],
+                        'sub_category_id' => $catSepatu->id,
+                        'varians' => [
+                            [
+                                'options_data' => [['name' => 'Ukuran', 'value' => '39'], ['name' => 'Warna', 'value' => 'Hitam']],
+                                'modal_price' => 360000,
+                                'profit_percentage' => 25,
+                                'stock' => 5,
+                            ],
+                            [
+                                'options_data' => [['name' => 'Ukuran', 'value' => '40'], ['name' => 'Warna', 'value' => 'Hitam']],
+                                'modal_price' => 360000,
+                                'profit_percentage' => 25,
+                                'stock' => 7,
+                            ],
+                            [
+                                'options_data' => [['name' => 'Ukuran', 'value' => '41'], ['name' => 'Warna', 'value' => 'Coklat']],
+                                'modal_price' => 370000,
+                                'profit_percentage' => 25,
+                                'stock' => 6,
+                            ],
+                        ]
+                    ],
+                    [
+                        'name' => 'Tas Bahu Anyaman Rotan',
+                        'main_image' => 'seeders/products/tas-rotan.jpg',
+                        'is_hot_sale' => true,
+                        'sub_category_id' => $catTas->id,
+                        'varians' => [
+                            [
+                                'options_data' => [['name' => 'Warna', 'value' => 'Natural']],
+                                'modal_price' => 120000,
+                                'profit_percentage' => 50,
+                                'stock' => 15,
+                            ],
+                            [
+                                'options_data' => [['name' => 'Warna', 'value' => 'Coklat Gelap']],
+                                'modal_price' => 125000,
+                                'profit_percentage' => 50,
+                                'stock' => 10,
+                            ],
                         ]
                     ],
                 ],
@@ -238,28 +310,105 @@ class MitraTokoSeeder extends Seeder
                 'products' => [
                     [
                         'name' => 'Blouse Sutra Wanita Kerah Pita',
-                        'modal_price' => 176000,
-                        'profit_percentage' => 25,
+                        'main_image' => 'seeders/products/blouse-sutra.jpg',
                         'is_new_arrival' => true,
                         'sub_category_id' => $catBajuWanita->id,
-                        'main_image' => 'seeders/products/blouse-sutra.jpg',
-                        'variants' => [
-                            ['name' => 'Blouse Sutra - Putih, S', 'price' => 220000, 'stock' => 25, 'options_data' => [['name' => 'Warna', 'value' => 'Putih'], ['name' => 'Ukuran', 'value' => 'S']]],
-                            ['name' => 'Blouse Sutra - Putih, M', 'price' => 220000, 'stock' => 30, 'options_data' => [['name' => 'Warna', 'value' => 'Putih'], ['name' => 'Ukuran', 'value' => 'M']]],
-                            ['name' => 'Blouse Sutra - Hitam, S', 'price' => 225000, 'stock' => 15, 'options_data' => [['name' => 'Warna', 'value' => 'Hitam'], ['name' => 'Ukuran', 'value' => 'S']], 'image_path' => 'seeders/products/variants/blouse-hitam.jpg'],
+                        'varians' => [
+                            [
+                                'options_data' => [['name' => 'Warna', 'value' => 'Putih'], ['name' => 'Ukuran', 'value' => 'S']],
+                                'modal_price' => 176000,
+                                'profit_percentage' => 25,
+                                'stock' => 10,
+                            ],
+                            [
+                                'options_data' => [['name' => 'Warna', 'value' => 'Hitam'], ['name' => 'Ukuran', 'value' => 'M']],
+                                'modal_price' => 180000,
+                                'profit_percentage' => 25,
+                                'stock' => 12,
+                            ],
                         ]
                     ],
                     [
                         'name' => 'Celana Chino Pria Slim Fit',
-                        'modal_price' => 220000,
-                        'profit_percentage' => 25,
+                        'main_image' => 'seeders/products/celana-chino.jpg',
                         'is_best_seller' => true,
                         'sub_category_id' => $catBajuPria->id,
-                        'main_image' => 'seeders/products/celana-chino.jpg',
-                        'variants' => [
-                            ['name' => 'Chino Slim Fit - Cream, 30', 'price' => 275000, 'stock' => 20, 'options_data' => [['name' => 'Warna', 'value' => 'Cream'], ['name' => 'Ukuran', 'value' => '30']]],
-                            ['name' => 'Chino Slim Fit - Cream, 32', 'price' => 275000, 'stock' => 25, 'options_data' => [['name' => 'Warna', 'value' => 'Cream'], ['name' => 'Ukuran', 'value' => '32']]],
-                            ['name' => 'Chino Slim Fit - Abu, 32', 'price' => 275000, 'stock' => 18, 'options_data' => [['name' => 'Warna', 'value' => 'Abu-abu'], ['name' => 'Ukuran', 'value' => '32']]],
+                        'varians' => [
+                            [
+                                'options_data' => [['name' => 'Warna', 'value' => 'Krem'], ['name' => 'Ukuran', 'value' => '30']],
+                                'modal_price' => 220000,
+                                'profit_percentage' => 25,
+                                'stock' => 15,
+                            ],
+                            [
+                                'options_data' => [['name' => 'Warna', 'value' => 'Abu-abu'], ['name' => 'Ukuran', 'value' => '32']],
+                                'modal_price' => 225000,
+                                'profit_percentage' => 25,
+                                'stock' => 10,
+                            ],
+                        ]
+                    ],
+                    [
+                        'name' => 'Tas Selempang Kanvas Unisex',
+                        'main_image' => 'seeders/products/tas-kanvas.jpg',
+                        'sub_category_id' => $catTas->id,
+                        'varians' => [
+                            [
+                                'options_data' => [['name' => 'Warna', 'value' => 'Hijau Army']],
+                                'modal_price' => 100000,
+                                'profit_percentage' => 50,
+                                'stock' => 20,
+                            ],
+                            [
+                                'options_data' => [['name' => 'Warna', 'value' => 'Biru Dongker']],
+                                'modal_price' => 105000,
+                                'profit_percentage' => 50,
+                                'stock' => 18,
+                            ],
+                        ]
+                    ],
+                    [
+                        'name' => 'Sneakers Kanvas Putih Klasik',
+                        'main_image' => 'seeders/products/sneakers-putih.jpg',
+                        'sub_category_id' => $catSepatu->id,
+                        'varians' => [
+                            [
+                                'options_data' => [['name' => 'Ukuran', 'value' => '38']],
+                                'modal_price' => 256000,
+                                'profit_percentage' => 25,
+                                'stock' => 8,
+                            ],
+                            [
+                                'options_data' => [['name' => 'Ukuran', 'value' => '39']],
+                                'modal_price' => 256000,
+                                'profit_percentage' => 25,
+                                'stock' => 12,
+                            ],
+                            [
+                                'options_data' => [['name' => 'Ukuran', 'value' => '40']],
+                                'modal_price' => 260000,
+                                'profit_percentage' => 25,
+                                'stock' => 10,
+                            ],
+                        ]
+                    ],
+                    [
+                        'name' => 'Scarf Polos Bahan Premium',
+                        'main_image' => 'seeders/products/scarf-polos.jpg',
+                        'sub_category_id' => $catAksesoris->id,
+                        'varians' => [
+                            [
+                                'options_data' => [['name' => 'Warna', 'value' => 'Maroon']],
+                                'modal_price' => 76000,
+                                'profit_percentage' => 25,
+                                'stock' => 25,
+                            ],
+                            [
+                                'options_data' => [['name' => 'Warna', 'value' => 'Navy']],
+                                'modal_price' => 78000,
+                                'profit_percentage' => 25,
+                                'stock' => 20,
+                            ],
                         ]
                     ],
                 ],
@@ -298,27 +447,100 @@ class MitraTokoSeeder extends Seeder
                 'products' => [
                     [
                         'name' => 'Nasi Rendang Daging Sapi Komplit',
-                        'modal_price' => 28000,
-                        'profit_percentage' => 25,
+                        'main_image' => 'seeders/products/nasi-rendang.jpg',
                         'is_best_seller' => true,
                         'sub_category_id' => $catMakananBerat->id,
-                        'main_image' => 'seeders/products/nasi-rendang.jpg',
-                        'variants' => [
-                            ['name' => 'Nasi Rendang Komplit', 'price' => 35000, 'stock' => 100, 'options_data' => [['name' => 'Penyajian', 'value' => 'Komplit']]],
-                            ['name' => 'Rendang Saja (Tanpa Nasi)', 'price' => 25000, 'stock' => 50, 'options_data' => [['name' => 'Penyajian', 'value' => 'Tanpa Nasi']]],
+                        'varians' => [
+                            [
+                                'options_data' => [['name' => 'Porsi', 'value' => 'Reguler']],
+                                'modal_price' => 28000,
+                                'profit_percentage' => 25,
+                                'stock' => 20,
+                            ],
+                            [
+                                'options_data' => [['name' => 'Porsi', 'value' => 'Jumbo']],
+                                'modal_price' => 35000,
+                                'profit_percentage' => 25,
+                                'stock' => 10,
+                            ],
+                        ]
+                    ],
+                    [
+                        'name' => 'Es Cendol Durian Medan',
+                        'main_image' => 'seeders/products/es-cendol.jpg',
+                        'sub_category_id' => $catMinuman->id,
+                        'varians' => [
+                            [
+                                'options_data' => [['name' => 'Ukuran', 'value' => 'Kecil']],
+                                'modal_price' => 12000,
+                                'profit_percentage' => 50,
+                                'stock' => 30,
+                            ],
+                            [
+                                'options_data' => [['name' => 'Ukuran', 'value' => 'Besar']],
+                                'modal_price' => 15000,
+                                'profit_percentage' => 50,
+                                'stock' => 20,
+                            ],
+                        ]
+                    ],
+                    [
+                        'name' => 'Risoles Ragout Ayam (Isi 5)',
+                        'main_image' => 'seeders/products/risoles.jpg',
+                        'is_new_arrival' => true,
+                        'sub_category_id' => $catCamilan->id,
+                        'varians' => [
+                            [
+                                'options_data' => [['name' => 'Paket', 'value' => 'Isi 5']],
+                                'modal_price' => 20000,
+                                'profit_percentage' => 25,
+                                'stock' => 25,
+                            ],
+                            [
+                                'options_data' => [['name' => 'Paket', 'value' => 'Isi 10']],
+                                'modal_price' => 35000,
+                                'profit_percentage' => 25,
+                                'stock' => 10,
+                            ],
+                        ]
+                    ],
+                    [
+                        'name' => 'Bolu Kukus Gula Merah',
+                        'main_image' => 'seeders/products/bolu-kukus.jpg',
+                        'sub_category_id' => $catKue->id,
+                        'varians' => [
+                            [
+                                'options_data' => [['name' => 'Ukuran', 'value' => 'Mini']],
+                                'modal_price' => 36000,
+                                'profit_percentage' => 25,
+                                'stock' => 15,
+                            ],
+                            [
+                                'options_data' => [['name' => 'Ukuran', 'value' => 'Standar']],
+                                'modal_price' => 50000,
+                                'profit_percentage' => 25,
+                                'stock' => 8,
+                            ],
                         ]
                     ],
                     [
                         'name' => 'Sambal Bawang Botol Premium',
-                        'modal_price' => 20000,
-                        'profit_percentage' => 50,
+                        'main_image' => 'seeders/products/sambal-bawang.jpg',
                         'is_hot_sale' => true,
                         'sub_category_id' => $catSambal->id,
-                        'main_image' => 'seeders/products/sambal-bawang.jpg',
-                        'variants' => [
-                            ['name' => 'Sambal Bawang - Level 1', 'price' => 30000, 'stock' => 40, 'options_data' => [['name' => 'Level Pedas', 'value' => '1 (Tidak Pedas)']]],
-                            ['name' => 'Sambal Bawang - Level 3', 'price' => 30000, 'stock' => 50, 'options_data' => [['name' => 'Level Pedas', 'value' => '3 (Pedas)']]],
-                            ['name' => 'Sambal Bawang - Level 5', 'price' => 32000, 'stock' => 30, 'options_data' => [['name' => 'Level Pedas', 'value' => '5 (Sangat Pedas)']]],
+                        'varians' => [
+                            [
+                                'options_data' => [['name' => 'Berat', 'value' => '100gr']],
+                                'modal_price' => 20000,
+                                'profit_percentage' => 50,
+                                'stock' => 40,
+                            ],
+                            [
+                                'options_data' => [['name' => 'Berat', 'value' => '250gr']],
+                                'modal_price' => 35000,
+                                'profit_percentage' => 50,
+                                'stock' => 20,
+                            ],
                         ]
                     ],
                 ],
@@ -360,10 +582,11 @@ class MitraTokoSeeder extends Seeder
         // 2. Buat Subdomain
         $subdomain = Subdomain::create([
             'user_id' => $mitra->id,
+            'shop_id' => null, // Dikosongkan sementara
             'subdomain_name' => $data['subdomain_name'],
             'status' => 'active'
         ]);
-        $this->command->info("Subdomain {$subdomain->subdomain_name} dibuat.");
+        $this->command->info("Subdomain {$subdomain->subdomain_name} dibuat (sementara tanpa shop_id).");
 
         // 3. Buat Toko (Shop)
         $shop = Shop::create(array_merge($data['shop'], [
@@ -373,6 +596,10 @@ class MitraTokoSeeder extends Seeder
             'ktp' => 'seeders/defaults/ktp.jpg',
         ]));
         $this->command->info("Toko {$shop->shop_name} dibuat.");
+
+        $subdomain->shop_id = $shop->id;
+        $subdomain->save();
+        $this->command->info("Subdomain {$subdomain->subdomain_name} diupdate dengan Shop ID: {$shop->id}.");
 
 
         // 4. Buat Tenant
@@ -393,7 +620,6 @@ class MitraTokoSeeder extends Seeder
             'expired_date' => now()->addYear(),
             'status' => 'active',
         ]);
-        // Order untuk pembelian paket oleh mitra
         $order = Order::create([
             'user_id' => $mitra->id,
             'subdomain_id' => $subdomain->id,
@@ -463,42 +689,52 @@ class MitraTokoSeeder extends Seeder
         }
         $this->command->info("Banners untuk {$mitra->email} dibuat.");
 
-        // 10. Buat Produk dan Variannya
+        // 10. Buat Produk dan Varian-Varian Fleksibelnya
         foreach ($data['products'] as $productData) {
+            // Hapus 'varians' dari $productData sebelum membuat Produk utama
+            $variansToCreate = $productData['varians'];
+            unset($productData['varians']);
+
+            // Buat Produk Utama
             $product = Product::create([
                 'user_id' => $mitra->id,
                 'shop_id' => $shop->id,
                 'name' => $productData['name'],
                 'slug' => Str::slug($productData['name']) . '-' . uniqid(),
-                'short_description' => 'Deskripsi singkat yang menarik untuk ' . $productData['name'],
-                'description' => 'Deskripsi lengkap dan detail mengenai ' . $productData['name'] . ', menjelaskan bahan, ukuran, dan keunggulannya.',
-                'modal_price' => $productData['modal_price'],
-                'profit_percentage' => $productData['profit_percentage'],
+                'short_description' => $productData['short_description'] ?? 'Deskripsi singkat yang menarik untuk ' . $productData['name'],
+                'description' => $productData['description'] ?? 'Deskripsi lengkap dan detail mengenai ' . $productData['name'] . ', menjelaskan bahan, ukuran, dan keunggulannya.',
+                // HAPUS 'modal_price' dan 'profit_percentage' dari sini
+                // 'modal_price' => $productData['modal_price'],
+                // 'profit_percentage' => $productData['profit_percentage'],
                 'sub_category_id' => $productData['sub_category_id'],
                 'main_image' => $productData['main_image'],
                 'is_best_seller' => $productData['is_best_seller'] ?? false,
                 'is_new_arrival' => $productData['is_new_arrival'] ?? false,
                 'is_hot_sale' => $productData['is_hot_sale'] ?? false,
                 'status' => 'active',
+                'sku' => $productData['sku'] ?? null, // Tambahkan SKU jika ada di data produk
             ]);
 
-            // Buat Varian untuk Produk ini
-            if (isset($productData['variants'])) {
-                foreach ($productData['variants'] as $variantData) {
-                    Varian::create([
-                        'product_id' => $product->id,
-                        'name' => $variantData['name'],
-                        'description' => 'Varian ' . $variantData['name'] . ' untuk produk ' . $product->name,
-                        'status' => 'active',
-                        'price' => $variantData['price'],
-                        'stock' => $variantData['stock'],
-                        'options_data' => $variantData['options_data'], // Laravel akan handle konversi ke JSON
-                        'image_path' => $variantData['image_path'] ?? null,
-                    ]);
-                }
+            // Buat Varian-Varian untuk Produk ini
+            foreach ($variansToCreate as $varianData) {
+                $sellingPrice = $varianData['modal_price'] * (1 + ($varianData['profit_percentage'] / 100));
+
+                $product->varians()->create([
+                    'name' => collect($varianData['options_data'])->pluck('value')->implode(' / '), // Nama varian gabungan
+                    'modal_price' => $varianData['modal_price'],
+                    'profit_percentage' => $varianData['profit_percentage'],
+                    'price' => $sellingPrice, // Simpan harga jual di kolom 'price'
+                    'stock' => $varianData['stock'],
+                    'options_data' => $varianData['options_data'], // Simpan array opsi ke kolom JSON
+                    // 'size' => null, // Set null karena sekarang pakai options_data
+                    // 'color' => null, // Set null karena sekarang pakai options_data
+                    'description' => null, // Default
+                    'status' => 'active', // Default
+                    'image_path' => $varianData['image_path'] ?? null, // Jika ada gambar per varian
+                ]);
             }
+            $this->command->info("Produk '{$product->name}' dan varian-variannya untuk {$mitra->email} dibuat.");
         }
-        $this->command->info("Produk dan variannya untuk {$mitra->email} dibuat.");
 
         // 11. Buat Voucher
         foreach ($data['vouchers'] as $voucherData) {

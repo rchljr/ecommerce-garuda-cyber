@@ -13,12 +13,14 @@
             padding: 8px;
             border: 1px solid #d1d5db;
             border-radius: 0.375rem;
+            min-height: 42px; /* Agar tidak terlalu kecil jika belum ada tag */
+            align-items: center;
         }
 
         .tag {
             display: inline-flex;
             align-items: center;
-            background-color: #3b82f6;
+            background-color: #3b82f6; /* Tailwind blue-600 */
             color: white;
             padding: 4px 8px;
             border-radius: 0.375rem;
@@ -42,6 +44,8 @@
             position: relative;
             width: 120px;
             height: 120px;
+            overflow: hidden; /* Pastikan gambar tidak keluar dari batas */
+            border-radius: 0.375rem;
         }
 
         .image-preview {
@@ -56,7 +60,7 @@
             position: absolute;
             top: -8px;
             right: -8px;
-            background-color: #ef4444;
+            background-color: #ef4444; /* Tailwind red-500 */
             color: white;
             border-radius: 50%;
             width: 24px;
@@ -67,13 +71,13 @@
             cursor: pointer;
             font-weight: bold;
             border: 2px solid white;
+            z-index: 10;
         }
 
         /* Style untuk penanda wajib isi */
         .required-label::after {
             content: '*';
-            color: #ef4444;
-            /* Warna merah */
+            color: #ef4444; /* Warna merah */
             margin-left: 4px;
         }
 
@@ -89,25 +93,20 @@
         .option-value-tag {
             display: inline-flex;
             align-items: center;
-            background-color: #e2e8f0;
-            /* bg-gray-200 */
-            color: #2d3748;
-            /* text-gray-800 */
+            background-color: #e2e8f0; /* bg-gray-200 */
+            color: #2d3748; /* text-gray-800 */
             padding: 0.25rem 0.75rem;
-            border-radius: 9999px;
-            /* rounded-full */
+            border-radius: 9999px; /* rounded-full */
             margin-right: 0.5rem;
             margin-bottom: 0.5rem;
             font-size: 0.875rem;
-            /* text-sm */
         }
 
         .option-value-tag button {
             margin-left: 0.5rem;
             background: none;
             border: none;
-            color: #4a5568;
-            /* text-gray-600 */
+            color: #4a5568; /* text-gray-600 */
             cursor: pointer;
             font-weight: bold;
             line-height: 1;
@@ -115,8 +114,39 @@
         }
 
         .option-value-tag button:hover {
-            color: #e53e3e;
-            /* text-red-600 */
+            color: #e53e3e; /* text-red-600 */
+        }
+        
+        /* Styling for the file input button inside table cell */
+        /* ini untuk input file yang disembunyikan dan diganti dengan label */
+        .file-input-button {
+            display: inline-block;
+            background-color: #eff6ff; /* blue-50 */
+            color: #1d4ed8; /* blue-700 */
+            padding: 8px 16px;
+            border-radius: 6px;
+            border: none;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.15s ease-in-out;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 100%; /* Agar tidak melebihi sel tabel */
+            box-sizing: border-box; /* Agar padding tidak menyebabkan overflow */
+        }
+        .file-input-button:hover {
+            background-color: #dbeafe; /* blue-100 */
+        }
+        /* Sembunyikan input file asli */
+        .file-input-hidden {
+            width: 0.1px;
+            height: 0.1px;
+            opacity: 0;
+            overflow: hidden;
+            position: absolute;
+            z-index: -1;
         }
     </style>
 @endpush
@@ -170,7 +200,7 @@
                             <label for="description" class="block text-sm font-medium text-gray-700 mb-1">Deskripsi Lengkap
                             </label>
                             {{-- Disarankan menggunakan editor WYSIWYG seperti TinyMCE atau CKEditor di sini --}}
-                            <textarea id="description" name="description" rows="8" class="w-full border-gray-300 rounded-md shadow-sm">{{ old('description') }}</textarea>
+                            <textarea id="description" name="description" rows="8" class="w-full border-gray-300 rounded-md shadow-sm resize-y focus:ring-blue-500 focus:border-blue-500">{{ old('description') }}</textarea> {{-- Menambahkan focus style --}}
                         </div>
                     </div>
 
@@ -260,8 +290,17 @@
                                             class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                             Varian</th>
                                         <th scope="col"
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Gambar Varian</th>
+                                        <th scope="col"
                                             class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider required-label">
-                                            Harga (Rp)</th>
+                                            Harga Modal (Rp)</th>
+                                        <th scope="col"
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider required-label">
+                                            Profit (%)</th>
+                                        <th scope="col"
+                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Harga Jual (Rp)</th>
                                         <th scope="col"
                                             class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider required-label">
                                             Stok</th>
@@ -270,7 +309,7 @@
                                 <tbody class="bg-white divide-y divide-gray-200">
                                     <template x-if="generatedVariants.length === 0">
                                         <tr>
-                                            <td colspan="3"
+                                            <td colspan="6"
                                                 class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
                                                 Tambahkan opsi varian di atas untuk membuat daftar varian produk.
                                             </td>
@@ -280,16 +319,71 @@
                                         <tr>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"
                                                 x-text="variant.name"></td>
+
+                                            {{-- Input Gambar Varian --}}
                                             <td class="px-6 py-4 whitespace-nowrap">
-                                                <input type="number" :name="`variants[${index}][price]`"
-                                                    x-model.number="variant.price" min="0" required
-                                                    class="w-32 block px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                                                {{-- Menggunakan x-data terpisah untuk setiap gambar varian --}}
+                                                <div x-data="{ fileInput: null, filePreview: variant.image_path_url || '' }" x-init="$watch('fileInput', (newVal) => {
+                                                    if (newVal && newVal[0]) {
+                                                        const reader = new FileReader();
+                                                        reader.onload = (e) => { filePreview = e.target.result; };
+                                                        reader.readAsDataURL(newVal[0]);
+                                                    } else if (variant.image_path_url) {
+                                                        filePreview = variant.image_path_url; // Revert to old if cleared
+                                                    } else {
+                                                        filePreview = '';
+                                                    }
+                                                });">
+                                                    <input type="file" :id="`variant-image-${index}`"
+                                                        :name="`variants[${index}][image_file]`"
+                                                        x-ref="imageInput"
+                                                        @change="fileInput = $event.target.files"
+                                                        accept="image/*"
+                                                        class="file-input-hidden"> {{-- Input file asli disembunyikan --}}
+                                                    <label :for="`variant-image-${index}`"
+                                                        class="file-input-button">
+                                                        <span x-text="fileInput && fileInput.length > 0 ? fileInput[0].name : (filePreview ? 'Ubah File' : 'Pilih File')"></span>
+                                                    </label>
+                                                    <template x-if="filePreview">
+                                                        <div class="image-preview-wrapper mt-2">
+                                                            <img :src="filePreview" class="image-preview"
+                                                                alt="Varian Gambar">
+                                                            <span class="remove-image"
+                                                                @click="fileInput = null; filePreview = ''; $refs.imageInput.value = '';">&times;</span>
+                                                        </div>
+                                                    </template>
+                                                </div>
                                             </td>
+
+                                            {{-- Input Harga Modal per Varian --}}
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                <input type="number" :name="`variants[${index}][modal_price]`"
+                                                    x-model.number="variant.modal_price" min="0" step="any"
+                                                    required
+                                                    class="w-32 block px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                                                    @input="generateVariants">
+                                            </td>
+
+                                            {{-- Input Persentase Keuntungan per Varian --}}
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                <input type="number" :name="`variants[${index}][profit_percentage]`"
+                                                    x-model.number="variant.profit_percentage" min="0" max="100"
+                                                    step="0.01" required
+                                                    class="w-24 block px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                                                    @input="generateVariants">
+                                            </td>
+
+                                            {{-- Tampilan Harga Jual Otomatis per Varian --}}
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 font-semibold"
+                                                x-text="formatRupiah(variant.selling_price)"></td>
+
+                                            {{-- Input Stok per Varian --}}
                                             <td class="px-6 py-4 whitespace-nowrap">
                                                 <input type="number" :name="`variants[${index}][stock]`"
                                                     x-model.number="variant.stock" min="0" required
                                                     class="w-24 block px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
                                             </td>
+
                                             {{-- Hidden input untuk menyimpan kombinasi opsi varian --}}
                                             <input type="hidden" :name="`variants[${index}][options]`"
                                                 :value="JSON.stringify(variant.options)">
@@ -306,7 +400,7 @@
                     </div>
                 </div>
 
-                {{-- Kolom Kanan (Pengaturan, Harga & SKU, Organisasi) --}}
+                {{-- Kolom Kanan (Pengaturan Tampilan, Organisasi, dan SKU) --}}
                 <div class="space-y-6">
                     <div class="bg-white p-6 rounded-lg shadow">
                         <h2 class="text-xl font-semibold mb-4">Pengaturan Tampilan</h2>
@@ -331,53 +425,14 @@
                             </label>
                         </div>
                     </div>
-                    <div class="bg-white p-6 rounded-lg shadow">
-                        <h2 class="text-xl font-semibold mb-4">Harga & SKU</h2>
-                        <div class="mb-4">
-                            <label for="modal_price" class="block text-sm font-medium text-gray-700 required-label">Harga
-                                Modal
-                                (Rp)</label>
-                            <input type="number" name="modal_price" id="modal_price" step="any" min="0"
-                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
-                                value="{{ old('modal_price') }}" required>
-                            @error('modal_price')
-                                <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                            @enderror
-                        </div>
 
-                        <div class="mb-4">
-                            <label for="profit_percentage"
-                                class="block text-sm font-medium text-gray-700 required-label">Persentase
-                                Keuntungan (%)</label>
-                            <input type="number" name="profit_percentage" id="profit_percentage" step="0.01"
-                                min="0" max="100"
-                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
-                                value="{{ old('profit_percentage') }}" required>
-                            @error('profit_percentage')
-                                <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        <div class="mb-4">
-                            <label class="block text-sm font-medium text-gray-700">Harga Jual (Otomatis)</label>
-                            <p class="mt-1 text-lg font-semibold text-gray-900" id="selling_price_display">
-                                Rp 0
-                                {{-- Di halaman create, $product belum ada, jadi tampilkan 0 atau kosong --}}
-                            </p>
-                        </div>
-                        <div>
-                            <label for="sku" class="block text-sm font-medium text-gray-700 mb-1">SKU (Stock Keeping
-                                Unit)</label>
-                            <input type="text" id="sku" name="sku" value="{{ old('sku') }}"
-                                class="w-full border-gray-300 rounded-md shadow-sm">
-                        </div>
-                    </div>
-
+                    {{-- Bagian Organisasi dan SKU --}}
                     <div class="bg-white p-6 rounded-lg shadow">
                         <h2 class="text-xl font-semibold mb-4">Organisasi</h2>
                         <div class="mb-4">
                             <label for="sub_category_id"
-                                class="block text-sm font-medium text-gray-700 mb-1 required-label">Sub Kategori:</label>
+                                class="block text-sm font-medium text-gray-700 mb-1 required-label">Sub
+                                Kategori:</label>
                             <select name="sub_category_id" id="sub_category_id"
                                 class="w-full border-gray-300 rounded-md shadow-sm" required>
                                 <option value="">Pilih Sub Kategori</option>
@@ -391,6 +446,12 @@
                             @error('sub_category_id')
                                 <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
                             @enderror
+                        </div>
+                        <div class="mb-4">
+                            <label for="sku" class="block text-sm font-medium text-gray-700 mb-1">SKU (Stock Keeping
+                                Unit)</label>
+                            <input type="text" id="sku" name="sku" value="{{ old('sku') }}"
+                                class="w-full border-gray-300 rounded-md shadow-sm">
                         </div>
                         <div>
                             <label for="tags-input" class="block text-sm font-medium text-gray-700 mb-1">Tag Produk
@@ -432,6 +493,7 @@
             renderTags(); // Render tags awal
 
             function renderTags() {
+                console.log('Rendering tags. Current tags:', tags); // Debugging line
                 tagsContainer.innerHTML = '';
                 tagsHidden.value = tags.join(',');
                 tags.forEach((tag, index) => {
@@ -445,15 +507,24 @@
                 });
             }
 
+            function processTagInput(inputElement) {
+                const newTag = inputElement.value.trim().replace(/,/g, '');
+                // Hanya tambahkan tag jika panjangnya lebih dari 1 karakter dan belum ada
+                if (newTag.length > 1 && !tags.includes(newTag)) {
+                    tags.push(newTag);
+                    renderTags(); // Render segera setelah menambahkan tag baru
+                }
+                inputElement.value = ''; // Selalu kosongkan input setelah diproses
+            }
+
             tagsInput.addEventListener('keyup', function(e) {
                 if (e.key === ',' || e.key === 'Enter') {
-                    const newTag = e.target.value.trim().replace(/,/g, '');
-                    if (newTag.length > 1 && !tags.includes(newTag)) {
-                        tags.push(newTag);
-                    }
-                    e.target.value = '';
-                    renderTags();
+                    processTagInput(e.target);
                 }
+            });
+
+            tagsInput.addEventListener('blur', function(e) {
+                processTagInput(e.target); // Proses tag saat input kehilangan fokus
             });
 
             tagsContainer.addEventListener('click', function(e) {
@@ -472,97 +543,76 @@
                 if (!input || !container) {
                     console.warn(
                         `Image previewer: Input with ID '${inputId}' or container with ID '${containerId}' not found.`
-                        );
+                    );
                     return;
                 }
 
+                // Add a flag to prevent multiple listeners
+                if (input.dataset.listenerAttached === 'true') {
+                    return;
+                }
+                input.dataset.listenerAttached = 'true';
+
                 input.addEventListener('change', function(event) {
-                    if (!multiple) {
-                        container.innerHTML = '';
-                    }
+                    container.innerHTML = ''; // Always clear the container on change event
+
                     const files = event.target.files;
-                    for (const file of files) {
+
+                    if (files.length === 0) {
+                        return; // No files selected (e.g., user clicked cancel)
+                    }
+
+                    // Process files. For single, take only the first. For multiple, take all.
+                    const filesToProcess = multiple ? Array.from(files) : [files[0]];
+
+                    filesToProcess.forEach(file => {
                         const reader = new FileReader();
                         reader.onload = function(e) {
                             const wrapper = document.createElement('div');
                             wrapper.className = 'image-preview-wrapper';
                             wrapper.innerHTML =
-                                `<img src="${e.target.result}" class="image-preview"><span class="remove-image" data-input-id="${inputId}">&times;</span>`;
+                                `<img src="${e.target.result}" class="image-preview"><span class="remove-image" data-input-id="${inputId}" data-is-multiple="${multiple}">&times;</span>`;
                             container.appendChild(wrapper);
-
-                            // Note: Removing image from preview does not clear the file input directly for multiple files easily.
-                            // For single file, setting input.value = ''; works.
                         }
                         reader.readAsDataURL(file);
-                    }
+                    });
                 });
 
                 // Event listener for remove button on image previews
                 container.addEventListener('click', function(e) {
                     if (e.target.classList.contains('remove-image')) {
                         const inputIdToClear = e.target.getAttribute('data-input-id');
+                        const isMultipleInput = e.target.getAttribute('data-is-multiple') === 'true';
                         const targetInput = document.getElementById(inputIdToClear);
 
                         if (targetInput) {
-                            if (multiple) {
-                                // For multiple files, manually manage FileList if you want to remove specific files
-                                // This is more complex and often involves re-creating the FileList
-                                // For simplicity, we might just remove the preview or clear all if multiple selected
-                                // Or advise user to re-select
-                                alert(
-                                    'Untuk menghapus gambar dari galeri, silakan unggah ulang semua gambar yang diinginkan.');
-                                // Consider adding a clear button for gallery input or more complex FileList manipulation
+                            if (isMultipleInput) {
+                                alert('Untuk menghapus gambar dari galeri, silakan unggah ulang semua gambar yang diinginkan.');
+                                targetInput.value = ''; // Clear actual file input
+                                container.innerHTML = ''; // Clear all previews
                             } else {
-                                targetInput.value = ''; // Clear the file input for single image
+                                targetInput.value = ''; // Clear actual file input
+                                e.target.closest('.image-preview-wrapper').remove(); // Remove only this preview
                             }
+                        } else {
+                            e.target.closest('.image-preview-wrapper').remove(); // Fallback
                         }
-                        e.target.closest('.image-preview-wrapper').remove();
                     }
                 });
             }
 
             createImagePreviewer('main_image', 'main-image-preview-container');
             createImagePreviewer('gallery_images', 'gallery-preview-container', true);
-
-            // --- Logika Perhitungan Harga Jual Otomatis (Opsional) ---
-            const modalPriceInput = document.getElementById('modal_price');
-            const profitPercentageInput = document.getElementById('profit_percentage');
-            const sellingPriceDisplay = document.getElementById('selling_price_display');
-
-            function calculateSellingPrice() {
-                const modalPrice = parseFloat(modalPriceInput.value) || 0;
-                const profitPercentage = parseFloat(profitPercentageInput.value) || 0;
-
-                if (modalPrice >= 0 && profitPercentage >= 0) {
-                    const sellingPrice = modalPrice * (1 + (profitPercentage / 100));
-                    sellingPriceDisplay.textContent = 'Rp ' + sellingPrice.toLocaleString('id-ID', {
-                        minimumFractionDigits: 0,
-                        maximumFractionDigits: 0
-                    });
-                } else {
-                    sellingPriceDisplay.textContent = 'Rp 0';
-                }
-            }
-
-            if (modalPriceInput && profitPercentageInput && sellingPriceDisplay) {
-                modalPriceInput.addEventListener('input', calculateSellingPrice);
-                profitPercentageInput.addEventListener('input', calculateSellingPrice);
-
-                // Panggil sekali saat halaman dimuat untuk menampilkan nilai awal jika ada old input
-                calculateSellingPrice();
-            }
         });
 
         // --- Alpine.js Data Handler for Flexible Variants ---
         document.addEventListener('alpine:init', () => {
             Alpine.data('productVariantsHandler', () => ({
-                options: [], // [{ id: 1, name: 'Ukuran', values: ['S', 'M'] }]
-                generatedVariants: [], // [{ id: 'S-Merah', name: 'S / Merah', price: 0, stock: 0, options: [{name: 'Ukuran', value: 'S'}, {name: 'Warna', value: 'Merah'}] }]
+                options: [],
+                generatedVariants: [],
                 nextOptionId: 1,
 
                 init() {
-                    // Load existing variants if in edit mode (from old input or database)
-                    // For create mode, initialize with one empty option
                     const oldOptions = @json(old('options', []));
                     if (oldOptions.length > 0) {
                         this.options = oldOptions.map((opt, index) => ({
@@ -573,14 +623,12 @@
                                     .trim()).filter(v => v.length > 0) : [])
                         }));
                     } else {
-                        // Start with one empty option if creating new product
                         this.addOption();
                     }
-                    // Load old generated variants prices/stocks if validation failed
+                    
                     const oldGeneratedVariants = @json(old('variants', []));
+                    const oldVariantsMap = new Map();
                     if (oldGeneratedVariants.length > 0) {
-                        // Create a map for quick lookup
-                        const oldVariantsMap = new Map();
                         oldGeneratedVariants.forEach(oldV => {
                             if (oldV.options) {
                                 try {
@@ -588,8 +636,10 @@
                                     const variantId = parsedOptions.map(c => c.name + ':' + c
                                         .value).join(';');
                                     oldVariantsMap.set(variantId, {
-                                        price: oldV.price,
-                                        stock: oldV.stock
+                                        modal_price: parseFloat(oldV.modal_price) || 0,
+                                        profit_percentage: parseFloat(oldV.profit_percentage) || 0,
+                                        stock: parseInt(oldV.stock) || 0,
+                                        image_path_url: oldV.image_path_url || ''
                                     });
                                 } catch (e) {
                                     console.error("Failed to parse old variant options JSON:",
@@ -597,11 +647,8 @@
                                 }
                             }
                         });
-                        this.oldVariantsMap = oldVariantsMap; // Store for use in generateVariants
-                    } else {
-                        this.oldVariantsMap = new Map();
                     }
-
+                    this.oldVariantsMap = oldVariantsMap;
 
                     this.generateVariants();
                 },
@@ -670,31 +717,45 @@
                         processedCombinations.forEach(combo => {
                             const variantName = combo.map(c => c.value).join(' / ');
                             const variantId = combo.map(c => c.name + ':' + c.value).join(
-                            ';'); // Unique ID for matching
+                                ';'); // Unique ID for matching
 
-                            // Prioritize old data if validation failed, otherwise check previously generated
-                            let price = 0;
+                            let modalPrice = 0;
+                            let profitPercentage = 0;
                             let stock = 0;
+                            let imagePathUrl = ''; // Untuk menyimpan URL gambar varian (jika ada)
 
+                            // Prioritaskan old input (dari validasi gagal), lalu data yang sudah digenerate
                             if (this.oldVariantsMap && this.oldVariantsMap.has(variantId)) {
                                 const oldData = this.oldVariantsMap.get(variantId);
-                                price = oldData.price;
-                                stock = oldData.stock;
+                                modalPrice = parseFloat(oldData.modal_price) || 0;
+                                profitPercentage = parseFloat(oldData.profit_percentage) || 0;
+                                stock = parseInt(oldData.stock) || 0;
+                                imagePathUrl = oldData.image_path_url || ''; // Ambil URL gambar dari old input
                             } else {
                                 const existingVariant = this.generatedVariants.find(v => v
                                     .id === variantId);
                                 if (existingVariant) {
-                                    price = existingVariant.price;
-                                    stock = existingVariant.stock;
+                                    modalPrice = parseFloat(existingVariant.modal_price) || 0;
+                                    profitPercentage = parseFloat(existingVariant.profit_percentage) || 0;
+                                    stock = parseInt(existingVariant.stock) || 0;
+                                    imagePathUrl = existingVariant.image_path_url || ''; // Ambil URL gambar dari varian yang sudah ada
                                 }
                             }
+
+                            // Pastikan modalPrice dan profitPercentage adalah angka sebelum perhitungan
+                            const finalModalPrice = !isNaN(modalPrice) ? modalPrice : 0;
+                            const finalProfitPercentage = !isNaN(profitPercentage) ? profitPercentage : 0;
+                            const sellingPrice = finalModalPrice * (1 + (finalProfitPercentage / 100));
 
                             newGeneratedVariants.push({
                                 id: variantId,
                                 name: variantName,
-                                price: price,
+                                modal_price: finalModalPrice,
+                                profit_percentage: finalProfitPercentage,
+                                selling_price: sellingPrice,
                                 stock: stock,
-                                options: combo // Store the full option objects for backend
+                                options: combo, // Store the full option objects for backend
+                                image_path_url: imagePathUrl // URL gambar varian
                             });
                         });
                     }
@@ -705,79 +766,13 @@
                 get totalStock() {
                     return this.generatedVariants.reduce((sum, variant) => sum + (variant.stock ||
                         0), 0);
+                },
+
+                formatRupiah(amount) { // Fungsi helper untuk format rupiah
+                    if (typeof amount !== 'number' || isNaN(amount)) return 'Rp 0'; // Tangani NaN
+                    return 'Rp ' + amount.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
                 }
             }));
-        });
-        // --- Logika Tagging ---
-
-        const tagsInput = document.getElementById('tags-input');
-
-        const tagsContainer = document.getElementById('tags-container');
-
-        const tagsHidden = document.getElementById('tags-hidden');
-
-        let tags = [];
-
-
-
-        // Inisialisasi tags dari old input atau nilai yang ada
-
-        if (tagsHidden.value) {
-
-            tags = tagsHidden.value.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
-
-        }
-
-        renderTags(); // Render tags awal
-
-
-
-        function renderTags() {
-
-            tagsContainer.innerHTML = '';
-
-            tagsHidden.value = tags.join(',');
-
-            tags.forEach((tag, index) => {
-
-                const tagElement = document.createElement('div');
-
-                tagElement.className = 'tag';
-
-                tagElement.innerHTML = `
-
-                <span>${tag}</span>
-
-                <span class="tag-close" data-index="${index}">&times;</span>
-
-            `;
-
-                tagsContainer.appendChild(tagElement);
-
-            });
-
-        }
-
-
-
-        tagsInput.addEventListener('keyup', function(e) {
-
-            if (e.key === ',' || e.key === 'Enter') {
-
-                const newTag = e.target.value.trim().replace(/,/g, '');
-
-                if (newTag.length > 1 && !tags.includes(newTag)) {
-
-                    tags.push(newTag);
-
-                }
-
-                e.target.value = '';
-
-                renderTags();
-
-            }
-
         });
     </script>
 @endpush

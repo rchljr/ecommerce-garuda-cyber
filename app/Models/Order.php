@@ -5,6 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Models\Shop;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Order extends Model
 {
@@ -75,5 +77,9 @@ class Order extends Model
     public function refundRequest()
     {
         return $this->hasOne(RefundRequest::class);
+    }
+     public function shop(): BelongsTo
+    {
+        return $this->belongsTo(Shop::class, 'shop_id', 'id');
     }
 }

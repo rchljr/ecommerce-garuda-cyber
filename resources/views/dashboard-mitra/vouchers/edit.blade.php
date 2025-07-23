@@ -10,7 +10,7 @@
         
         <form action="{{ route('mitra.vouchers.update', $voucher->id) }}" method="POST" class="p-6">
             @method('PUT')
-            @include('mitra.vouchers._form')
+            @include('dashboard-mitra.vouchers._form')
 
             <div class="mt-6 flex justify-end">
                 <a href="{{ route('mitra.vouchers.index') }}" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded mr-2">

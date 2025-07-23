@@ -14,7 +14,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
-use App\Models\SubCategory; // Make sure to import SubCategory model
+use App\Models\SubCategory;
 
 
 class ProductController extends Controller
@@ -29,12 +29,10 @@ class ProductController extends Controller
         $user = Auth::user();
         $shop = $user->shop;
 
-        // Pastikan mitra memiliki toko yang terdaftar
         if (!$shop) {
             abort(403, 'Profil toko Anda belum lengkap.');
         }
 
-        // Ambil produk yang HANYA memiliki shop_id yang sama dengan toko mitra.
         $products = Product::where('shop_id', $shop->id)
             ->latest()
             ->paginate(10);
@@ -51,12 +49,10 @@ class ProductController extends Controller
         $shop = $user->shop;
         $subCategories = collect();
 
-        // Pastikan mitra memiliki toko dan kategori produk
         if (!$shop || !$shop->product_categories) {
             abort(403, 'Profil toko Anda belum lengkap untuk menambahkan produk.');
         }
 
-        // Ambil sub-kategori berdasarkan kategori utama toko
         $mainCategory = Category::where('slug', $shop->product_categories)->first();
         if ($mainCategory) {
             $subCategories = $mainCategory->subCategories()->orderBy('name', 'asc')->get();
@@ -73,73 +69,70 @@ class ProductController extends Controller
         $user = Auth::user();
         $shop = $user->shop;
 
-        // Validasi keberadaan toko sebelum menyimpan
         if (!$shop) {
             return back()->with('error', 'Profil toko tidak ditemukan.');
         }
 
-        // --- Validasi Semua Data dari Form ---
         $validatedData = $request->validate([
             'name' => 'required|string|max:255',
-            'short_description' => 'nullable|string|max:500', // Sesuaikan max jika perlu
+            'short_description' => 'nullable|string|max:500',
             'description' => 'nullable|string',
-            'modal_price' => 'required|numeric|min:0',
-            'profit_percentage' => 'required|numeric|min:0|max:100',
-            'sub_category_id' => 'required|exists:sub_categories,id', // Pastikan sub_categories ada
+            // Hapus validasi modal_price dan profit_percentage dari sini (sudah di level varian)
+            // 'modal_price' => 'required|numeric|min:0',
+            // 'profit_percentage' => 'required|numeric|min:0|max:100',
+            'sub_category_id' => 'required|exists:sub_categories,id',
             'main_image' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
-            'gallery_images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048', // Nullable karena mungkin tidak selalu ada galeri
-            'tags' => 'nullable|string', // Tags dikirim sebagai string koma-separated
+            'gallery_images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+            'tags' => 'nullable|string',
+            'sku' => 'nullable|string|unique:products,sku',
+            'is_best_seller' => 'nullable',
+            'is_new_arrival' => 'nullable',
+            'is_hot_sale' => 'nullable',
 
-            // --- Validasi untuk VARIAN PRODUK (dari Alpine.js) ---
-            'variants' => 'required|array', // Harus ada setidaknya satu varian
-            'variants.*.name' => 'nullable|string|max:255', // Nama varian gabungan (e.g., S / Merah), dikirim dari frontend
-            'variants.*.price' => 'required|numeric|min:0', // Harga per varian
-            'variants.*.stock' => 'required|integer|min:0', // Stok per varian
-            'variants.*.options' => 'required|json', // Data opsi varian dalam format JSON string
-            // 'variants.*.image_path' => 'nullable|string', // Jika setiap varian punya path gambar sendiri
+            // --- Validasi untuk VARIAN PRODUK ---
+            'variants' => 'required|array',
+            'variants.*.name' => 'nullable|string|max:255',
+            'variants.*.modal_price' => 'required|numeric|min:0', // BARU: Validasi modal_price per varian
+            'variants.*.profit_percentage' => 'required|numeric|min:0|max:100', // BARU: Validasi profit_percentage per varian
+            'variants.*.stock' => 'required|integer|min:0',
+            'variants.*.options' => 'required|json',
         ]);
 
-        DB::beginTransaction(); // Mulai transaksi database
+        DB::beginTransaction();
 
         try {
-            // --- 1. Simpan Gambar Utama dan Galeri Produk ---
             $mainImagePath = null;
             if ($request->hasFile('main_image')) {
                 $mainImagePath = $request->file('main_image')->store('products/main', 'public');
             }
 
-            $galleryImagePaths = []; // Inisialisasi sebagai array kosong
+            $galleryImagePaths = [];
             if ($request->hasFile('gallery_images')) {
                 foreach ($request->file('gallery_images') as $file) {
-                    // Pastikan file valid sebelum disimpan
                     if ($file->isValid()) {
                         $galleryImagePaths[] = $file->store('products/gallery', 'public');
                     }
                 }
             }
 
-            // --- 2. Buat Produk Utama ---
             $product = Product::create([
-                'user_id' => Auth::id(), // Gunakan Auth::id()
+                'user_id' => Auth::id(),
                 'shop_id' => $shop->id,
                 'name' => $validatedData['name'],
-                'slug' => Str::slug($validatedData['name']) . '-' . uniqid(), // Pastikan Str diimport
+                'slug' => Str::slug($validatedData['name']) . '-' . uniqid(),
                 'short_description' => $validatedData['short_description'],
                 'description' => $validatedData['description'],
-                'modal_price' => $validatedData['modal_price'],
-                'profit_percentage' => $validatedData['profit_percentage'],
-                'sku' => $validatedData['sku'] ?? null, // SKu bisa nullable dan tidak wajib
+                // Hapus 'modal_price' dan 'profit_percentage' dari sini (sudah di level varian)
+                'sku' => $validatedData['sku'] ?? null,
                 'sub_category_id' => $validatedData['sub_category_id'],
-                'main_image' => $mainImagePath, // Kolom DB 'main_image'
-                'gallery_image_paths' => $galleryImagePaths, // Kolom DB 'gallery_image_paths' (tipe JSON)
-                'status' => 'active', // Default status produk
-                'is_best_seller' => $request->boolean('is_best_seller'), // Gunakan boolean()
+                'main_image' => $mainImagePath,
+                'gallery_image_paths' => $galleryImagePaths,
+                'status' => 'active',
+                'is_best_seller' => $request->boolean('is_best_seller'),
                 'is_new_arrival' => $request->boolean('is_new_arrival'),
                 'is_hot_sale' => $request->boolean('is_hot_sale'),
-                // 'tags' tidak disimpan langsung di sini karena ada relasi Many-to-Many
             ]);
 
-            // --- 3. Sinkronkan Tags ---
             if (!empty($validatedData['tags'])) {
                 $tagsInput = explode(',', $validatedData['tags']);
                 $tagIds = [];
@@ -150,32 +143,31 @@ class ProductController extends Controller
                 $product->tags()->sync($tagIds);
             }
 
-            // --- 4. Simpan Varian Produk ---
             foreach ($validatedData['variants'] as $variantData) {
-                $optionsData = json_decode($variantData['options'], true); // Dekode JSON string ke array PHP
+                $optionsData = json_decode($variantData['options'], true);
 
                 $product->varians()->create([
-                    'name' => $variantData['name'] ?? null, // Ambil nama varian dari frontend
-                    'price' => $variantData['price'],
+                    'name' => $variantData['name'] ?? null,
+                    'modal_price' => $variantData['modal_price'],
+                    'profit_percentage' => $variantData['profit_percentage'],
+                    'price' => $variantData['modal_price'] * (1 + ($variantData['profit_percentage'] / 100)), // Mengisi kolom 'price' dengan harga jual yang dihitung
                     'stock' => $variantData['stock'],
-                    'options_data' => $optionsData, // Simpan array opsi ke kolom JSON
-                    // Kolom 'size' dan 'color' di tabel varians sekarang seharusnya null atau dihapus dari DB.
-                    'size' => null, // Atur ke null jika kolom masih ada di DB tapi tidak digunakan
-                    'color' => null, // Atur ke null jika kolom masih ada di DB tapi tidak digunakan
-                    'description' => null, // Atur ke null jika tidak ada deskripsi per varian
-                    'status' => 'active', // Atur status default varian
+                    'options_data' => $optionsData,
+                    'size' => null, // Set null jika kolom masih ada di DB tapi tidak digunakan
+                    'color' => null, // Set null jika kolom masih ada di DB tapi tidak digunakan
+                    'description' => null,
+                    'status' => 'active',
                     'image_path' => null, // Jika ada gambar per varian, perlu logika upload di sini
                 ]);
             }
 
-            DB::commit(); // Commit transaksi jika semua berhasil
+            DB::commit();
 
             return redirect()->route('mitra.products.index')->with('success', 'Produk berhasil ditambahkan!');
 
         } catch (\Exception $e) {
-            DB::rollBack(); // Rollback transaksi jika terjadi error
+            DB::rollBack();
 
-            // Hapus gambar yang sudah diupload jika ada error
             if (isset($mainImagePath) && Storage::disk('public')->exists($mainImagePath)) {
                 Storage::disk('public')->delete($mainImagePath);
             }
@@ -185,7 +177,6 @@ class ProductController extends Controller
                 }
             }
 
-            // Log error untuk debugging lebih lanjut
             Log::error("Error saving product: " . $e->getMessage(), ['exception' => $e]);
 
             return redirect()->back()->withInput()->with('error', 'Terjadi kesalahan saat menyimpan produk: ' . $e->getMessage());
@@ -202,6 +193,9 @@ class ProductController extends Controller
             abort(403, 'Anda tidak memiliki izin untuk melihat produk ini.');
         }
 
+        // Pastikan varian dimuat untuk perhitungan harga di Product Model Accessor
+        $product->load('varians');
+
         return view('dashboard-mitra.products.show', compact('product'));
     }
 
@@ -214,9 +208,9 @@ class ProductController extends Controller
             abort(403, 'Anda tidak memiliki izin untuk mengedit produk ini.');
         }
 
-        $product->load(['tags', 'variants', 'gallery']);
+        $product->load(['tags', 'varians', 'gallery']); // Load 'varians' bukan 'variants'
         $user = Auth::user();
-        $subCategories = collect(); // Mengubah nama variabel dari $categories menjadi $subCategories
+        $subCategories = collect();
 
         $mainCategorySlug = optional($user->shop)->product_categories;
 
@@ -226,7 +220,28 @@ class ProductController extends Controller
                 $subCategories = $mainCategory->subCategories()->orderBy('name', 'asc')->get();
             }
         }
-        return view('dashboard-mitra.products.edit', compact('product', 'subCategories')); // Menggunakan 'subCategories'
+
+        // Untuk mengisi Alpine.js di frontend dengan data varian yang ada:
+        // Anda perlu meneruskan $product->varians->toArray() atau memprosesnya
+        // agar cocok dengan struktur `options` di Alpine.js productVariantsHandler.
+        // Contoh:
+        $existingVariantsForAlpine = $product->varians->map(function ($varian) {
+            return [
+                'id' => $varian->id, // Jika Anda ingin mengupdate varian yang ada
+                'name' => $varian->name,
+                'modal_price' => $varian->modal_price,
+                'profit_percentage' => $varian->profit_percentage,
+                'stock' => $varian->stock,
+                'options' => json_encode($varian->options_data), // Encode kembali ke JSON string
+            ];
+        })->toArray();
+
+
+        // Untuk tags, pastikan formatnya string koma-separated
+        $existingTags = $product->tags->pluck('name')->implode(',');
+
+
+        return view('dashboard-mitra.products.edit', compact('product', 'subCategories', 'existingVariantsForAlpine', 'existingTags'));
     }
 
     /**
@@ -238,51 +253,53 @@ class ProductController extends Controller
             abort(403, 'Anda tidak memiliki izin untuk mengedit produk ini.');
         }
 
-        // --- DEBUGGING: Periksa semua data dari request sebelum validasi ---
-        // dd($request->all());
-
         $validatedData = $request->validate([
             'name' => 'required|string|max:255',
-            'short_description' => 'nullable|string',
+            'short_description' => 'nullable|string|max:500',
             'description' => 'nullable|string',
-            'modal_price' => 'required|numeric|min:0', // Tambahkan validasi untuk harga modal
-            'profit_percentage' => 'required|numeric|min:0|max:100', // Tambahkan validasi untuk persentase keuntungan
+            // HAPUS validasi modal_price dan profit_percentage dari sini (sudah di level varian)
+            // 'modal_price' => 'required|numeric|min:0',
+            // 'profit_percentage' => 'required|numeric|min:0|max:100',
             'sub_category_id' => 'required|exists:sub_categories,id',
-            'main_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
-            'gallery_images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:2048',
-            'variants' => 'required|array',
-            'variants.*.color' => 'required|string|max:255',
-            'variants.*.size' => 'required|string|max:255',
-            'variants.*.stock' => 'required|integer|min:0',
+            'main_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048', // Nullable karena mungkin tidak diubah
+            'gallery_images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048', // Nullable karena mungkin tidak diubah
             'tags' => 'nullable|string',
             'sku' => ['nullable', 'string', Rule::unique('products')->ignore($product->id)],
             'is_best_seller' => 'nullable',
             'is_new_arrival' => 'nullable',
             'is_hot_sale' => 'nullable',
-        ]);
 
-        // --- DEBUGGING: Periksa data yang sudah divalidasi ---
-        // dd($validatedData);
+            // --- Validasi untuk VARIAN PRODUK ---
+            'variants' => 'required|array',
+            'variants.*.name' => 'nullable|string|max:255',
+            'variants.*.modal_price' => 'required|numeric|min:0', // BARU: Validasi modal_price per varian
+            'variants.*.profit_percentage' => 'required|numeric|min:0|max:100', // BARU: Validasi profit_percentage per varian
+            'variants.*.stock' => 'required|integer|min:0',
+            'variants.*.options' => 'required|json',
+            'variants.*.id' => 'nullable|exists:varians,id', // Jika Anda mengirim ID varian untuk update/delete selektif
+        ]);
 
         DB::beginTransaction();
         try {
             $updateData = $validatedData;
-
-            unset($updateData['variants'], $updateData['tags']); // Hapus gallery_images karena ditangani terpisah
+            // Hapus 'variants' dan 'tags' dari updateData untuk Product::update
+            unset($updateData['variants'], $updateData['tags']);
+            // HAPUS INI JUGA jika 'modal_price' dan 'profit_percentage' tidak lagi di tabel products
+            unset($updateData['modal_price'], $updateData['profit_percentage']); // TAMBAHKAN INI
 
             // Add checkbox data
-            $updateData['is_best_seller'] = $request->has('is_best_seller');
-            $updateData['is_new_arrival'] = $request->has('is_new_arrival');
-            $updateData['is_hot_sale'] = $request->has('is_hot_sale');
+            $updateData['is_best_seller'] = $request->boolean('is_best_seller');
+            $updateData['is_new_arrival'] = $request->boolean('is_new_arrival');
+            $updateData['is_hot_sale'] = $request->boolean('is_hot_sale');
 
             if ($request->hasFile('main_image')) {
                 $this->deleteFile($product->main_image);
                 $updateData['main_image'] = $this->uploadFile($request->file('main_image'), 'products/main');
             }
 
-            // Kolom 'price' akan dihitung otomatis oleh mutator di model Product
             $product->update($updateData);
 
+            // --- Sinkronkan Tags ---
             if (!empty($validatedData['tags'])) {
                 $tagsInput = explode(',', $validatedData['tags']);
                 $tagIds = [];
@@ -295,20 +312,37 @@ class ProductController extends Controller
                 $product->tags()->sync([]);
             }
 
-            $product->variants()->delete();
+            // --- Sinkronkan Varian Produk ---
+            $product->varians()->delete(); // Hapus semua varian lama
             foreach ($validatedData['variants'] as $variantData) {
-                $product->variants()->create($variantData);
+                $optionsData = json_decode($variantData['options'], true);
+
+                $product->varians()->create([
+                    'name' => $variantData['name'] ?? null,
+                    'modal_price' => $variantData['modal_price'],
+                    'profit_percentage' => $variantData['profit_percentage'],
+                    'price' => $variantData['modal_price'] * (1 + ($variantData['profit_percentage'] / 100)), // Harga jual dihitung
+                    'stock' => $variantData['stock'],
+                    'options_data' => $optionsData,
+                    'size' => null, // Set null
+                    'color' => null, // Set null
+                    'description' => null,
+                    'status' => 'active',
+                    'image_path' => null,
+                ]);
             }
 
-            // Hapus galeri lama jika ada gambar baru yang diunggah
+            // --- Sinkronkan Galeri Gambar ---
             if ($request->hasFile('gallery_images')) {
                 foreach ($product->gallery as $galleryImage) {
                     $this->deleteFile($galleryImage->image_path);
                     $galleryImage->delete();
                 }
                 foreach ($request->file('gallery_images') as $galleryFile) {
-                    $galleryPath = $this->uploadFile($galleryFile, 'products/gallery');
-                    $product->gallery()->create(['image_path' => $galleryPath]);
+                    if ($galleryFile->isValid()) {
+                        $galleryPath = $galleryFile->store('products/gallery', 'public');
+                        $product->gallery()->create(['image_path' => $galleryPath]);
+                    }
                 }
             }
 
@@ -316,7 +350,8 @@ class ProductController extends Controller
             return redirect()->route('mitra.products.index')->with('success', 'Produk berhasil diperbarui!');
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->withInput()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+            Log::error("Error updating product: " . $e->getMessage(), ['exception' => $e]);
+            return back()->withInput()->with('error', 'Terjadi kesalahan saat memperbarui produk: ' . $e->getMessage());
         }
     }
 
@@ -325,21 +360,20 @@ class ProductController extends Controller
      */
     public function destroy(Product $product)
     {
-        if ($product->shop_id !== Auth::user()->shop->id) { // Tambahkan otorisasi
+        if ($product->shop_id !== Auth::user()->shop->id) {
             abort(403, 'Anda tidak memiliki izin untuk menghapus produk ini.');
         }
 
         DB::beginTransaction();
         try {
-            // Hapus file utama
             $this->deleteFile($product->main_image);
 
-            // Hapus file galeri
             foreach ($product->gallery as $galleryImage) {
                 $this->deleteFile($galleryImage->image_path);
+                $galleryImage->delete();
             }
 
-            $product->delete(); // Ini akan menghapus relasi seperti variants dan gallery secara otomatis jika onDelete('cascade') di migrasi
+            $product->delete();
 
             DB::commit();
             return redirect()->route('mitra.products.index')->with('success', 'Produk berhasil dihapus!');

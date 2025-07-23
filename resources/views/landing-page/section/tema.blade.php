@@ -15,11 +15,11 @@
                                 <!-- Image and Link -->
                                 <a href="{{ $template->status === 'active' ? route('template.preview', $template) : '#' }}" 
                                 target="_blank" 
-                                   class="block {{ $template->status !== 'active' ? 'pointer-events-none' : '' }}">
+                                class="block {{ $template->status !== 'active' ? 'pointer-events-none' : '' }}">
                                     <img src="{{ asset('storage/' . $template->image_preview) }}"
-                                         onerror="this.onerror=null;this.src='https://placehold.co/400x300/f1f5f9/cbd5e1?text=No+Image';"
-                                         alt="{{ $template->name }}"
-                                         class="w-full h-40 object-cover rounded-lg mb-4 {{ $template->status === 'active' ? 'hover:opacity-80' : 'filter grayscale brightness-75' }} transition-all">
+                                        onerror="this.onerror=null;this.src='https://placehold.co/400x300/f1f5f9/cbd5e1?text={{$template->name}}';"
+                                        alt="{{ $template->name }}"
+                                        class="w-full h-40 object-cover rounded-lg mb-4 {{ $template->status === 'active' ? 'hover:opacity-80' : 'filter grayscale brightness-75' }} transition-all">
                                 </a>
                                 
                                 <!-- Content -->

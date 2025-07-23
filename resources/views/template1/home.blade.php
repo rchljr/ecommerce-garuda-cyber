@@ -1,208 +1,96 @@
 {{-- resources/views/template1/home.blade.php --}}
 @extends('template1.layouts.template')
 
-@section('title', 'Beranda')
+@section('content')
 
 @push('styles')
-    {{-- Style kustom untuk modal varian dan notifikasi --}}
+    {{-- [TAMBAHAN] Style untuk Modal dan Notifikasi, disamakan dengan halaman Shop --}}
     <style>
-        /* PERBAIKAN: Menambahkan text-shadow untuk keterbacaan */
-        .hero__text h6,
-        .hero__text h2,
-        .hero__text p {
-            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.6);
-        }
-
-        .banner__item__text h2 {
-            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.4);
-        }
-
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.6);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 10000;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.3s ease, visibility 0.3s ease;
-        }
-
-        .modal-overlay.show {
-            opacity: 1;
-            visibility: visible;
-        }
-
-        .modal-content {
-            background: white;
-            padding: 1.5rem;
-            border-radius: 12px;
-            width: 90%;
-            max-width: 400px;
-            transform: scale(0.95);
-            transition: transform 0.3s ease;
-        }
-
-        .modal-overlay.show .modal-content {
-            transform: scale(1);
-        }
-
-        .modal-close {
-            position: absolute;
-            top: 10px;
-            right: 15px;
-            font-size: 2rem;
-            font-weight: bold;
-            color: #888;
-            cursor: pointer;
-        }
-
-        .modal-variant-select {
-            width: 100%;
-            height: 46px;
-            border: 1px solid #e1e1e1;
-            padding: 0 15px;
-            font-size: 14px;
-            color: #444444;
-            border-radius: 5px;
-            -webkit-appearance: none;
-            -moz-appearance: none;
-            appearance: none;
-            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
-            background-repeat: no-repeat;
-            background-position: right 0.75rem center;
-            background-size: 16px 12px;
-        }
-
-        .modal-variant-select:disabled {
-            background-color: #f3f3f3;
-            color: #b0b0b0;
-            cursor: not-allowed;
-        }
-
-        .primary-btn:disabled {
-            background-color: #b0b0b0;
-            cursor: not-allowed;
-        }
-
         .toast-notification {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background-color: #2c3e50;
-            color: white;
-            padding: 15px 25px;
-            border-radius: 8px;
+            position: fixed; bottom: 20px; right: 20px;
+            background-color: #2c3e50; color: white;
+            padding: 15px 25px; border-radius: 8px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-            z-index: 10001;
-            opacity: 0;
-            visibility: hidden;
+            z-index: 10001; opacity: 0; visibility: hidden;
             transform: translateY(20px);
             transition: all 0.4s cubic-bezier(0.215, 0.610, 0.355, 1);
         }
+        .toast-notification.show { opacity: 1; visibility: visible; transform: translateY(0); }
+        .toast-notification.success { background-color: #27ae60; }
+        .toast-notification.error { background-color: #c0392b; }
 
-        .toast-notification.show {
-            opacity: 1;
-            visibility: visible;
-            transform: translateY(0);
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.6); display: none;
+            align-items: center; justify-content: center; z-index: 10000;
+            opacity: 0; visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
         }
-
-        .toast-notification.success {
-            background-color: #27ae60;
+        .modal-overlay.show { display: flex; opacity: 1; visibility: visible; }
+        .modal-content {
+            background: white; padding: 1.5rem; border-radius: 12px;
+            width: 90%; max-width: 400px;
+            transform: scale(0.95); transition: transform 0.3s ease;
         }
-
-        .toast-notification.error {
-            background-color: #c0392b;
+        .modal-overlay.show .modal-content { transform: scale(1); }
+        .modal-close {
+            position: absolute; top: 10px; right: 15px;
+            font-size: 2rem; font-weight: bold; color: #888; cursor: pointer;
         }
-
-        .filter__controls li {
-            padding: 8px 20px;
-            border-radius: 25px;
-            transition: all 0.3s ease;
+        .modal-variant-select {
+            width: 100%; height: 46px; border: 1px solid #e1e1e1; padding: 0 15px;
+            font-size: 14px; color: #444444; border-radius: 5px;
+            -webkit-appearance: none; -moz-appearance: none; appearance: none;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+            background-repeat: no-repeat; background-position: right 0.75rem center; background-size: 16px 12px;
         }
-
-        .filter__controls li.active {
-            background-color: #111111;
-            color: #ffffff;
-        }
-
+        .modal-variant-select:disabled { background-color: #f3f3f3; color: #b0b0b0; cursor: not-allowed; }
+        .primary-btn:disabled { background-color: #b0b0b0 !important; cursor: not-allowed; }
         .product__item__text .add-cart {
-            display: block;
-            width: 100%;
-            padding: 10px;
-            background: #f3f3f3;
-            color: #111;
-            font-weight: 700;
-            border: none;
-            border-radius: 5px;
-            text-align: center;
-            transition: all 0.3s ease;
-            cursor: pointer;
+            display: inline-block; width: auto; padding: 8px 25px; background: #111;
+            color: #fff; border-radius: 20px; font-size: 13px; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 1px; border: none;
+            cursor: pointer; transition: all 0.3s;
         }
-
-        .product__item__text .add-cart:hover {
-            background: #ca1515;
-            color: #ffffff;
-        }
-
-        .product__hover li i {
-            color: #111;
-            font-size: 18px;
-            background: #fff;
-            display: block;
-            height: 45px;
-            width: 45px;
-            line-height: 45px;
-            text-align: center;
-            border-radius: 50%;
-            transition: all .3s;
-        }
-
-        .product__hover li:hover i {
-            background: #ca1515;
-            color: #fff;
-            transform: rotate(360deg);
-        }
-
-        .product__hover a.toggle-wishlist.active i,
-        #modal-wishlist-btn.active i {
-            background: #ca1515;
-            color: #fff;
-        }
+        .product__item__text .add-cart:hover { background: #333; }
     </style>
 @endpush
-
-@section('content')
-    @php
-        $isPreview = $isPreview ?? false;
-        $subdomainName = request()->route('subdomain');
-    @endphp
 
     <!-- Hero Section Begin -->
     <section class="hero">
         <div class="hero__slider owl-carousel">
+            {{-- Menggunakan loop untuk menampilkan semua hero yang aktif dari mitra --}}
             @forelse ($heroes as $hero)
                 <div class="hero__items set-bg" data-setbg="{{ $hero->image_url }}">
                     <div class="container">
                         <div class="row">
                             <div class="col-xl-5 col-lg-7 col-md-8">
                                 <div class="hero__text">
-                                    <h6>{{ $hero->subtitle }}</h6>
-                                    <h2>{{ $hero->title }}</h2>
-                                    <p>{{ $hero->description }}</p>
-                                    <a href="{{ $hero->button_url }}" class="primary-btn">{{ $hero->button_text }} <span
-                                            class="arrow_right"></span></a>
+                                    {{-- Data diambil dari objek $hero --}}
+                                    <h6 id="preview-hero-subtitle">{{ $hero->subtitle }}</h6>
+                                    <h2 id="preview-hero-title">{{ $hero->title }}</h2>
+                                    <p id="preview-hero-description">{{ $hero->description }}</p>
+
+                                    {{-- Tombol ini bisa diatur warnanya dari shop_settings jika mau --}}
+                                    <a href="{{ $hero->button_url }}" class="primary-btn preview-button">
+                                        <span id="preview-hero-button-text">{{ $hero->button_text }}</span>
+                                        <span class="arrow_right"></span>
+                                    </a>
+
+                                    <div class="hero__social">
+                                        {{-- Link sosial media bisa diambil dari $settings jika masih digunakan --}}
+                                        <a href="#"><i class="fa fa-facebook"></i></a>
+                                        <a href="#"><i class="fa fa-twitter"></i></a>
+                                        <a href="#"><i class="fa fa-pinterest"></i></a>
+                                        <a href="#"><i class="fa fa-instagram"></i></a>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
             @empty
+                {{-- Konten default jika tidak ada hero yang diatur oleh mitra --}}
                 <div class="hero__items set-bg" data-setbg="{{ asset('template1/img/hero/hero-default.jpg') }}">
                     <div class="container">
                         <div class="row">
@@ -226,19 +114,23 @@
     <section class="banner spad">
         <div class="container">
             <div class="row">
+                {{-- Menggunakan loop untuk menampilkan banner dari mitra --}}
                 @forelse ($banners as $banner)
+                    {{-- Anda perlu menyesuaikan class col-lg-* berdasarkan jumlah banner --}}
                     <div class="col-lg-4">
                         <div class="banner__item">
                             <div class="banner__item__pic">
-                                <img src="{{ $banner->image_url }}" alt="{{ $banner->title }}">
+                                <img id="preview-banner-{{ $loop->index }}-img" src="{{ $banner->image_url }}"
+                                    alt="{{ $banner->title }}">
                             </div>
                             <div class="banner__item__text">
-                                <h2>{{ $banner->title }}</h2>
-                                <a href="{{ $banner->link_url }}">Belanja Sekarang</a>
+                                <h2 id="preview-banner-{{ $loop->index }}-title">{{ $banner->title }}</h2>
+                                <a href="{{ $banner->link_url }}">Shop now</a>
                             </div>
                         </div>
                     </div>
                 @empty
+                    {{-- Konten default jika tidak ada banner --}}
                     <div class="col-lg-12 text-center">
                         <p>Banner belum diatur. Silakan tambahkan melalui dashboard.</p>
                     </div>
@@ -254,14 +146,16 @@
             <div class="row">
                 <div class="col-lg-12">
                     <ul class="filter__controls">
-                        <li class="active" data-filter=".best-seller">Produk Terlaris</li>
-                        <li data-filter=".new-arrival">Koleksi Terbaru</li>
-                        <li data-filter=".hot-sale">Promo Spesial</li>
+                        {{-- Filter ini akan bekerja dengan class pada produk di bawah --}}
+                        <li class="active" data-filter=".best-seller">Best Sellers</li>
+                        <li data-filter=".new-arrival">New Arrivals</li>
+                        <li data-filter=".hot-sale">Hot Sales</li>
                     </ul>
                 </div>
             </div>
 
             @php
+                // Menggabungkan semua produk dan memastikan tidak ada duplikat
                 $allProducts = collect($bestSellers ?? [])
                     ->merge($newArrivals ?? [])
                     ->merge($hotSales ?? [])
@@ -272,38 +166,35 @@
                 @forelse ($allProducts as $product)
                     @php
                         $classes = '';
-                        if (($bestSellers ?? collect())->contains($product)) {
-                            $classes .= ' best-seller';
-                        }
-                        if (($newArrivals ?? collect())->contains($product)) {
-                            $classes .= ' new-arrival';
-                        }
-                        if (($hotSales ?? collect())->contains($product)) {
-                            $classes .= ' hot-sale';
-                        }
+                        if (($bestSellers ?? collect())->contains($product)) { $classes .= ' best-seller'; }
+                        if (($newArrivals ?? collect())->contains($product)) { $classes .= ' new-arrival'; }
+                        if (($hotSales ?? collect())->contains($product)) { $classes .= ' hot-sale'; }
                     @endphp
                     <div class="col-lg-3 col-md-6 col-sm-6 mix{{ $classes }}">
                         <div class="product__item">
                             <div class="product__item__pic set-bg" data-setbg="{{ $product->image_url }}">
                                 @if ($product->is_new_arrival)
-                                    <span class="label">Baru</span>
+                                    <span class="label">New</span>
                                 @elseif($product->is_hot_sale)
-                                    <span class="label">Diskon</span>
+                                    <span class="label">Sale</span>
                                 @endif
                                 <ul class="product__hover">
-                                    <li><a href="#" class="toggle-wishlist" data-product-id="{{ $product->id }}"><i
-                                                class="fa fa-heart-o"></i></a></li>
-                                    <li><a
-                                            href="{{ !$isPreview ? route('tenant.product.details', ['subdomain' => $subdomainName, 'product' => $product->slug]) : '#' }}"><i
-                                                class="fa fa-eye"></i></a></li>
+                                    <li><a href="#"><img src="{{ asset('template1/img/icon/heart.png') }}" alt=""></a></li>
+                                    @if(isset($isPreview) && $isPreview)
+                                        <li><a href="#"><img src="{{ asset('template1/img/icon/search.png') }}" alt=""></a></li>
+                                    @else
+                                        <li><a href="{{ route('tenant.product.details', ['subdomain' => $subdomainName, 'product' => $product->slug]) }}"><img src="{{ asset('template1/img/icon/search.png') }}" alt=""></a></li>
+                                    @endif
                                 </ul>
                             </div>
                             <div class="product__item__text">
                                 <h6>{{ $product->name }}</h6>
-                                {{-- PERBAIKAN KUNCI: Hanya menyimpan ID, data lengkap diambil dari objek JS global --}}
-                                <button class="add-cart open-variant-modal" data-product-id="{{ $product->id }}">
-                                    + Keranjang
+                                
+                                {{-- [PERBAIKAN] Tombol disamakan dengan halaman Shop --}}
+                                <button type="button" class="add-cart open-variant-modal" data-product-id="{{ $product->id }}">
+                                    + Add To Cart
                                 </button>
+                                
                                 <div class="rating">
                                     @for ($i = 1; $i <= 5; $i++)
                                         <i class="fa {{ ($product->rating_product ?? 0) >= $i ? 'fa-star' : 'fa-star-o' }}"></i>
@@ -322,274 +213,298 @@
         </div>
     </section>
     <!-- Product Section End -->
-
-    <!-- Modal Varian -->
     <div id="variant-modal" class="modal-overlay">
         <div class="modal-content relative">
             <span class="modal-close">&times;</span>
-            <div id="modal-body">
-                {{-- Konten modal akan diisi oleh JavaScript --}}
-            </div>
+            <div id="modal-body"></div>
         </div>
     </div>
-
-    {{-- Notifikasi Toast --}}
     <div id="toast-notification" class="toast-notification"></div>
 @endsection
 
 @push('scripts')
+    {{-- [PERBAIKAN] JavaScript untuk Modal disamakan dengan halaman Shop --}}
     <script>
-        const allProductData = @json($allProducts->mapWithKeys(function ($product) {
-            return [$product->id => $product->load('variants')];
+        const allProductData = @json($allProducts->keyBy('id')->map(function ($product) {
+            $product->load('varians');
+            $processedVariants = $product->varians->map(function ($varian) {
+                $optionsMap = [];
+                if (is_array($varian->options_data)) {
+                    foreach ($varian->options_data as $option) {
+                        $optionsMap[$option['name']] = $option['value'];
+                    }
+                }
+                $varian->options_map = $optionsMap;
+                return $varian;
+            });
+            $product->processed_varians = $processedVariants;
+            return $product;
         }));
 
         document.addEventListener('DOMContentLoaded', function () {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            const isPreview = {{ $isPreview ?? false ? 'true' : 'false' }};
+            const subdomain = '{{ $subdomainName ?? "" }}';
+
+            if (typeof axios === 'undefined') {
+                console.error('Axios tidak dimuat. AJAX tidak akan berfungsi.');
+                return;
+            }
+            axios.defaults.headers.common['X-CSRF-TOKEN'] = csrfToken;
+            
             const modal = document.getElementById('variant-modal');
             const modalBody = document.getElementById('modal-body');
-            const toastElement = document.getElementById('toast-notification');
-            let toastTimeout;
-            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-            const isPreview = {{ $isPreview ? 'true' : 'false' }};
-            const subdomain = '{{ $subdomainName }}';
-
-            // Pastikan Axios tersedia sebelum melanjutkan
-            if (typeof axios === 'undefined') {
-                console.error('Axios library is not loaded. AJAX requests will fail.');
-                return; // Hentikan eksekusi jika axios tidak ada
-            }
-
-            // Konfigurasi Axios untuk mengirim CSRF token secara otomatis di setiap request.
-            if (csrfToken) {
-                axios.defaults.headers.common['X-CSRF-TOKEN'] = csrfToken;
-            } else {
-                console.error('CSRF Token not found. AJAX requests will fail.');
-            }
-
-            // ===================================================================
-            // FUNGSI BANTUAN (HELPERS)
-            // ===================================================================
-
-            function showToast(message, type = 'success') {
-                clearTimeout(toastTimeout);
-                toastElement.textContent = message;
-                toastElement.className = 'toast-notification'; // Reset class
-                toastElement.classList.add(type, 'show');
-                toastTimeout = setTimeout(() => {
-                    toastElement.classList.remove('show');
-                }, 3000);
-            }
-
-            function closeModal() {
-                modal.classList.remove('show');
-            }
-
-            // ===================================================================
-            // LOGIKA UTAMA MODAL VARIAN
-            // ===================================================================
-
-            function populateAndShowModal(product) {
-                const uniqueSizes = [...new Set(product.variants.map(v => v.size))];
-                let sizesHTML = uniqueSizes.map(size => `<option value="${size}">${size}</option>`).join('');
-
-                modalBody.innerHTML = `
-                            <div>
-                                <h4 class="font-bold text-lg">${product.name}</h4>
-                                <p class="text-red-600 font-bold text-lg">${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(product.price)}</p>
-                            </div>
-                            <form id="modal-cart-form" class="space-y-4 mt-4" novalidate>
-                                <input type="hidden" name="product_id" value="${product.id}">
-                                <div>
-                                    <label for="size-select" class="block text-sm font-medium text-gray-700 mb-1">Ukuran</label>
-                                    <select id="size-select" name="size" class="modal-variant-select" required>
-                                        <option value="">Pilih Ukuran</option>
-                                        ${sizesHTML}
-                                    </select>
-                                </div>
-                                <div>
-                                    <label for="color-select" class="block text-sm font-medium text-gray-700 mb-1">Warna</label>
-                                    <select id="color-select" name="color" class="modal-variant-select" disabled required>
-                                        <option value="">Pilih ukuran terlebih dahulu</option>
-                                    </select>
-                                </div>
-                                <div class="mt-6">
-                                    <label for="quantity-input" class="block text-sm font-medium text-gray-700 mb-1">Jumlah</label>
-                                    <input type="number" name="quantity" id="quantity-input" value="1" min="1" class="w-full border-gray-300 rounded-md" required>
-                                </div>
-                                <div class="flex items-center space-x-2 mt-4">
-                                    <button type="submit" id="modal-add-btn" class="primary-btn w-full !bg-gray-800 !text-white hover:!bg-black" disabled>Tambah ke Keranjang</button>
-                                </div>
-                            </form>
-                        `;
-                modal.classList.add('show');
-                attachModalEventListeners(product);
-            }
-
-            function attachModalEventListeners(product) {
-                const form = modalBody.querySelector('#modal-cart-form');
-                const sizeSelect = modalBody.querySelector('#size-select');
-                const colorSelect = modalBody.querySelector('#color-select');
-                const modalAddBtn = modalBody.querySelector('#modal-add-btn');
-                const modalWishlistBtn = modalBody.querySelector('#modal-wishlist-btn');
-
-                function updateColors() {
-                    const selectedSize = sizeSelect.value;
-                    colorSelect.innerHTML = '<option value="">Pilih Warna</option>';
-                    colorSelect.disabled = true;
-
-                    if (selectedSize) {
-                        const availableColors = product.variants.filter(v => v.size === selectedSize);
-                        if (availableColors.length > 0) {
-                            availableColors.forEach(variant => {
-                                const option = document.createElement('option');
-                                option.value = variant.color;
-                                option.textContent = variant.color;
-                                if (variant.stock <= 0) {
-                                    option.disabled = true;
-                                    option.textContent += ' (Stok Habis)';
-                                }
-                                colorSelect.appendChild(option);
-                            });
-                            colorSelect.disabled = false;
-                        } else {
-                            colorSelect.innerHTML = '<option value="">Warna tidak tersedia</option>';
-                        }
-                    } else {
-                        colorSelect.innerHTML = '<option value="">Pilih ukuran terlebih dahulu</option>';
-                    }
-                    updateButtonState();
-                }
-
-                function updateButtonState() {
-                    const selectedSize = sizeSelect.value;
-                    const selectedColor = colorSelect.value;
-                    if (selectedSize && selectedColor) {
-                        const variant = product.variants.find(v => v.size === selectedSize && v.color === selectedColor);
-                        modalAddBtn.disabled = !variant || variant.stock <= 0;
-                    } else {
-                        modalAddBtn.disabled = true;
-                    }
-                }
-
-                sizeSelect.addEventListener('change', updateColors);
-                colorSelect.addEventListener('change', updateButtonState);
-                form.addEventListener('submit', handleAddToCart);
-                modalWishlistBtn.addEventListener('click', () => handleToggleWishlist(modalWishlistBtn));
-            }
-
-            // ===================================================================
-            // HANDLER UNTUK AKSI (CART & WISHLIST)
-            // ===================================================================
-
-            function handleAddToCart(e) {
-                e.preventDefault();
-                if (isPreview) {
-                    showToast('Fitur ini tidak aktif dalam mode pratinjau.', 'error');
-                    return;
-                }
-                const form = e.target;
-                const submitButton = form.querySelector('#modal-add-btn');
-                const formData = new FormData(form);
-                const data = Object.fromEntries(formData.entries());
-                submitButton.disabled = true;
-                submitButton.textContent = 'Menambahkan...';
-                axios.post(`/tenant/${subdomain}/cart/add`, data)
-                    .then(response => {
-                        if (response.data.success) {
-                            showToast(response.data.message, 'success');
-                            const cartCountEl = document.querySelector('.header__nav__option #cart-count');
-                            if (cartCountEl) {
-                                cartCountEl.textContent = response.data.cart_count;
-                            }
-                            closeModal();
-                        } else {
-                            throw new Error(response.data.message || 'Gagal menambahkan produk.');
-                        }
-                    })
-                    .catch(error => {
-                        const errorMessage = error.response?.data?.message || error.message || 'Terjadi kesalahan.';
-                        showToast(errorMessage, 'error');
-                    })
-                    .finally(() => {
-                        if (document.body.contains(submitButton)) {
-                            submitButton.disabled = false;
-                            submitButton.textContent = 'Tambah ke Keranjang';
-                        }
-                    });
-            }
-
-            function handleToggleWishlist(button) {
-                if (isPreview) {
-                    showToast('Fitur ini tidak aktif dalam mode pratinjau.', 'error');
-                    return;
-                }
-                if (!csrfToken) {
-                    showToast('Terjadi kesalahan. Coba refresh halaman.', 'error');
-                    return;
-                }
-                const productId = button.dataset.productId;
-                axios.post(`/tenant/${subdomain}/wishlist/toggle`, { product_id: productId })
-                    .then(response => {
-                        if (response.data.success) {
-                            const allWishlistButtons = document.querySelectorAll(`.toggle-wishlist[data-product-id="${productId}"], #modal-wishlist-btn[data-product-id="${productId}"]`);
-                            if (response.data.action === 'added') {
-                                showToast('Produk ditambahkan ke Wishlist!', 'success');
-                                allWishlistButtons.forEach(btn => btn.classList.add('active'));
-                            } else {
-                                showToast('Produk dihapus dari Wishlist.', 'success');
-                                allWishlistButtons.forEach(btn => btn.classList.remove('active'));
-                            }
-                            const wishlistCountEl = document.querySelector('.header__nav__option #wishlist-count');
-                            if (wishlistCountEl) {
-                                wishlistCountEl.textContent = response.data.wishlist_count;
-                            }
-                        } else {
-                            throw new Error(response.data.message || 'Operasi wishlist gagal.');
-                        }
-                    })
-                    .catch(error => {
-                        if (error.response?.status === 401) {
-                            showToast('Silakan login untuk menggunakan wishlist.', 'error');
-                            setTimeout(() => {
-                                window.location.href = `/tenant/${subdomain}/customer/login`;
-                            }, 1500);
-                        } else {
-                            const errorMessage = error.response?.data?.message || 'Terjadi kesalahan pada wishlist.';
-                            showToast(errorMessage, 'error');
-                        }
-                    });
-            }
-
-            // ===================================================================
-            // EVENT LISTENERS AWAL
-            // ===================================================================
 
             document.querySelectorAll('.open-variant-modal').forEach(button => {
-                button.addEventListener('click', function () {
-                    // PERBAIKAN KUNCI: Mengambil data dari objek global, bukan dari atribut
+                button.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    if (isPreview) {
+                        showToast('Fitur ini tidak tersedia dalam mode pratinjau.', 'error');
+                        return;
+                    }
                     const productId = this.dataset.productId;
                     const productData = allProductData[productId];
-
                     if (productData) {
-                        populateAndShowModal(productData);
+                        populateAndShowModal(productData, modal, modalBody);
                     } else {
-                        console.error("Data produk tidak ditemukan untuk ID:", productId);
-                        showToast("Tidak dapat memuat detail produk.", "error");
+                        showToast('Gagal memuat detail produk.', 'error');
                     }
                 });
             });
 
-            modal.addEventListener('click', function (e) {
+            modal.addEventListener('click', e => {
                 if (e.target.classList.contains('modal-overlay') || e.target.classList.contains('modal-close')) {
-                    closeModal();
+                    modal.classList.remove('show');
                 }
             });
 
-            document.querySelectorAll('.toggle-wishlist').forEach(button => {
-                button.addEventListener('click', function (e) {
-                    e.preventDefault();
-                    handleToggleWishlist(this);
+            function populateAndShowModal(product, modal, modalBody) {
+                if (!product.processed_varians || product.processed_varians.length === 0) {
+                    modalBody.innerHTML = `<h4 class="font-bold text-lg mb-4">${product.name}</h4><p class="text-gray-600">Produk ini tidak memiliki varian yang tersedia.</p><button type="button" class="primary-btn mt-3" onclick="document.getElementById('variant-modal').classList.remove('show')">Tutup</button>`;
+                    modal.classList.add('show');
+                    return;
+                }
+
+                const allOptionNames = new Set();
+                product.processed_varians.forEach(v => {
+                    if (v.options_data && Array.isArray(v.options_data)) {
+                        v.options_data.forEach(opt => allOptionNames.add(opt.name));
+                    }
                 });
-            });
+
+                let formHTML = `
+                    <div>
+                        <h4 class="font-bold text-lg">${product.name}</h4>
+                        <p class="text-red-600 font-bold text-lg" id="modal-display-price">${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(product.price)}</p>
+                        <p class="text-gray-500 text-sm mt-1" id="modal-display-stock">Pilih varian untuk melihat stok</p>
+                    </div>
+                    <form id="modal-cart-form" class="space-y-4 mt-4" novalidate>
+                        <input type="hidden" name="product_id" value="${product.id}">
+                        <input type="hidden" name="selected_variant_id" id="selected-variant-id" value="">
+                `;
+
+                const orderedOptionNames = Array.from(allOptionNames).sort((a, b) => {
+                    if (a === 'Ukuran') return -1; if (b === 'Ukuran') return 1;
+                    if (a === 'Warna') return -1; if (b === 'Warna') return 1;
+                    return 0;
+                });
+
+                orderedOptionNames.forEach((optionName, index) => {
+                    const uniqueOptionValues = [...new Set(product.processed_varians.flatMap(v => v.options_data.filter(opt => opt.name === optionName).map(opt => opt.value)))].filter(Boolean);
+                    if (uniqueOptionValues.length > 0) {
+                        const selectId = `option-${index}-${optionName.replace(/\s/g, '')}-select`;
+                        const isDisabled = index > 0;
+                        formHTML += `
+                            <div>
+                                <label for="${selectId}" class="block text-sm font-medium text-gray-700 mb-1">${optionName}</label>
+                                <select id="${selectId}" name="option_${optionName.toLowerCase().replace(/\s/g, '_')}" class="modal-variant-select" data-option-name="${optionName}" ${isDisabled ? 'disabled' : ''} required>
+                                    <option value="">Pilih ${optionName}</option>
+                                    ${uniqueOptionValues.map(value => `<option value="${value}">${value}</option>`).join('')}
+                                </select>
+                            </div>`;
+                    }
+                });
+
+                formHTML += `
+                        <div class="mt-6">
+                            <label for="quantity-input" class="block text-sm font-medium text-gray-700 mb-1">Jumlah</label>
+                            <input type="number" name="quantity" id="quantity-input" value="1" min="1" class="w-full border-gray-300 rounded-md" required>
+                        </div>
+                        <div class="flex items-center space-x-2 mt-4">
+                            <button type="submit" id="modal-add-btn" class="primary-btn w-full !bg-gray-800 !text-white hover:!bg-black" disabled>Tambah ke Keranjang</button>
+                        </div>
+                    </form>`;
+
+                modalBody.innerHTML = formHTML;
+                modal.classList.add('show');
+                attachModalEventListeners(product, orderedOptionNames);
+            }
+
+            function attachModalEventListeners(product, orderedOptionNames) {
+                const form = document.getElementById('modal-cart-form');
+                const modalAddBtn = document.getElementById('modal-add-btn');
+                const modalDisplayPrice = document.getElementById('modal-display-price');
+                const modalDisplayStock = document.getElementById('modal-display-stock');
+                const selectedVariantIdInput = document.getElementById('selected-variant-id');
+                const quantityInput = document.getElementById('quantity-input');
+                const optionSelects = orderedOptionNames.map((name, index) => document.getElementById(`option-${index}-${name.replace(/\s/g, '')}-select`)).filter(Boolean);
+                let currentSelectedVariant = null;
+
+                const updateOptionDropdowns = () => {
+                    let currentSelectedOptions = {};
+                    optionSelects.forEach(select => { currentSelectedOptions[select.dataset.optionName] = select.value; });
+
+                    optionSelects.forEach((currentSelect, currentIndex) => {
+                        if (currentIndex > 0) {
+                            const prevSelect = optionSelects[currentIndex - 1];
+                            currentSelect.disabled = !prevSelect || !prevSelect.value;
+                        }
+                        if (!currentSelect.disabled && currentSelect.value === "") {
+                            let availableValues = new Set();
+                            const filteredVariants = product.processed_varians.filter(varian => {
+                                let matches = true;
+                                for (let i = 0; i < currentIndex; i++) {
+                                    const prevSelect = optionSelects[i];
+                                    if (prevSelect && prevSelect.value && varian.options_map[prevSelect.dataset.optionName] !== prevSelect.value) {
+                                        matches = false; break;
+                                    }
+                                }
+                                return matches;
+                            });
+                            filteredVariants.forEach(varian => {
+                                if (varian.options_map[currentSelect.dataset.optionName]) {
+                                    availableValues.add(varian.options_map[currentSelect.dataset.optionName]);
+                                }
+                            });
+                            const currentValue = currentSelect.value;
+                            currentSelect.innerHTML = `<option value="">Pilih ${currentSelect.dataset.optionName}</option>`;
+                            Array.from(availableValues).sort().forEach(value => {
+                                const hasStock = product.processed_varians.some(v => {
+                                    let isMatch = true;
+                                    for(const optName in currentSelectedOptions) {
+                                        if (currentSelectedOptions[optName] && v.options_map[optName] !== currentSelectedOptions[optName]) {
+                                            isMatch = false; break;
+                                        }
+                                    }
+                                    return isMatch && v.options_map[currentSelect.dataset.optionName] === value && v.stock > 0;
+                                });
+                                const option = new Option(value, value);
+                                if (!hasStock) {
+                                    option.disabled = true; option.textContent += ' (Habis)';
+                                }
+                                currentSelect.add(option);
+                            });
+                            if (currentValue && Array.from(availableValues).includes(currentValue)) {
+                                currentSelect.value = currentValue;
+                            }
+                        }
+                    });
+                    updateButtonState();
+                };
+
+                const updateButtonState = () => {
+                    currentSelectedVariant = null;
+                    let allOptionsSelected = true;
+                    let selectedOptionsMap = {};
+                    optionSelects.forEach(select => {
+                        if (select.value === "") allOptionsSelected = false;
+                        selectedOptionsMap[select.dataset.optionName] = select.value;
+                    });
+
+                    if (allOptionsSelected) {
+                        currentSelectedVariant = product.processed_varians.find(v => {
+                            let matches = true;
+                            for (const optName in selectedOptionsMap) {
+                                if (v.options_map[optName] !== selectedOptionsMap[optName]) {
+                                    matches = false; break;
+                                }
+                            }
+                            return matches;
+                        });
+                        if (currentSelectedVariant && currentSelectedVariant.stock > 0) {
+                            modalAddBtn.disabled = false;
+                            selectedVariantIdInput.value = currentSelectedVariant.id;
+                            quantityInput.max = currentSelectedVariant.stock;
+                            quantityInput.value = Math.min(quantityInput.value, currentSelectedVariant.stock);
+                            modalDisplayPrice.textContent = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(currentSelectedVariant.price);
+                            modalDisplayStock.textContent = `Stok: ${currentSelectedVariant.stock}`;
+                        } else {
+                            modalAddBtn.disabled = true;
+                            selectedVariantIdInput.value = '';
+                            modalDisplayPrice.textContent = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(product.price);
+                            modalDisplayStock.textContent = `Stok: ${currentSelectedVariant ? 'Habis' : '-'}`;
+                        }
+                    } else {
+                        modalAddBtn.disabled = true;
+                        selectedVariantIdInput.value = '';
+                        modalDisplayPrice.textContent = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(product.price);
+                        modalDisplayStock.textContent = `Stok: -`;
+                    }
+                };
+
+                optionSelects.forEach((select, index) => {
+                    select.addEventListener('change', () => {
+                        for (let i = index + 1; i < optionSelects.length; i++) {
+                            optionSelects[i].value = "";
+                            optionSelects[i].disabled = true;
+                            optionSelects[i].innerHTML = `<option value="">Pilih ${optionSelects[i].dataset.optionName} dahulu</option>`;
+                        }
+                        updateOptionDropdowns();
+                    });
+                });
+                quantityInput.addEventListener('input', updateButtonState);
+                form.addEventListener('submit', handleFormSubmit);
+                updateOptionDropdowns();
+            }
+
+            function handleFormSubmit(e) {
+                e.preventDefault();
+                const form = e.target;
+                const button = form.querySelector('button[type="submit"]');
+                button.disabled = true;
+                button.innerHTML = 'Memproses...';
+
+                const postData = {
+                    product_id: form.querySelector('input[name="product_id"]').value,
+                    variant_id: form.querySelector('input[name="selected_variant_id"]').value,
+                    quantity: form.querySelector('input[name="quantity"]').value
+                };
+
+                if (!postData.variant_id) {
+                    showToast('Harap pilih varian terlebih dahulu.', 'error');
+                    button.disabled = false;
+                    button.innerHTML = 'Tambah ke Keranjang';
+                    return;
+                }
+
+                axios.post(`/tenant/${subdomain}/cart/add`, postData)
+                    .then(res => {
+                        if (res.data.success) {
+                            showToast(res.data.message, 'success');
+                            const cartCountEl = document.getElementById('cart-count');
+                            if (cartCountEl) cartCountEl.textContent = res.data.cart_count;
+                            document.getElementById('variant-modal').classList.remove('show');
+                        } else {
+                            throw new Error(res.data.message);
+                        }
+                    })
+                    .catch(err => {
+                        showToast(err.response?.data?.message || 'Terjadi kesalahan.', 'error');
+                    })
+                    .finally(() => {
+                        button.disabled = false;
+                        button.innerHTML = 'Tambah ke Keranjang';
+                    });
+            }
+            
+            function showToast(message, type = 'success') {
+                const toast = document.getElementById('toast-notification');
+                clearTimeout(window.toastTimeout);
+                toast.textContent = message;
+                toast.className = `toast-notification ${type} show`;
+                window.toastTimeout = setTimeout(() => toast.classList.remove('show'), 3000);
+            }
         });
     </script>
 @endpush
+

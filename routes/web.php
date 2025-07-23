@@ -83,6 +83,7 @@ Route::prefix('tenant/{subdomain}')
             Route::post('/add', [CartController::class, 'add'])->name('add');
             Route::patch('/update/{productCartId}', [CartController::class, 'update'])->name('update');
             Route::delete('/remove', [CartController::class, 'removeItems'])->name('remove');
+            Route::post('/add-multiple', [CartController::class, 'addMultiple'])->name('addMultiple');
         });
 
         // --- RUTE OTENTIKASI PELANGGAN ---
@@ -168,7 +169,6 @@ Route::prefix('register')->name('register.')->group(function () {
 });
 //preview template
 Route::get('/{template:name}/beranda', [TemplateController::class, 'preview'])->name('template.preview');
-// Route::prefix('dashboard-mitra')->name('mitra.')->group(function () {
 //     // Rute dashboard utama
 //     Route::get('/', function () {
 //         return view('dashboard-mitra.dashboardmitra');
@@ -230,6 +230,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/payment/apply-voucher', [PaymentController::class, 'applyVoucher'])->name('payment.applyVoucher');
     Route::post('/payment/remove-voucher', [PaymentController::class, 'removeVoucher'])->name('payment.removeVoucher');
     Route::post('/payment/generate-token', [PaymentController::class, 'generateSnapToken'])->name('payment.generateSnapToken');
+    //Route::post('/midtrans-callback', [PaymentCallbackController::class, 'receiveCallback'])->name('midtrans.callback');
 
     ///== ADMIN ROUTES ==//
     Route::middleware(['role:admin'])->prefix('admin')->name('admin.')->group(function () {
@@ -301,9 +302,11 @@ Route::middleware(['auth'])->group(function () {
         // Route::get('/dashboard', [MitraController::class, 'index'])->name('dashboard');
         Route::get('/dashboard', [DashboardMitraController::class, 'index'])->name('dashboard');
         // Rute untuk publikasi toko
+        Route::get('/transactions/export/excel', [DashboardMitraController::class, 'exportProductOrdersExcel'])->name('transactions.export.excel');
+        Route::get('/pendapatan/export-excel', [DashboardMitraController::class, 'exportSubscriptionPaymentsExcel'])->name('pendapatan.export.excel');
 
-        Route::post('/editor/publish', [StorePublicationController::class, 'publish'])->name('editor.publish');
-        Route::post('/editor/unpublish', [StorePublicationController::class, 'unpublish'])->name('editor.unpublish');
+        Route::patch('/editor/publish', [StorePublicationController::class, 'publish'])->name('editor.publish');
+        Route::patch('/editor/unpublish', [StorePublicationController::class, 'unpublish'])->name('editor.unpublish');
 
         Route::get('/produk', [ProductController::class, 'index'])->name('produk');
         Route::get('/hero', [HeroController::class, 'index'])->name('hero');
@@ -320,6 +323,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('vouchers/create', [VoucherProductController::class, 'create'])->name('vouchers.create');
         Route::get('vouchers/edit', [VoucherProductController::class, 'edit'])->name('vouchers.edit');
         Route::get('vouchers/destroy', [VoucherProductController::class, 'destroy'])->name('vouchers.destroy');
+        Route::resource('vouchers', VoucherProductController::class);
 
 
         Route::resource('heroes', HeroController::class);
@@ -339,8 +343,15 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/editor/template/update', [TemaController::class, 'updateTheme'])->name('editor.updateTheme');
 
 
-        Route::get('/orders', [OrderController::class, 'index'])->name('orders');
+        Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
         Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
+        Route::put('/orders/{order}/status', [OrderController::class, 'updateStatus'])->name('orders.updateStatus');
+        // Rute khusus untuk menangani permintaan refund
+        Route::patch('/orders/{order}/refund/approve', [OrderController::class, 'approveRefund'])->name('orders.refund.approve');
+        Route::patch('/orders/{order}/refund/reject', [OrderController::class, 'rejectRefund'])->name('orders.refund.reject');
+
+        Route::get('/transactions', [DashboardMitraController::class, 'transactions'])->name('transactions.index');
+        // Anda mungkin juga ingin menambahkan link ini di sidebar navigasi dashboard mitra Anda
 
         Route::resource('products', ProductController::class)->names([
             'index' => 'products.index',    // Ini akan menjadi 'mitra.products.index'

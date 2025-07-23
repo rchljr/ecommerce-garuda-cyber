@@ -46,7 +46,7 @@ class InitialDataSeeder extends Seeder
         $admin = User::create([
             'id' => (string) Str::uuid(),
             'name' => 'Admin GCI',
-            'email' => 'admin@ecommercegaruda.my.id',
+            'email' => 'rachellfazaa@gmail.com',
             'password' => Hash::make('admin123'),
             'status' => 'active',
         ]);
