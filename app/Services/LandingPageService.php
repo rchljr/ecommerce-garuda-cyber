@@ -3,8 +3,9 @@
 namespace App\Services;
 
 use App\Models\User;
+use App\Models\Product;
 use App\Models\LandingPage;
-use Illuminate\Http\Request; // <-- Import Request
+use Illuminate\Http\Request;
 
 class LandingPageService
 {
@@ -14,10 +15,10 @@ class LandingPageService
     public function getStatistics(): LandingPage
     {
         return LandingPage::firstOrCreate([], [
-            'total_users' => 0,
-            'total_shops' => 0,
-            'total_visitors' => 0,
-            'total_transactions' => 0,
+            'total_users' => 12345,
+            'total_shops' => 12345,
+            'total_visitors' => 12345,
+            'total_transactions' => 12345,
         ]);
     }
 
@@ -32,16 +33,17 @@ class LandingPageService
     }
 
     /**
-     * Mengambil 8 mitra terbaru untuk ditampilkan di halaman utama.
+     * Mengambil 3 mitra terbaru untuk ditampilkan di halaman utama.
      */
     public function getPartners()
     {
         return User::role('mitra')
             ->whereHas('shop')
-            ->whereHas('subdomain', fn($q) => $q->where('status', 'active'))
+            ->whereHas('userPackage', fn($q) => $q->where('status', 'active'))
+            ->whereHas('subdomain', fn($q) => $q->where('publication_status', 'published'))
             ->with(['shop', 'subdomain'])
             ->latest()
-            ->take(8)
+            ->take(3)
             ->get();
     }
 
@@ -52,8 +54,10 @@ class LandingPageService
     {
         $query = User::role('mitra')
             ->whereHas('shop')
-            ->whereHas('subdomain', fn($q) => $q->where('status', 'active'))
+            ->whereHas('subdomain')
             // Eager load relasi yang dibutuhkan, termasuk voucher yang aktif
+            ->whereHas('userPackage', fn($q) => $q->where('status', 'active'))
+            ->whereHas('subdomain', fn($q) => $q->where('publication_status', 'published'))
             ->with(['shop', 'subdomain', 'activeVouchers']);
 
         // Filter berdasarkan pencarian nama toko
@@ -67,15 +71,50 @@ class LandingPageService
         // Filter berdasarkan kategori produk
         if ($request->filled('category')) {
             $categorySlug = $request->input('category');
-
             $query->whereHas('shop', function ($q) use ($categorySlug) {
-                // Menggunakan 'like' agar lebih fleksibel.
-                // Ini akan cocok jika slug kategori ada di dalam kolom 'product_categories',
-                // baik itu sebagai nilai tunggal ("fashion") atau bagian dari daftar ("fashion,makanan").
                 $q->where('product_categories', 'like', '%' . $categorySlug . '%');
             });
         }
 
         return $query->latest()->paginate(12); // Paginasi 12 item per halaman
+    }
+
+    /**
+     * Mengambil ID semua mitra yang tokonya terlihat oleh publik.
+     * @return \Illuminate\Support\Collection
+     */
+    private function getVisiblePartnerIds()
+    {
+        return User::role('mitra')
+            ->whereHas('userPackage', fn($q) => $q->where('status', 'active'))
+            ->whereHas('subdomain', fn($q) => $q->where('publication_status', 'published'))
+            ->pluck('id');
+    }
+
+    /**
+     *  Mengambil produk unggulan dari semua mitra yang terlihat.
+     * @param string $type ('best_seller', 'new_arrival', 'hot_sale')
+     * @param int $limit
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function getFeaturedProducts(string $type, int $limit = 8)
+    {
+        $partnerIds = $this->getVisiblePartnerIds();
+
+        if ($partnerIds->isEmpty()) {
+            return collect();
+        }
+
+        // Tentukan nama kolom boolean berdasarkan tipe
+        $column = 'is_' . $type;
+
+        // Ambil produk dengan relasi yang dibutuhkan untuk membuat link
+        return Product::whereIn('user_id', $partnerIds)
+            ->where($column, true)
+            ->where('status', 'active')
+            ->with(['shopOwner.shop', 'shopOwner.subdomain']) // Eager load untuk URL
+            ->latest()
+            ->take($limit)
+            ->get();
     }
 }

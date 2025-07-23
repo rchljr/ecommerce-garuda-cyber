@@ -16,13 +16,13 @@ use App\Models\Contact;
 use App\Models\Hero;
 use App\Models\Banner;
 use App\Models\Product;
+use App\Models\Varian; // <-- IMPORT MODEL VARIAN
 use App\Models\CustomTema;
 use App\Models\ShopSetting;
 use App\Models\Category;
 use App\Models\SubCategory;
 use App\Models\Voucher;
 use App\Models\Customer; // Import model Customer
-use App\Models\Varian; // PENTING: Import model Varian
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
@@ -41,7 +41,7 @@ class MitraTokoSeeder extends Seeder
 
         // Daftar email mitra yang akan dihapus
         $mitraEmailsToDelete = ['hilmi21ti@mahasiswa.pcr.ac.id', 'rachel21ti@mahasiswa.pcr.ac.id', 'chef.anton@example.com'];
-        $usersToDelete = User::whereIn('email', $mitraEmailsToDelete)->get();
+        $usersToDelete = User::whereIn('email', $mitraEmailsToDelete)->with('products.variants')->get();
 
         foreach ($usersToDelete as $user) {
             // Hapus pesanan dan item pesanan terkait (jika ada)
@@ -117,9 +117,6 @@ class MitraTokoSeeder extends Seeder
         $catKue = SubCategory::firstOrCreate(['slug' => 'kue-roti'], ['name' => 'Kue & Roti', 'category_id' => $kulinerCategory->id]);
         $catSambal = SubCategory::firstOrCreate(['slug' => 'bumbu-masak'], ['name' => 'Bumbu Masak', 'category_id' => $kulinerCategory->id]);
 
-        // URL dasar untuk gambar (hanya untuk referensi di seeder, simpan path relatif ke DB)
-        $imageUrlBase = 'https://ecommercegaruda.my.id/storage/';
-
         // 2. Buat satu Pelanggan (Customer) spesifik yang akan digunakan oleh OrderSeeder
         User::firstOrCreate(
             ['email' => 'customer@gmail.com'],
@@ -161,14 +158,10 @@ class MitraTokoSeeder extends Seeder
                 'heroes' => [
                     ['title' => 'Pesona Batik Warisan', 'subtitle' => 'Koleksi Premium Terbaru', 'image' => 'seeders/heroes/batik-hero.jpg', 'button_text' => 'Lihat Koleksi', 'button_url' => '/shop'],
                     ['title' => 'Keanggunan Tenun Indonesia', 'subtitle' => 'Diskon Spesial 20%', 'image' => 'seeders/heroes/tenun-hero.jpg', 'button_text' => 'Belanja Sekarang', 'button_url' => '/shop'],
-                    ['title' => 'Gaya Kasual Modern', 'subtitle' => 'Nyaman & Tetap Trendi', 'image' => 'seeders/heroes/casual-hero.jpg', 'button_text' => 'Jelajahi', 'button_url' => '/shop'],
                 ],
                 'banners' => [
                     ['title' => 'Kemeja Pria', 'image' => 'seeders/banners/kemeja-pria-banner.jpg', 'link_url' => '/shop?category=baju-pria'],
                     ['title' => 'Dress Wanita', 'image' => 'seeders/banners/dress-wanita-banner.jpg', 'link_url' => '/shop?category=baju-wanita'],
-                    ['title' => 'Aksesoris Etnik', 'image' => 'seeders/banners/aksesoris-banner.jpg', 'link_url' => '/shop?category=aksesoris-lainnya'],
-                    ['title' => 'Sepatu Kulit', 'image' => 'seeders/banners/sepatu-banner.jpg', 'link_url' => '/shop?category=sepatu'],
-                    ['title' => 'Tas Tangan', 'image' => 'seeders/banners/tas-banner.jpg', 'link_url' => '/shop?category=tas'],
                 ],
                 'products' => [
                     [
@@ -260,8 +253,6 @@ class MitraTokoSeeder extends Seeder
                 ],
                 'vouchers' => [
                     ['code' => 'GAYA10', 'discount' => 10, 'min_spending' => 200000, 'description' => 'Diskon 10% untuk semua produk fashion.'],
-                    ['code' => 'ONGKIRGRATIS', 'discount' => 15, 'min_spending' => 300000, 'description' => 'Potongan ongkir 15%'],
-                    ['code' => 'NUSANTARA50', 'discount' => 30, 'min_spending' => 500000, 'description' => 'Potongan langsung 30%'],
                 ]
             ],
             // =================================================================
@@ -288,15 +279,9 @@ class MitraTokoSeeder extends Seeder
                 ],
                 'heroes' => [
                     ['title' => 'Minimalist Wardrobe', 'subtitle' => 'Esensi Gaya Modern', 'image' => 'seeders/heroes/minimalist-hero.jpg', 'button_text' => 'Jelajahi', 'button_url' => '/shop'],
-                    ['title' => 'Koleksi Musim Semi', 'subtitle' => 'Warna-Warna Cerah Terbaru', 'image' => 'seeders/heroes/spring-hero.jpg', 'button_text' => 'Lihat Produk', 'button_url' => '/shop'],
-                    ['title' => 'Flash Sale Akhir Pekan', 'subtitle' => 'Diskon Hingga 50%!', 'image' => 'seeders/heroes/sale-hero.jpg', 'button_text' => 'Belanja Sekarang', 'button_url' => '/shop'],
                 ],
                 'banners' => [
                     ['title' => 'Blouse Wanita', 'image' => 'seeders/banners/blouse-banner.jpg', 'link_url' => '/shop?category=baju-wanita'],
-                    ['title' => 'Celana Pria', 'image' => 'seeders/banners/celana-pria-banner.jpg', 'link_url' => '/shop?category=baju-pria'],
-                    ['title' => 'Tas Selempang', 'image' => 'seeders/banners/tas-selempang-banner.jpg', 'link_url' => '/shop?category=tas'],
-                    ['title' => 'Sneakers Putih', 'image' => 'seeders/banners/sneakers-banner.jpg', 'link_url' => '/shop?category=sepatu'],
-                    ['title' => 'Promo Beli 1 Gratis 1', 'image' => 'seeders/banners/bogo-banner.jpg', 'link_url' => '/shop'],
                 ],
                 'products' => [
                     [
@@ -383,8 +368,6 @@ class MitraTokoSeeder extends Seeder
                 ],
                 'vouchers' => [
                     ['code' => 'CHIC15', 'discount' => 15, 'min_spending' => 250000, 'description' => 'Diskon 15% untuk koleksi terbaru.'],
-                    ['code' => 'NEWLOOK', 'discount' => 50, 'min_spending' => 300000, 'description' => 'Potongan 50% untuk pelanggan baru.'],
-                    ['code' => 'WEEKENDDEAL', 'discount' => 20, 'min_spending' => 400000, 'description' => 'Diskon 20% khusus Sabtu & Minggu.'],
                 ]
             ],
             // =================================================================
@@ -411,15 +394,9 @@ class MitraTokoSeeder extends Seeder
                 ],
                 'heroes' => [
                     ['title' => 'Cita Rasa Asli Indonesia', 'subtitle' => 'Resep Warisan Keluarga', 'image' => 'seeders/heroes/rendang-hero.jpg', 'button_text' => 'Lihat Menu', 'button_url' => '/shop'],
-                    ['title' => 'Paket Makan Siang Hemat', 'subtitle' => 'Mulai dari Rp 25.000', 'image' => 'seeders/heroes/paket-nasi-hero.jpg', 'button_text' => 'Pesan Sekarang', 'button_url' => '/shop'],
-                    ['title' => 'Pesan Antar, Gratis Ongkir!', 'subtitle' => 'Untuk Area Yogyakarta', 'image' => 'seeders/heroes/delivery-hero.jpg', 'button_text' => 'Hubungi Kami', 'button_url' => '/contact'],
                 ],
                 'banners' => [
                     ['title' => 'Nasi Kotak Spesial', 'image' => 'seeders/banners/nasi-kotak-banner.jpg', 'link_url' => '/shop?category=makanan-berat'],
-                    ['title' => 'Aneka Sambal Pedas', 'image' => 'seeders/banners/sambal-banner.jpg', 'link_url' => '/shop?category=bumbu-masak'],
-                    ['title' => 'Minuman Segar', 'image' => 'seeders/banners/minuman-banner.jpg', 'link_url' => '/shop?category=minuman'],
-                    ['title' => 'Jajanan Pasar', 'image' => 'seeders/banners/jajanan-banner.jpg', 'link_url' => '/shop?category=camilan'],
-                    ['title' => 'Kue Tampah Acara', 'image' => 'seeders/banners/kue-tampah-banner.jpg', 'link_url' => '/shop?category=kue-roti'],
                 ],
                 'products' => [
                     [
@@ -503,8 +480,6 @@ class MitraTokoSeeder extends Seeder
                 ],
                 'vouchers' => [
                     ['code' => 'MAKANENAK10', 'discount' => 10, 'min_spending' => 100000, 'description' => 'Diskon 10% untuk semua menu makanan.'],
-                    ['code' => 'PESANANTAR', 'discount' => 30, 'min_spending' => 150000, 'description' => 'Gratis ongkir, maks. potongan 30%'],
-                    ['code' => 'HEMAT25', 'discount' => 25, 'min_spending' => 200000, 'description' => 'Potongan langsung 25%'],
                 ]
             ],
         ];

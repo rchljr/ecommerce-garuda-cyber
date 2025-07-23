@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsTo; // Ini sudah benar
 
 class OrderItem extends Model
 {
@@ -26,24 +26,23 @@ class OrderItem extends Model
     ];
 
     // Relasi ke Order
-    public function order(): BelongsTo
+    public function order(): BelongsTo // IDE mungkin memperingatkan di sini
     {
         return $this->belongsTo(Order::class);
     }
 
     // Relasi ke Product
-    public function product(): BelongsTo
+    public function product(): BelongsTo // IDE mungkin memperingatkan di sini
     {
         return $this->belongsTo(Product::class);
     }
 
-    // BARU: Relasi ke Varian
-    public function variant(): BelongsTo
+    // Relasi ke Varian
+    public function variant(): BelongsTo // IDE mungkin memperingatkan di sini
     {
         return $this->belongsTo(Varian::class, 'product_variant_id');
     }
 
-    // Jika Anda ingin accessor untuk total harga per item, contoh:
     public function getTotalPriceAttribute(): float
     {
         return $this->quantity * $this->price;

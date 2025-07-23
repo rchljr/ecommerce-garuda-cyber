@@ -72,7 +72,7 @@ Route::prefix('tenant/{subdomain}')
         Route::post('/checkout/search-destination', [CheckoutController::class, 'searchDestination'])->name('checkout.search_destination');
         Route::post('/checkout/calculate-shipping', [CheckoutController::class, 'calculateShipping'])->name('checkout.calculate_shipping');
         // Route::get('/checkout/areas', [CheckoutController::class, 'getBiteshipAreas'])->name('checkout.areas');
-    
+
         // Wishlist
         Route::get('/wishlist', [WishlistController::class, 'index'])->name('wishlist');
         Route::post('/wishlist/toggle', [WishlistController::class, 'toggle'])->name('wishlist.toggle');
@@ -118,6 +118,9 @@ Route::prefix('tenant/{subdomain}')
                 Route::get('/profile', [CustomerProfileController::class, 'show'])->name('profile');
                 Route::post('/profile/update', [CustomerProfileController::class, 'update'])->name('profile.update');
                 Route::get('/orders', [CustomerOrderController::class, 'index'])->name('orders');
+                Route::post('/orders/{order}/cancel', [CustomerOrderController::class, 'cancel'])->name('orders.cancel');
+                Route::post('/orders/{order}/receive', [CustomerOrderController::class, 'receive'])->name('orders.receive');
+                Route::post('/orders/{order}/request-refund', [CustomerOrderController::class, 'requestRefund'])->name('orders.request_refund');
                 Route::get('/notifications', [CustomerNotificationController::class, 'index'])->name('notifications');
                 Route::get('/points', [CustomerPointController::class, 'index'])->name('points');
                 Route::post('/points/redeem/{rewardId}', [CustomerPointController::class, 'redeem'])->name('points.redeem');
@@ -227,6 +230,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/payment/apply-voucher', [PaymentController::class, 'applyVoucher'])->name('payment.applyVoucher');
     Route::post('/payment/remove-voucher', [PaymentController::class, 'removeVoucher'])->name('payment.removeVoucher');
     Route::post('/payment/generate-token', [PaymentController::class, 'generateSnapToken'])->name('payment.generateSnapToken');
+    Route::post('/midtrans-callback', [PaymentCallbackController::class, 'receiveCallback'])->name('midtrans.callback');
 
     ///== ADMIN ROUTES ==//
     Route::middleware(['role:admin'])->prefix('admin')->name('admin.')->group(function () {
@@ -298,6 +302,8 @@ Route::middleware(['auth'])->group(function () {
         // Route::get('/dashboard', [MitraController::class, 'index'])->name('dashboard');
         Route::get('/dashboard', [DashboardMitraController::class, 'index'])->name('dashboard');
         // Rute untuk publikasi toko
+        Route::get('/transactions/export/excel', [DashboardMitraController::class, 'exportProductOrdersExcel'])->name('transactions.export.excel');
+        Route::get('/pendapatan/export-excel', [DashboardMitraController::class, 'exportSubscriptionPaymentsExcel'])->name('pendapatan.export.excel');
 
         Route::post('/editor/publish', [StorePublicationController::class, 'publish'])->name('editor.publish');
         Route::post('/editor/unpublish', [StorePublicationController::class, 'unpublish'])->name('editor.unpublish');
@@ -317,6 +323,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('vouchers/create', [VoucherProductController::class, 'create'])->name('vouchers.create');
         Route::get('vouchers/edit', [VoucherProductController::class, 'edit'])->name('vouchers.edit');
         Route::get('vouchers/destroy', [VoucherProductController::class, 'destroy'])->name('vouchers.destroy');
+        Route::resource('vouchers', VoucherProductController::class);
 
 
         Route::resource('heroes', HeroController::class);
@@ -336,8 +343,12 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/editor/template/update', [TemaController::class, 'updateTheme'])->name('editor.updateTheme');
 
 
-        Route::get('/orders', [OrderController::class, 'index'])->name('orders');
+        Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
         Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
+        Route::put('/orders/{order}/status', [OrderController::class, 'updateStatus'])->name('orders.updateStatus');
+
+        Route::get('/transactions', [DashboardMitraController::class, 'transactions'])->name('transactions.index');
+        // Anda mungkin juga ingin menambahkan link ini di sidebar navigasi dashboard mitra Anda
 
         Route::resource('products', ProductController::class)->names([
             'index' => 'products.index',    // Ini akan menjadi 'mitra.products.index'

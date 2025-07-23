@@ -15,8 +15,6 @@ return new class extends Migration
             // Mengubah kolom 'status' menjadi string dengan panjang yang lebih besar
             // Contoh: string(20) atau string(50) untuk lebih aman
             $table->string('status', 20)->change();
-            // Jika Anda menggunakan ENUM, Anda perlu mengubahnya menjadi:
-            // $table->enum('status', ['completed', 'pending', 'processing', 'cancelled', 'failed', 'new_status_jika_ada'])->change();
         });
     }
 

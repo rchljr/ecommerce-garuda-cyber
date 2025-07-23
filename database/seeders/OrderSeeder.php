@@ -25,6 +25,7 @@ use App\Models\Customer;
 use App\Models\Varian;
 use App\Models\OrderItem;
 use App\Models\Testimoni;
+use App\Models\Shipping; // PENTING: Import model Shipping
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -44,8 +45,9 @@ class OrderSeeder extends Seeder
         OrderItem::truncate();
         Order::truncate();
         Testimoni::truncate();
+        Shipping::truncate(); // PENTING: Hapus juga data Shipping lama
         DB::statement('SET FOREIGN_KEY_CHECKS=1;');
-        $this->command->info('Data pesanan, item pesanan, dan testimoni lama dihapus.');
+        $this->command->info('Data pesanan, item pesanan, testimoni, dan pengiriman lama dihapus.');
 
         $mitraEmails = ['hilmi21ti@mahasiswa.pcr.ac.id', 'rachel21ti@mahasiswa.pcr.ac.id', 'chef.anton@example.com'];
         $mitras = User::whereIn('email', $mitraEmails)->get();
@@ -61,7 +63,10 @@ class OrderSeeder extends Seeder
         }
         $customers = collect([$customer]);
 
-        $orderStatuses = ['completed', 'pending', 'processing', 'cancelled', 'failed'];
+        // UBAH: Semua order akan berstatus 'completed'
+        $targetOrderStatus = 'completed'; 
+        $deliveryMethods = ['delivery', 'pickup']; // Pilihan metode pengiriman
+
         $numOrdersPerShop = 15;
 
         foreach ($mitras as $mitra) {
@@ -84,15 +89,16 @@ class OrderSeeder extends Seeder
 
             for ($i = 0; $i < $numOrdersPerShop; $i++) {
                 $selectedCustomer = $customers->random();
-                $status = $orderStatuses[array_rand($orderStatuses)];
+                $deliveryMethod = $deliveryMethods[array_rand($deliveryMethods)]; // Pilih metode pengiriman acak
                 $createdAt = Carbon::now()->subDays(rand(0, 45))->subHours(rand(0, 23))->subMinutes(rand(0, 59));
 
                 $order = Order::create([
                     'user_id' => $selectedCustomer->id,
                     'shop_id' => $shop->id,
-                    'total_price' => 0,
-                    'status' => $status,
+                    'total_price' => 0, // Akan dihitung nanti
+                    'status' => $targetOrderStatus, // BARU: Selalu set ke 'completed'
                     'order_date' => $createdAt,
+                    'delivery_method' => $deliveryMethod,
                     'shipping_address' => 'Jl. Dummy No. ' . rand(1, 100) . ', Kota Dummy',
                     'shipping_city' => 'Kota Dummy',
                     'shipping_zip_code' => '12345',
@@ -113,13 +119,6 @@ class OrderSeeder extends Seeder
                     }
                     $selectedVarian = $product->varians->random();
 
-                    // --- DEBUGGING: Tampilkan nilai-nilai penting sebelum perhitungan ---
-                    $this->command->info("  [DEBUG] Memproses Varian: {$selectedVarian->name} (ID: {$selectedVarian->id}) dari Produk: {$product->name}");
-                    $this->command->info("  [DEBUG] Varian Modal Price: " . ($selectedVarian->modal_price ?? 'NULL/Not Set'));
-                    $this->command->info("  [DEBUG] Varian Profit Percentage: " . ($selectedVarian->profit_percentage ?? 'NULL/Not Set'));
-                    $this->command->info("  [DEBUG] Varian Selling Price (Accessor Result): " . ($selectedVarian->selling_price ?? 'NULL/Not Set'));
-                    // --- END DEBUGGING ---
-
                     $quantity = rand(1, min(5, $selectedVarian->stock > 0 ? $selectedVarian->stock : 1));
                     $itemPrice = (float) $selectedVarian->selling_price;
                     if (is_null($itemPrice)) {
@@ -127,11 +126,9 @@ class OrderSeeder extends Seeder
                         $itemPrice = 0.00;
                     }
                     
-                    // Tambahkan peringatan jika itemPrice tetap 0 padahal seharusnya tidak
                     if ($itemPrice == 0.00 && ($selectedVarian->modal_price > 0 || $selectedVarian->profit_percentage > 0)) {
                          $this->command->warn("PERINGATAN KRITIS: Harga item varian {$selectedVarian->name} (ID: {$selectedVarian->id}) adalah 0 padahal Modal Price: {$selectedVarian->modal_price}, Profit: {$selectedVarian->profit_percentage}.");
                     }
-
 
                     OrderItem::create([
                         'order_id' => $order->id,
@@ -144,15 +141,36 @@ class OrderSeeder extends Seeder
                 }
                 $order->update(['total_price' => $orderTotalPrice]);
 
-                if ($order->status === 'completed') {
-                    Testimoni::create([
-                        'name' => optional($selectedCustomer)->name ?? 'Pelanggan Anonim',
-                        'content' => 'Sangat puas dengan produk dan layanan dari toko ' . $shop->shop_name . '! Pesanan tiba tepat waktu dan kualitasnya luar biasa.',
-                        'rating' => rand(4, 5),
-                        'status' => 'published',
-                        'shop_id' => $shop->id,
+                // --- BARU: Buat record Shipping berdasarkan deliveryMethod yang dipilih ---
+                if ($order->delivery_method === 'delivery') {
+                    // Untuk order 'delivery', set statusnya menjadi 'shipped'
+                    Shipping::create([
+                        'order_id' => $order->id,
+                        'delivery_service' => ['JNE', 'J&T', 'SiCepat'][array_rand(['JNE', 'J&T', 'SiCepat'])],
+                        'status' => 'delivered', // BARU: Status pengiriman di Shipping langsung 'delivered'
+                        'receipt_number' => Str::random(12),
+                        'shipping_cost' => rand(10000, 30000),
+                        'estimated_delivery' => Carbon::parse($createdAt)->addDays(rand(2, 7)),
+                    ]);
+                } elseif ($order->delivery_method === 'pickup') {
+                     // Untuk order 'pickup', set statusnya menjadi 'ready_for_pickup'
+                     Shipping::create([
+                        'order_id' => $order->id,
+                        'delivery_service' => 'Pickup',
+                        'status' => 'picked_up', // BARU: Status pengiriman di Shipping 'picked_up'
+                        'receipt_number' => null,
+                        'shipping_cost' => 0,
+                        'estimated_delivery' => null,
                     ]);
                 }
+                // Jika order sudah completed, maka testimoni juga dibuat
+                Testimoni::create([
+                    'name' => optional($selectedCustomer)->name ?? 'Pelanggan Anonim',
+                    'content' => 'Sangat puas dengan produk dan layanan dari toko ' . $shop->shop_name . '! Pesanan tiba tepat waktu dan kualitasnya luar biasa.',
+                    'rating' => rand(4, 5),
+                    'status' => 'published',
+                    'shop_id' => $shop->id,
+                ]);
             }
             $this->command->info("{$numOrdersPerShop} pesanan dummy dibuat untuk toko '{$shop->shop_name}'.");
         }

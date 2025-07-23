@@ -27,6 +27,26 @@
             <span class="sidebar-text ml-4">Dashboard</span>
         </a>
 
+        <div class="sidebar-dropdown">
+            <button
+                class="sidebar-item dropdown-toggle w-full flex items-center justify-between p-3 rounded-lg hover:bg-red-800 transition-colors">
+                <div class="flex items-center">
+                    <span class="sidebar-icon">@include('dashboard-admin.icons.kategori')</span>
+                    <span class="sidebar-text ml-4">Kelola Toko</span>
+                </div>
+                <svg class="w-4 h-4 text-white/70 dropdown-arrow sidebar-text" fill="none" stroke="currentColor"
+                    viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+            </button>
+            <div class="sidebar-submenu hidden mt-1 pl-8 space-y-1">
+                <a href="{{ route('mitra.editor.edit') }}"
+                    class="sidebar-subitem block p-2 rounded-lg hover:bg-red-800 text-sm">Kelola Toko</a>
+                <a href="{{ route('mitra.tema') }}"
+                    class="sidebar-subitem block p-2 rounded-lg hover:bg-red-800 text-sm">Kelola Tema</a>
+            </div>
+        </div>
+
         <a href="{{ route('mitra.produk') }}"
             class="sidebar-item flex items-center p-3 rounded-lg hover:bg-red-800 transition-colors">
             <span class="sidebar-icon">@include('dashboard-admin.icons.paket')</span>
@@ -37,8 +57,8 @@
             <button
                 class="sidebar-item dropdown-toggle w-full flex items-center justify-between p-3 rounded-lg hover:bg-red-800 transition-colors">
                 <div class="flex items-center">
-                    <span class="sidebar-icon">@include('dashboard-admin.icons.kategori')</span>
-                    <span class="sidebar-text ml-4">Panel</span>
+                    <span class="sidebar-icon">@include('dashboard-admin.icons.pendapatan')</span>
+                    <span class="sidebar-text ml-4">Order & Transaksi</span>
                 </div>
                 <svg class="w-4 h-4 text-white/70 dropdown-arrow sidebar-text" fill="none" stroke="currentColor"
                     viewBox="0 0 24 24">
@@ -46,55 +66,22 @@
                 </svg>
             </button>
             <div class="sidebar-submenu hidden mt-1 pl-8 space-y-1">
-                {{-- <a href="{{ route('mitra.hero') }}"
-                    class="sidebar-subitem block p-2 rounded-lg hover:bg-red-800 text-sm">Kelola Hero</a>
-                <a href="{{ route('mitra.banner') }}"
-                    class="sidebar-subitem block p-2 rounded-lg hover:bg-red-800 text-sm">Kelola Banner</a> --}}
-                <a href="{{ route('mitra.tema') }}"
-                    class="sidebar-subitem block p-2 rounded-lg hover:bg-red-800 text-sm">Kelola Tema</a>
-                <a href="{{ route('mitra.editor.edit') }}"
-                    class="sidebar-subitem block p-2 rounded-lg hover:bg-red-800 text-sm">Kelola Toko</a>
+                <a href="{{ route('mitra.orders.index') }}"
+                    class="sidebar-subitem block p-2 rounded-lg hover:bg-red-800 text-sm">Kelola Order</a>
+                <a href="{{ route('mitra.transactions.index') }}"
+                    class="sidebar-subitem block p-2 rounded-lg hover:bg-red-800 text-sm">Pendapatan</a>
             </div>
         </div>
-
-        <a href="{{ route('mitra.contacts') }}"
-            class="sidebar-item flex items-center p-3 rounded-lg hover:bg-red-800 transition-colors">
-            <span class="sidebar-icon">@include('dashboard-admin.icons.testimoni')</span>
-            <span class="sidebar-text ml-4">Kelola Kontak</span>
-        </a>
-
         <a href="{{ route('mitra.testimoni.index') }}"
             class="sidebar-item flex items-center p-3 rounded-lg hover:bg-red-800 transition-colors">
-            <span class="sidebar-icon">@include('dashboard-admin.icons.kategori')</span>
+            <span class="sidebar-icon">@include('dashboard-admin.icons.testimoni')</span>
             <span class="sidebar-text ml-4">Testimoni</span>
         </a>
-
         <a href="{{ route('mitra.vouchers.index') }}"
             class="sidebar-item flex items-center p-3 rounded-lg hover:bg-red-800 transition-colors">
             <span class="sidebar-icon">@include('dashboard-admin.icons.landing')</span>
             <span class="sidebar-text ml-4">Kelola Voucher</span>
         </a>
-
-        {{-- <a href="{{ route('admin.kategori.index') }}"
-            class="sidebar-item flex items-center p-3 rounded-lg hover:bg-red-800 transition-colors">
-            <span class="sidebar-icon">@include('dashboard-admin.icons.kategori')</span>
-            <span class="sidebar-text ml-4">Kelola Kategori</span>
-        </a>
-        <a href="{{ route('admin.testimoni.index') }}"
-            class="sidebar-item flex items-center p-3 rounded-lg hover:bg-red-800 transition-colors">
-            <span class="sidebar-icon">@include('dashboard-admin.icons.testimoni')</span>
-            <span class="sidebar-text ml-4">Kelola Testimoni</span>
-        </a>
-        <a href="{{ route('admin.pendapatan.index') }}"
-            class="sidebar-item flex items-center p-3 rounded-lg hover:bg-red-800 transition-colors">
-            <span class="sidebar-icon">@include('dashboard-admin.icons.pendapatan')</span>
-            <span class="sidebar-text ml-4">Kelola Pendapatan</span>
-        </a> --}}
-        {{-- <a href="{{ route('admin.landing-page.statistics') }}"
-            class="sidebar-item flex items-center p-3 rounded-lg hover:bg-red-800 transition-colors">
-            <span class="sidebar-icon">@include('dashboard-admin.icons.landing')</span>
-            <span class="sidebar-text ml-4">Landing Page</span>
-        </a> --}}
     </nav>
 
     <div class="p-4 border-t border-red-800">

@@ -2,10 +2,23 @@
 @section('title', 'Pesanan Saya')
 
 @push('styles')
-    {{-- PERBAIKAN: Memastikan SweetAlert2 dimuat --}}
+    {{-- SweetAlert2 for beautiful alerts and confirmations --}}
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    {{-- Custom styles for modals and other elements --}}
     <style>
-        /* Gaya untuk modal */
+        /* Animation for modal overlay */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        /* Animation for modal content */
+        @keyframes slideIn {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        /* Modal Overlay: The dark background */
         .modal-overlay {
             display: none;
             position: fixed;
@@ -19,6 +32,7 @@
             animation: fadeIn 0.4s;
         }
 
+        /* Modal Content: The actual dialog box */
         .modal-content {
             background-color: #fefefe;
             margin: 8% auto;
@@ -28,426 +42,591 @@
             max-width: 500px;
             border-radius: 0.5rem;
             animation: slideIn 0.4s;
+            position: relative;
         }
 
+        /* Close button for modals */
         .modal-close {
             color: #aaa;
-            float: right;
+            position: absolute;
+            right: 15px;
+            top: 10px;
             font-size: 28px;
             font-weight: bold;
             cursor: pointer;
+            line-height: 1;
+        }
+        .modal-close:hover,
+        .modal-close:focus {
+            color: black;
         }
 
-        /* Gaya untuk rating bintang di modal */
+        /* Star rating styles for the review modal */
         .star-rating {
             display: flex;
-            flex-direction: row-reverse;
+            flex-direction: row-reverse; /* This makes stars fill from left to right */
             justify-content: flex-end;
         }
-
         .star-rating input {
             display: none;
         }
-
         .star-rating label {
             font-size: 2rem;
             color: #ddd;
             cursor: pointer;
             transition: color 0.2s;
         }
-
-        .star-rating input:checked~label,
+        .star-rating input:checked ~ label,
         .star-rating label:hover,
-        .star-rating label:hover~label {
-            color: #f59e0b;
-            /* amber-500 */
+        .star-rating label:hover ~ label {
+            color: #f59e0b; /* amber-500 */
         }
     </style>
 @endpush
 
 @section('content')
-    <div class="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        <div class="flex flex-col md:flex-row gap-8">
+<div class="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
+    <div class="flex flex-col md:flex-row gap-8">
 
-            <!-- Sidebar Kiri -->
-            <aside class="w-full md:w-1/4 lg:w-1/5 flex-shrink-0">
-                <div class="bg-white p-4 rounded-lg shadow-md">
-                    @include('layouts._partials.customer-sidebar')
+        <!-- Left Sidebar -->
+        <aside class="w-full md:w-1/4 lg:w-1/5 flex-shrink-0">
+            <div class="bg-white p-4 rounded-lg shadow-md">
+                @include('layouts._partials.customer-sidebar')
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="w-full md:w-3/4 lg:w-4/5">
+            <div class="bg-white p-6 md:p-8 rounded-lg shadow-md">
+                
+                <!-- Header and Search Form -->
+                <div class="flex flex-wrap justify-between items-center mb-6 gap-4">
+                    <div>
+                        <h1 class="text-2xl md:text-3xl font-bold text-gray-800">Pesanan Saya</h1>
+                        <p class="text-gray-500 mt-1">Lacak, ulas, dan lihat riwayat pesanan Anda.</p>
+                    </div>
+                    <form action="{{ route('tenant.account.orders', ['subdomain' => $subdomain]) }}" method="GET" class="flex-grow md:flex-grow-0">
+                        <div class="relative">
+                            <input type="text" name="search" value="{{ $search ?? '' }}" placeholder="Cari nama produk atau ID Pesanan..." class="border rounded-lg py-2 pl-10 pr-4 w-full focus:outline-none focus:ring-2 focus:ring-gray-400 transition">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" /></svg>
+                            </div>
+                        </div>
+                    </form>
                 </div>
-            </aside>
 
-            <!-- Konten Utama Kanan -->
-            <main class="w-full md:w-3/4 lg:w-4/5">
-                <div class="bg-white p-6 md:p-8 rounded-lg shadow-md">
-                    <h1 class="text-2xl md:text-3xl font-bold text-gray-800">Pesanan Saya</h1>
-                    <p class="text-gray-500 mt-1 mb-6">Lacak, ulas, dan lihat riwayat pesanan Anda.</p>
-
-                    <!-- Daftar Pesanan -->
-                    <div class="space-y-6">
-                        @forelse($orders as $order)
-                            <div class="bg-white border border-gray-200 rounded-lg shadow-sm">
-                                {{-- Header Order --}}
-                                <div class="bg-gray-50 p-4 flex flex-wrap justify-between items-center rounded-t-lg border-b">
-                                    <div class="flex items-center gap-3">
-                                        @if($order->subdomain && optional($order->subdomain->user)->shop)
-                                            <a href="{{ route('tenant.home', ['subdomain' => $order->subdomain->subdomain_name]) }}"
-                                                class="font-semibold text-gray-800 hover:text-red-600 transition">
-                                                {{ $order->subdomain->user->shop->shop_name }}
-                                            </a>
-                                        @else
-                                            <span class="font-semibold text-gray-500 italic">Toko Dihapus</span>
-                                        @endif
-                                    </div>
-                                    <div>
-                                        @php
-                                            $statusConfig = [
-                                                'pending' => ['text' => 'Belum Dibayar', 'class' => 'bg-yellow-100 text-yellow-800'],
-                                                'completed' => ['text' => 'Selesai', 'class' => 'bg-green-100 text-green-800'],
-                                                'cancelled' => ['text' => 'Dibatalkan', 'class' => 'bg-red-100 text-red-800'],
-                                                'failed' => ['text' => 'Gagal', 'class' => 'bg-red-100 text-red-800'],
-                                                'default' => ['text' => 'Diproses', 'class' => 'bg-blue-100 text-blue-800']
-                                            ];
-                                            $status = $statusConfig[$order->status] ?? $statusConfig['default'];
-                                        @endphp
-                                        <span class="px-3 py-1 text-xs font-semibold rounded-full {{ $status['class'] }}">
-                                            {{ $status['text'] }}
-                                        </span>
-                                    </div>
+                <!-- Orders List -->
+                <div class="space-y-6">
+                    @forelse($orders as $order)
+                        <div class="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+                            
+                            {{-- Order Header --}}
+                            <div class="bg-gray-50 p-4 flex flex-wrap justify-between items-center rounded-t-lg border-b gap-2">
+                                <div class="flex items-center gap-3">
+                                    <span class="font-semibold text-gray-800">{{ optional(optional(optional($order->subdomain)->user)->shop)->shop_name ?? 'Toko Dihapus' }}</span>
                                 </div>
-                                {{-- Body Order (Item) --}}
-                                <div class="p-4 space-y-4">
-                                    @foreach($order->items as $item)
-                                        <div class="flex justify-between items-start border-b pb-4 last:border-b-0 last:pb-0">
-                                            <div class="flex items-start gap-4 flex-grow">
-                                                <img src="{{ asset('storage/' . optional($item->product)->main_image) }}"
-                                                    onerror="this.onerror=null;this.src='https://placehold.co/64x64/f1f5f9/cbd5e1?text=No+Image';"
-                                                    alt="{{ optional($item->product)->name }}"
-                                                    class="w-16 h-16 bg-gray-200 rounded-md object-cover">
-                                                <div>
-                                                    <p class="font-semibold text-gray-800">
-                                                        {{ optional($item->product)->name ?? 'Produk Dihapus' }}
-                                                    </p>
-                                                    <p class="text-xs text-gray-500">Varian:
-                                                        {{ optional($item->variant)->color ?? '-' }} /
-                                                        {{ optional($item->variant)->size ?? '-' }}
-                                                    </p>
-                                                    <p class="text-sm text-gray-600">{{ $item->quantity }} x
-                                                        {{ format_rupiah($item->unit_price) }}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                            <div class="flex-shrink-0 ml-4">
-                                                @if($order->status == 'completed' && \Carbon\Carbon::parse($order->order_date)->addMonths(3)->isFuture())
-                                                    @php
-                                                        $testimonial = $order->testimonials->firstWhere('product_id', $item->product_id);
-                                                    @endphp
-                                                    @if($testimonial)
-                                                        <button class="edit-review-btn text-sm font-semibold text-blue-600 hover:underline"
-                                                            data-testimonial-id="{{ $testimonial->id }}">
-                                                            Edit Ulasan
-                                                        </button>
-                                                    @else
-                                                        <button class="give-review-btn text-sm font-semibold text-green-600 hover:underline"
-                                                            data-order-id="{{ $order->id }}" data-product-id="{{ $item->product_id }}">
-                                                            Beri Ulasan
-                                                        </button>
-                                                    @endif
-                                                @endif
+                                <div>
+                                    @php
+                                        // Configuration for order status badges
+                                        $statusConfig = [
+                                            'pending' => ['text' => 'Belum Dibayar', 'class' => 'bg-yellow-100 text-yellow-800'],
+                                            'processing' => ['text' => 'Diproses', 'class' => 'bg-blue-100 text-blue-800'],
+                                            'shipped' => ['text' => 'Dikirim', 'class' => 'bg-cyan-100 text-cyan-800'],
+                                            'ready_for_pickup' => ['text' => 'Siap Diambil', 'class' => 'bg-indigo-100 text-indigo-800'],
+                                            'completed' => ['text' => 'Selesai', 'class' => 'bg-green-100 text-green-800'],
+                                            'cancelled' => ['text' => 'Dibatalkan', 'class' => 'bg-red-100 text-red-800'],
+                                            'failed' => ['text' => 'Gagal', 'class' => 'bg-red-100 text-red-800'],
+                                            'refund_pending' => ['text' => 'Pengajuan Refund', 'class' => 'bg-orange-100 text-orange-800'],
+                                            'refunded' => ['text' => 'Dana Dikembalikan', 'class' => 'bg-gray-100 text-gray-800'],
+                                        ];
+                                        $status = $statusConfig[$order->status] ?? $statusConfig['processing'];
+                                    @endphp
+                                    <span class="px-3 py-1 text-xs font-semibold rounded-full {{ $status['class'] }}">
+                                        {{ $status['text'] }}
+                                    </span>
+                                </div>
+                            </div>
+
+                            {{-- Order Body (Items) --}}
+                            <div class="p-4 space-y-4">
+                                @foreach($order->items as $item)
+                                    <div class="flex justify-between items-start border-b pb-4 last:border-b-0 last:pb-0">
+                                        <div class="flex items-start gap-4 flex-grow">
+                                            @php
+                                                $productName = optional($item->product)->name ?? 'Produk Dihapus';
+                                                $imageUrl = optional($item->product)->main_image 
+                                                    ? asset('storage/' . $item->product->main_image) 
+                                                    : 'https://placehold.co/64x64/f1f5f9/64748b?text=' . urlencode(substr($productName, 0, 15));
+                                            @endphp
+                                            <img src="{{ $imageUrl }}" 
+                                                alt="{{ $productName }}" 
+                                                class="w-16 h-16 bg-gray-200 rounded-md object-cover"
+                                                onerror="this.onerror=null;this.src='https://placehold.co/64x64/f1f5f9/64748b?text={{$productName}}';">
+
+                                            <div>
+                                                <p class="font-semibold text-gray-800">{{ $productName }}</p>
+                                                <p class="text-xs text-gray-500">Varian: {{ optional($item->variant)->name ?? '-' }}</p>
+                                                <p class="text-sm text-gray-600">{{ $item->quantity }} x {{ format_rupiah($item->price) }}</p>
                                             </div>
                                         </div>
-                                    @endforeach
-                                </div>
-                                {{-- Footer Order --}}
-                                <div class="bg-gray-50 p-4 flex flex-wrap gap-4 justify-between items-center rounded-b-lg">
-                                    <div>
-                                        <span class="text-sm text-gray-600">Total Pesanan:</span>
-                                        <span
-                                            class="font-bold text-lg text-red-600">{{ format_rupiah($order->total_price) }}</span>
+                                        
+                                        {{-- Review Buttons --}}
+                                        <div class="flex-shrink-0 ml-4">
+                                            @if($order->status == 'completed' && $item->product)
+                                                @php
+                                                    $testimonial = $order->testimonials->where('product_id', $item->product_id)->where('user_id', Auth::guard('customers')->id())->first();
+                                                @endphp
+                                                @if($testimonial)
+                                                    <button class="edit-review-btn text-sm font-semibold text-blue-600 hover:underline" data-testimonial-id="{{ $testimonial->id }}">Edit Ulasan</button>
+                                                @else
+                                                    <button class="give-review-btn text-sm font-semibold text-green-600 hover:underline" data-order-id="{{ $order->id }}" data-product-id="{{ $item->product_id }}">Beri Ulasan</button>
+                                                @endif
+                                            @endif
+                                        </div>
                                     </div>
-                                    <button
-                                        class="detail-button text-white font-semibold bg-gray-800 rounded-lg px-5 py-2 text-sm hover:bg-black transition flex items-center gap-2"
-                                        data-order-json="{{ json_encode($order) }}">
-                                        Lihat Detail
-                                    </button>
+                                @endforeach
+                            </div>
+
+                            {{-- Order Footer (Total & Action Buttons) --}}
+                            <div class="bg-gray-50 p-4 flex flex-wrap gap-4 justify-between items-center rounded-b-lg">
+                                <div>
+                                    <span class="text-sm text-gray-600">Total Pesanan:</span>
+                                    <span class="font-bold text-lg text-red-600">{{ format_rupiah($order->total_price) }}</span>
+                                </div>
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    @if($order->status == 'pending')
+                                        <button class="cancel-order-btn text-white font-semibold bg-red-600 rounded-lg px-5 py-2 text-sm hover:bg-red-700 transition" data-order-id="{{ $order->id }}">Batalkan Pesanan</button>
+                                    @endif
+                                    @if($order->status == 'processing' && !$order->refundRequest)
+                                        <button class="request-refund-btn text-white font-semibold bg-orange-500 rounded-lg px-5 py-2 text-sm hover:bg-orange-600 transition" data-order-id="{{ $order->id }}" data-total-price="{{ $order->total_price }}">Ajukan Refund</button>
+                                    @endif
+                                    @if(in_array($order->status, ['shipped', 'ready_for_pickup']))
+                                        <button class="receive-order-btn text-white font-semibold bg-green-600 rounded-lg px-5 py-2 text-sm hover:bg-green-700 transition" data-order-id="{{ $order->id }}">Pesanan Diterima</button>
+                                    @endif
+                                    <button class="detail-button text-white font-semibold bg-gray-800 rounded-lg px-5 py-2 text-sm hover:bg-black transition" data-order-json="{{ json_encode($order) }}">Lihat Detail</button>
                                 </div>
                             </div>
-                        @empty
-                            <div class="text-center py-16 text-gray-500 border-2 border-dashed rounded-lg">
-                                <h3 class="mt-2 text-sm font-medium text-gray-900">Belum ada pesanan</h3>
-                                <p class="mt-1 text-sm text-gray-500">Mulai belanja sekarang untuk melihat pesanan Anda di sini.
-                                </p>
-                            </div>
-                        @endforelse
-                    </div>
+                        </div>
+                    @empty
+                        <div class="text-center py-16 text-gray-500 border-2 border-dashed rounded-lg">
+                            <h3 class="mt-2 text-sm font-medium text-gray-900">
+                                @if($search)
+                                    Pesanan tidak ditemukan
+                                @else
+                                    Belum ada pesanan
+                                @endif
+                            </h3>
+                            <p class="mt-1 text-sm text-gray-500">
+                                @if($search)
+                                    Coba kata kunci lain atau <a href="{{ route('tenant.account.orders', ['subdomain' => $subdomain]) }}" class="text-red-600 hover:underline">lihat semua pesanan</a>.
+                                @else
+                                    Mulai belanja sekarang untuk melihat pesanan Anda di sini.
+                                @endif
+                            </p>
+                        </div>
+                    @endforelse
                 </div>
-            </main>
+                
+                <!-- Pagination -->
+                <div class="mt-8">
+                    {{ $orders->appends(request()->query())->links() }}
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<!-- ======================================================================= -->
+<!-- MODALS: All modals are placed here at the end of the main content -->
+<!-- ======================================================================= -->
+
+<!-- Order Detail Modal -->
+<div id="order-detail-modal" class="modal-overlay">
+    <div class="modal-content">
+        <span class="modal-close" id="close-detail-modal">&times;</span>
+        <h2 class="text-xl font-bold mb-4">Detail Pesanan</h2>
+        <div class="text-sm space-y-2 mb-4 border-b pb-4">
+            <div class="flex justify-between"><span class="text-gray-500">ID Pesanan:</span><span id="detail-order-id" class="font-semibold font-mono"></span></div>
+            <div class="flex justify-between"><span class="text-gray-500">Tanggal:</span><span id="detail-order-date" class="font-semibold"></span></div>
+            <div class="flex justify-between"><span class="text-gray-500">Toko:</span><span id="detail-order-shop" class="font-semibold"></span></div>
+            <div class="flex justify-between"><span class="text-gray-500">Status:</span><span id="detail-order-status" class="font-semibold px-2 py-0.5 rounded-full"></span></div>
+        </div>
+        <div id="detail-item-list" class="space-y-3 mb-4"></div>
+        <div class="border-t pt-4 space-y-2 text-sm">
+            <div class="flex justify-between"><span class="text-gray-500">Subtotal Produk</span><span id="detail-subtotal"></span></div>
+            <div id="detail-shipping-row" class="flex justify-between"><span class="text-gray-500">Ongkos Kirim</span><span id="detail-shipping-cost"></span></div>
+            <div id="detail-discount-row" class="flex justify-between text-green-600" style="display: none;"><span class="text-gray-500">Potongan Voucher</span><span id="detail-discount"></span></div>
+            <div class="flex justify-between font-bold text-lg pt-2 mt-2 border-t"><span class="text-gray-800">Total Akhir</span><span id="detail-total" class="text-red-600"></span></div>
+        </div>
+        <div id="detail-shipping-info" class="mt-4 border-t pt-4"></div>
+        <div id="detail-notes-info" class="mt-4 border-t pt-4" style="display: none;">
+            <h4 class="font-semibold text-sm mb-1">Catatan Pesanan:</h4>
+            <p id="detail-notes-text" class="text-sm text-gray-600 bg-gray-50 p-3 rounded-md"></p>
         </div>
     </div>
+</div>
 
-    <!-- Modal untuk Detail Pesanan -->
-    <div id="order-detail-modal" class="modal-overlay">
-        <div class="modal-content">
-            <span class="modal-close" id="close-detail-modal">&times;</span>
-            <h2 class="text-xl font-bold mb-4">Detail Pesanan</h2>
-            <div class="text-sm space-y-2 mb-4 border-b pb-4">
-                <div class="flex justify-between"><span class="text-gray-500">ID Pesanan:</span><span id="detail-order-id"
-                        class="font-semibold font-mono"></span></div>
-                <div class="flex justify-between"><span class="text-gray-500">Tanggal:</span><span id="detail-order-date"
-                        class="font-semibold"></span></div>
-                <div class="flex justify-between"><span class="text-gray-500">Toko:</span><span id="detail-order-shop"
-                        class="font-semibold"></span></div>
-                <div class="flex justify-between"><span class="text-gray-500">Status:</span><span id="detail-order-status"
-                        class="font-semibold px-2 py-0.5 rounded-full"></span></div>
+<!-- Refund Request Modal -->
+<div id="refund-modal" class="modal-overlay">
+    <div class="modal-content">
+        <span class="modal-close" id="close-refund-modal">&times;</span>
+        <h2 class="text-xl font-bold mb-4">Formulir Pengajuan Refund</h2>
+        <form id="refund-form">
+            @csrf
+            {{-- PERBAIKAN 2: Modifikasi Modal Refund --}}
+            <div class="mb-4">
+                <label for="refund-total" class="block text-gray-700 text-sm font-bold mb-2">Total Pengembalian Dana</label>
+                <input type="text" id="refund-total" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 bg-gray-200" readonly>
             </div>
-            <div id="detail-item-list" class="space-y-3 mb-4"></div>
-            <div class="border-t pt-4 space-y-2 text-sm">
-                <div class="flex justify-between"><span class="text-gray-500">Subtotal Produk</span><span
-                        id="detail-subtotal"></span></div>
-                <div id="detail-shipping-row" class="flex justify-between"><span class="text-gray-500">Ongkos
-                        Kirim</span><span id="detail-shipping-cost"></span></div>
-                <div id="detail-discount-row" class="flex justify-between text-green-600" style="display: none;"><span
-                        class="text-gray-500">Potongan Voucher</span><span id="detail-discount"></span></div>
-                <div class="flex justify-between font-bold text-lg pt-2 mt-2 border-t"><span class="text-gray-800">Total
-                        Akhir</span><span id="detail-total" class="text-red-600"></span></div>
+            <div class="mb-4">
+                <label for="refund-method" class="block text-gray-700 text-sm font-bold mb-2">Metode Pengembalian</label>
+                <select id="refund-method" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                    <option value="bca">Transfer Bank - BCA</option>
+                    <option value="bri">Transfer Bank - BRI</option>
+                    <option value="gopay">e-Wallet - Gopay</option>
+                </select>
             </div>
-            <div id="detail-shipping-info" class="mt-4 border-t pt-4"></div>
-            <div id="detail-notes-info" class="mt-4 border-t pt-4" style="display: none;">
-                <h4 class="font-semibold text-sm mb-1">Catatan:</h4>
-                <p id="detail-notes-text" class="text-sm text-gray-600 bg-gray-50 p-3 rounded-md"></p>
+            <div class="mb-4">
+                <label for="refund-account-number" class="block text-gray-700 text-sm font-bold mb-2">Nomor Rekening / Gopay</label>
+                <input type="text" id="refund-account-number" name="bank_account_number" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="Contoh: 1234567890" required>
             </div>
-        </div>
+            <div class="mb-6">
+                <label for="refund-reason" class="block text-gray-700 text-sm font-bold mb-2">Alasan Pengembalian</label>
+                <textarea id="refund-reason" name="reason" rows="3" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="Jelaskan alasan Anda mengajukan pengembalian dana..." required minlength="10"></textarea>
+            </div>
+            <div class="flex items-center justify-end">
+                <button type="submit" id="submit-refund-button" class="bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:shadow-outline transition">Ajukan Refund</button>
+            </div>
+        </form>
     </div>
+</div>
 
-    <!-- Modal untuk Ulasan Produk -->
-    <div id="review-modal" class="modal-overlay">
-        <div class="modal-content">
-            <span class="modal-close" id="close-review-modal">&times;</span>
-            <h2 id="review-modal-title" class="text-xl font-bold mb-4">Beri Ulasan Produk</h2>
-            <form id="review-form">
-                @csrf
-                <input type="hidden" id="review-order-id" name="order_id">
-                <input type="hidden" id="review-product-id" name="product_id">
-                <input type="hidden" id="review-method" name="_method" value="POST">
-                <input type="hidden" id="review-testimonial-id" name="testimonial_id">
-
-                <div class="mb-4">
-                    <label class="block text-gray-700 text-sm font-bold mb-2">Rating Anda:</label>
-                    <div class="star-rating">
-                        <input type="radio" id="star5" name="rating" value="5" /><label for="star5"
-                            title="5 stars">★</label>
-                        <input type="radio" id="star4" name="rating" value="4" /><label for="star4"
-                            title="4 stars">★</label>
-                        <input type="radio" id="star3" name="rating" value="3" /><label for="star3"
-                            title="3 stars">★</label>
-                        <input type="radio" id="star2" name="rating" value="2" /><label for="star2"
-                            title="2 stars">★</label>
-                        <input type="radio" id="star1" name="rating" value="1" /><label for="star1" title="1 star">★</label>
-                    </div>
+<!-- Product Review Modal -->
+<div id="review-modal" class="modal-overlay">
+    <div class="modal-content">
+        <span class="modal-close" id="close-review-modal">&times;</span>
+        <h2 id="review-modal-title" class="text-xl font-bold mb-4">Beri Ulasan Produk</h2>
+        <form id="review-form">
+            @csrf
+            <input type="hidden" id="review-order-id" name="order_id">
+            <input type="hidden" id="review-product-id" name="product_id">
+            <input type="hidden" id="review-method" name="_method" value="POST">
+            <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2">Rating Anda:</label>
+                <div class="star-rating">
+                    <input type="radio" id="star5" name="rating" value="5" required/><label for="star5" title="5 stars">★</label>
+                    <input type="radio" id="star4" name="rating" value="4"/><label for="star4" title="4 stars">★</label>
+                    <input type="radio" id="star3" name="rating" value="3"/><label for="star3" title="3 stars">★</label>
+                    <input type="radio" id="star2" name="rating" value="2"/><label for="star2" title="2 stars">★</label>
+                    <input type="radio" id="star1" name="rating" value="1"/><label for="star1" title="1 star">★</label>
                 </div>
-
-                <div class="mb-6">
-                    <label for="review-content" class="block text-gray-700 text-sm font-bold mb-2">Ulasan Anda:</label>
-                    <textarea id="review-content" name="content" rows="4"
-                        class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                        placeholder="Bagaimana pengalaman Anda dengan produk ini?"></textarea>
-                </div>
-
-                <div class="flex items-center justify-end">
-                    <button type="submit" id="submit-review-button"
-                        class="bg-gray-800 hover:bg-black text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:shadow-outline transition">
-                        Kirim Ulasan
-                    </button>
-                </div>
-            </form>
-        </div>
+            </div>
+            <div class="mb-6">
+                <label for="review-content" class="block text-gray-700 text-sm font-bold mb-2">Ulasan Anda:</label>
+                <textarea id="review-content" name="content" rows="4" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="Bagaimana pengalaman Anda dengan produk ini?" required minlength="5"></textarea>
+            </div>
+            <div class="flex items-center justify-end">
+                <button type="submit" id="submit-review-button" class="bg-gray-800 hover:bg-black text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:shadow-outline transition">
+                    Kirim Ulasan
+                </button>
+            </div>
+        </form>
     </div>
+</div>
 @endsection
 
 @push('scripts')
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const detailModal = document.getElementById('order-detail-modal');
-            const reviewModal = document.getElementById('review-modal');
-            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-            const currentSubdomain = "{{ $subdomain }}";
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // --- Global Variables & Helpers ---
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    const currentSubdomain = "{{ $subdomain }}";
 
-            // ... (Kode untuk modal detail tetap sama) ...
-            const formatRupiah = (number) => {
-                const num = parseFloat(number);
-                if (isNaN(num)) return 'Rp 0';
-                return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num);
+    const formatRupiah = (number) => {
+        const num = parseFloat(number);
+        if (isNaN(num)) return 'Rp 0';
+        return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num);
+    };
+
+    // --- Unified Modal Closing Logic ---
+    document.querySelectorAll('.modal-close').forEach(btn => {
+        btn.onclick = () => btn.closest('.modal-overlay').style.display = 'none';
+    });
+    window.onclick = (event) => {
+        if (event.target.classList.contains('modal-overlay')) {
+            event.target.style.display = 'none';
+        }
+    };
+
+    // --- Order Detail Modal Logic ---
+    document.querySelectorAll('.detail-button').forEach(button => {
+        button.addEventListener('click', function () {
+            const modal = document.getElementById('order-detail-modal');
+            const order = JSON.parse(this.dataset.orderJson);
+            
+            // Basic Info
+            modal.querySelector('#detail-order-id').textContent = order.id;
+            modal.querySelector('#detail-order-date').textContent = new Date(order.order_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+            modal.querySelector('#detail-order-shop').textContent = order.subdomain?.user?.shop?.shop_name ?? 'Toko Dihapus';
+
+            // Status Badge
+            const statusEl = modal.querySelector('#detail-order-status');
+            const statusConfig = {
+                pending: { text: 'Belum Dibayar', class: 'bg-yellow-100 text-yellow-800' },
+                processing: { text: 'Diproses', class: 'bg-blue-100 text-blue-800' },
+                shipped: { text: 'Dikirim', class: 'bg-cyan-100 text-cyan-800' },
+                ready_for_pickup: { text: 'Siap Diambil', class: 'bg-indigo-100 text-indigo-800' },
+                completed: { text: 'Selesai', class: 'bg-green-100 text-green-800' },
+                cancelled: { text: 'Dibatalkan', class: 'bg-red-100 text-red-800' },
+                failed: { text: 'Gagal', class: 'bg-red-100 text-red-800' },
+                refund_pending: { text: 'Pengajuan Refund', class: 'bg-orange-100 text-orange-800' },
+                refunded: { text: 'Dana Dikembalikan', class: 'bg-gray-100 text-gray-800' },
             };
+            const status = statusConfig[order.status] || statusConfig.processing;
+            statusEl.textContent = status.text;
+            statusEl.className = `font-semibold px-2 py-0.5 rounded-full text-xs ${status.class}`;
 
-            document.querySelectorAll('.detail-button').forEach(button => {
-                button.addEventListener('click', function () {
-                    const order = JSON.parse(this.dataset.orderJson);
-                    document.getElementById('detail-order-id').textContent = order.id;
-                    document.getElementById('detail-order-date').textContent = new Date(order.order_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
-                    document.getElementById('detail-order-shop').textContent = order.subdomain?.user?.shop?.shop_name ?? 'Toko Dihapus';
-                    const statusEl = document.getElementById('detail-order-status');
-                    const statusConfig = {
-                        pending: { text: 'Belum Dibayar', class: 'bg-yellow-100 text-yellow-800' },
-                        completed: { text: 'Selesai', class: 'bg-green-100 text-green-800' },
-                        cancelled: { text: 'Dibatalkan', class: 'bg-red-100 text-red-800' },
-                        failed: { text: 'Gagal', class: 'bg-red-100 text-red-800' },
-                        default: { text: 'Diproses', class: 'bg-blue-100 text-blue-800' }
-                    };
-                    const status = statusConfig[order.status] || statusConfig.default;
-                    statusEl.textContent = status.text;
-                    statusEl.className = `font-semibold px-2 py-0.5 rounded-full ${status.class}`;
-                    const itemListEl = document.getElementById('detail-item-list');
-                    itemListEl.innerHTML = '';
-                    let calculatedSubtotal = 0;
-                    order.items.forEach(item => {
-                        const itemTotal = (item.quantity || 0) * (item.unit_price || 0);
-                        calculatedSubtotal += itemTotal;
-                        itemListEl.innerHTML += `<div class="flex justify-between text-sm"><div><p>${item.product ? item.product.name : 'Produk Dihapus'}</p><p class="text-xs text-gray-500">${item.quantity} x ${formatRupiah(item.unit_price)}</p></div><p>${formatRupiah(itemTotal)}</p></div>`;
-                    });
-                    const subtotal = parseFloat(order.subtotal) > 0 ? parseFloat(order.subtotal) : calculatedSubtotal;
-                    const shippingCost = parseFloat(order.shipping_cost) || 0;
-                    const discountAmount = parseFloat(order.discount_amount) || 0;
-                    const correctFinalTotal = subtotal + shippingCost - discountAmount;
-                    document.getElementById('detail-subtotal').textContent = formatRupiah(subtotal);
-                    document.getElementById('detail-shipping-cost').textContent = formatRupiah(shippingCost);
-                    document.getElementById('detail-total').textContent = formatRupiah(correctFinalTotal);
-                    const discountRow = document.getElementById('detail-discount-row');
-                    const shippingRow = document.getElementById('detail-shipping-row');
-                    shippingRow.style.display = order.shipping ? 'flex' : 'none';
-                    if (discountAmount > 0) {
-                        document.getElementById('detail-discount').textContent = `- ${formatRupiah(discountAmount)}`;
-                        discountRow.style.display = 'flex';
-                    } else {
-                        discountRow.style.display = 'none';
-                    }
-                    const shippingInfoEl = document.getElementById('detail-shipping-info');
-                    if (order.shipping) {
-                        shippingInfoEl.innerHTML = `<h4 class="font-semibold text-sm mb-1">Info Pengiriman</h4><p class="text-xs text-gray-500 mt-1">${order.shipping.delivery_service || ''}</p>`;
-                    } else {
-                        shippingInfoEl.innerHTML = `<h4 class="font-semibold text-sm">Metode Pengambilan: Ambil di Toko</h4>`;
-                    }
-                    const notesInfoEl = document.getElementById('detail-notes-info');
-                    if (order.notes && order.notes.trim() !== '') {
-                        document.getElementById('detail-notes-text').textContent = order.notes;
-                        notesInfoEl.style.display = 'block';
-                    } else {
-                        notesInfoEl.style.display = 'none';
-                    }
-                    detailModal.style.display = 'block';
-                });
+            // Item List
+            const itemListEl = modal.querySelector('#detail-item-list');
+            itemListEl.innerHTML = '';
+            order.items.forEach(item => {
+                itemListEl.innerHTML += `
+                    <div class="flex justify-between text-sm">
+                        <div>
+                            <p class="font-medium">${item.product ? item.product.name : 'Produk Dihapus'}</p>
+                            <p class="text-xs text-gray-500">${item.quantity} x ${formatRupiah(item.price)}</p>
+                        </div>
+                        <p>${formatRupiah(item.quantity * item.price)}</p>
+                    </div>`;
             });
-            document.getElementById('close-detail-modal').onclick = () => detailModal.style.display = 'none';
-            window.onclick = (event) => {
-                if (event.target == detailModal) detailModal.style.display = 'none';
-                if (event.target == reviewModal) reviewModal.style.display = 'none';
-            };
 
-            // --- Logika untuk Modal Ulasan ---
-            const reviewForm = document.getElementById('review-form');
-            const reviewModalTitle = document.getElementById('review-modal-title');
-            const reviewOrderId = document.getElementById('review-order-id');
-            const reviewProductId = document.getElementById('review-product-id');
-            const reviewMethod = document.getElementById('review-method');
-            const reviewTestimonialId = document.getElementById('review-testimonial-id');
-            const reviewContent = document.getElementById('review-content');
-            const starInputs = document.querySelectorAll('.star-rating input');
-
-            function openReviewModal() {
-                reviewModal.style.display = 'block';
+            // Financials
+            modal.querySelector('#detail-subtotal').textContent = formatRupiah(order.subtotal);
+            modal.querySelector('#detail-shipping-cost').textContent = formatRupiah(order.shipping_cost);
+            modal.querySelector('#detail-total').textContent = formatRupiah(order.total_price);
+            
+            const discountRow = modal.querySelector('#detail-discount-row');
+            if (parseFloat(order.discount_amount) > 0) {
+                modal.querySelector('#detail-discount').textContent = `- ${formatRupiah(order.discount_amount)}`;
+                discountRow.style.display = 'flex';
+            } else {
+                discountRow.style.display = 'none';
             }
-            document.getElementById('close-review-modal').onclick = () => reviewModal.style.display = 'none';
 
-            // Event untuk tombol "Beri Ulasan"
-            document.querySelectorAll('.give-review-btn').forEach(button => {
-                button.addEventListener('click', function () {
-                    reviewForm.reset();
-                    reviewModalTitle.textContent = 'Beri Ulasan Produk';
-                    reviewOrderId.value = this.dataset.orderId;
-                    reviewProductId.value = this.dataset.productId;
-                    reviewMethod.value = 'POST';
-                    reviewTestimonialId.value = ''; // Kosongkan ID testimoni
-                    reviewForm.action = `{{ route('tenant.customer.reviews.submit', ['subdomain' => $subdomain]) }}`;
-                    openReviewModal();
-                });
-            });
+            // Shipping Info & Receipt Number Logic
+            const shippingInfoEl = modal.querySelector('#detail-shipping-info');
+            if (order.delivery_method === 'ship') {
+                // Handle null or empty string for courier
+                const courier = order.shipping?.delivery_service ? order.shipping.delivery_service.toUpperCase() : 'N/A';
+                let shippingHtml = `<h4 class="font-semibold text-sm mb-1">Info Pengiriman</h4>`;
+                shippingHtml += `<p class="text-sm text-gray-700">${order.shipping_address || 'Alamat tidak tersedia'}</p>`;
+                shippingHtml += `<p class="text-xs text-gray-500 mt-1">Kurir: ${courier}</p>`;
+                
+                // Show receipt number only if status is shipped or later
+                if (['shipped', 'ready_for_pickup', 'completed'].includes(order.status) && order.shipping?.receipt_number) {
+                    shippingHtml += `<p class="text-xs text-gray-500">No. Resi: <strong class="font-mono">${order.shipping.receipt_number}</strong></p>`;
+                }
+                shippingInfoEl.innerHTML = shippingHtml;
+            } else {
+                shippingInfoEl.innerHTML = `<h4 class="font-semibold text-sm">Metode Pengambilan: Ambil di Toko</h4>`;
+            }
 
-            // Event untuk tombol "Edit Ulasan"
-            document.querySelectorAll('.edit-review-btn').forEach(button => {
-                button.addEventListener('click', function () {
-                    const testimonialId = this.dataset.testimonialId;
-                    const url = `{{ route('tenant.customer.reviews.json', ['subdomain' => $subdomain, 'testimonial' => '__ID__']) }}`.replace('__ID__', testimonialId);
+            // Notes
+            const notesInfoEl = modal.querySelector('#detail-notes-info');
+            if (order.notes && order.notes.trim() !== '') {
+                modal.querySelector('#detail-notes-text').textContent = order.notes;
+                notesInfoEl.style.display = 'block';
+            } else {
+                notesInfoEl.style.display = 'none';
+            }
 
-                    fetch(url)
-                        .then(response => {
-                            if (!response.ok) {
-                                throw new Error('Gagal mengambil data ulasan.');
-                            }
-                            return response.json();
-                        })
-                        .then(data => {
-                            reviewForm.reset();
-                            reviewModalTitle.textContent = 'Edit Ulasan Anda';
-                            reviewOrderId.value = data.order_id;
-                            reviewProductId.value = data.product_id;
-                            reviewMethod.value = 'PUT';
-                            reviewTestimonialId.value = data.id;
-                            reviewContent.value = data.content;
+            modal.style.display = 'block';
+        });
+    });
 
-                            const starInput = document.querySelector(`.star-rating input[value="${data.rating}"]`);
-                            if (starInput) {
-                                starInput.checked = true;
-                            }
-
-                            reviewForm.action = `{{ route('tenant.customer.reviews.update', ['subdomain' => $subdomain, 'testimonial' => '__ID__']) }}`.replace('__ID__', data.id);
-                            openReviewModal();
-                        })
-                        .catch(error => {
-                            Swal.fire('Error', error.message, 'error');
-                        });
-                });
-            });
-
-            // Submit form ulasan
-            reviewForm.addEventListener('submit', function (e) {
-                e.preventDefault();
-                const submitButton = document.getElementById('submit-review-button');
-                submitButton.disabled = true;
-                submitButton.textContent = 'Mengirim...';
-
-                const formData = new FormData(this);
-
-                fetch(this.action, {
-                    method: 'POST', // Selalu POST, karena _method akan di-handle Laravel
-                    headers: {
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': csrfToken
-                    },
-                    body: formData
-                })
-                    .then(response => response.json().then(data => ({ ok: response.ok, data })))
-                    .then(({ ok, data }) => {
+    // --- Action Button Logic ---
+    // 1. Cancel Order
+    document.querySelectorAll('.cancel-order-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const orderId = this.dataset.orderId;
+            Swal.fire({
+                title: 'Anda yakin?',
+                text: "Pesanan yang sudah dibatalkan tidak dapat dikembalikan.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Ya, batalkan!',
+                cancelButtonText: 'Tidak'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    fetch(`/tenant/${currentSubdomain}/account/orders/${orderId}/cancel`, {
+                        method: 'POST',
+                        headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken }
+                    }).then(res => res.json().then(data => ({ok: res.ok, data})))
+                    .then(({ok, data}) => {
                         if (ok) {
-                            reviewModal.style.display = 'none';
-                            Swal.fire({
-                                icon: 'success',
-                                title: 'Berhasil!',
-                                text: data.message,
-                                timer: 2000,
-                                showConfirmButton: false
-                            }).then(() => {
-                                window.location.reload();
-                            });
+                            Swal.fire('Dibatalkan!', data.message, 'success').then(() => window.location.reload());
                         } else {
-                            throw new Error(data.message || 'Terjadi kesalahan.');
+                            Swal.fire('Gagal!', data.message || 'Terjadi kesalahan.', 'error');
                         }
-                    })
-                    .catch(error => {
-                        Swal.fire('Error', error.message, 'error');
-                    })
-                    .finally(() => {
-                        submitButton.disabled = false;
-                        submitButton.textContent = 'Kirim Ulasan';
-                    });
+                    }).catch(() => Swal.fire('Error!', 'Tidak dapat menghubungi server.', 'error'));
+                }
             });
         });
-    </script>
+    });
+
+    // 2. Receive Order
+    document.querySelectorAll('.receive-order-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const orderId = this.dataset.orderId;
+            Swal.fire({
+                title: 'Konfirmasi Penerimaan',
+                text: "Pastikan Anda sudah menerima produk dalam kondisi baik.",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#28a745',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Ya, sudah diterima!',
+                cancelButtonText: 'Belum'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                     fetch(`/tenant/${currentSubdomain}/account/orders/${orderId}/receive`, {
+                        method: 'POST',
+                        headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken }
+                    }).then(res => res.json().then(data => ({ok: res.ok, data})))
+                      .then(({ok, data}) => {
+                        if (ok) {
+                            Swal.fire('Berhasil!', data.message, 'success').then(() => window.location.reload());
+                        } else {
+                            Swal.fire('Gagal!', data.message || 'Terjadi kesalahan.', 'error');
+                        }
+                    }).catch(() => Swal.fire('Error!', 'Tidak dapat menghubungi server.', 'error'));
+                }
+            });
+        });
+    });
+
+    // 3. Refund Request
+    const refundModal = document.getElementById('refund-modal');
+    const refundForm = document.getElementById('refund-form');
+    let currentRefundOrderId = null;
+
+    document.querySelectorAll('.request-refund-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            currentRefundOrderId = this.dataset.orderId;
+            const totalPrice = this.dataset.totalPrice;
+            // PERBAIKAN: Pindahkan reset() sebelum mengisi nilai
+            refundForm.reset(); 
+            refundModal.querySelector('#refund-total').value = formatRupiah(totalPrice);
+            refundModal.style.display = 'block';
+        });
+    });
+
+    refundForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const submitButton = refundModal.querySelector('#submit-refund-button');
+        submitButton.disabled = true;
+        submitButton.textContent = 'Mengirim...';
+
+        fetch(`/tenant/${currentSubdomain}/account/orders/${currentRefundOrderId}/request-refund`, {
+            method: 'POST',
+            headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+            body: new FormData(this)
+        })
+        .then(res => res.json().then(data => ({ok: res.ok, data})))
+        .then(({ok, data}) => {
+            if (ok) {
+                refundModal.style.display = 'none';
+                Swal.fire('Berhasil!', data.message, 'success').then(() => window.location.reload());
+            } else {
+                const errorMessage = data.errors ? Object.values(data.errors).join('\n') : data.message;
+                Swal.fire('Gagal!', errorMessage || 'Terjadi kesalahan.', 'error');
+            }
+        })
+        .catch(() => Swal.fire('Error!', 'Tidak dapat menghubungi server.', 'error'))
+        .finally(() => {
+            submitButton.disabled = false;
+            submitButton.textContent = 'Ajukan Refund';
+        });
+    });
+
+    // 4. Review Modal Logic (Create & Edit)
+    const reviewModal = document.getElementById('review-modal');
+    const reviewForm = document.getElementById('review-form');
+    
+    // Open modal for "Beri Ulasan"
+    document.querySelectorAll('.give-review-btn').forEach(button => {
+        button.addEventListener('click', function () {
+            reviewForm.reset();
+            reviewModal.querySelectorAll('.star-rating input').forEach(input => input.checked = false);
+            reviewModal.querySelector('#review-modal-title').textContent = 'Beri Ulasan Produk';
+            reviewModal.querySelector('#review-order-id').value = this.dataset.orderId;
+            reviewModal.querySelector('#review-product-id').value = this.dataset.productId;
+            reviewModal.querySelector('#review-method').value = 'POST';
+            reviewForm.action = `{{ route('tenant.customer.reviews.submit', ['subdomain' => $subdomain]) }}`;
+            reviewModal.style.display = 'block';
+        });
+    });
+
+    // Open modal for "Edit Ulasan"
+    document.querySelectorAll('.edit-review-btn').forEach(button => {
+        button.addEventListener('click', function () {
+            const testimonialId = this.dataset.testimonialId;
+            const url = `{{ route('tenant.customer.reviews.json', ['subdomain' => $subdomain, 'testimonial' => '__ID__']) }}`.replace('__ID__', testimonialId);
+
+            fetch(url)
+                .then(response => {
+                    if (!response.ok) throw new Error('Gagal mengambil data ulasan.');
+                    return response.json();
+                })
+                .then(data => {
+                    reviewForm.reset();
+                    reviewModal.querySelector('#review-modal-title').textContent = 'Edit Ulasan Anda';
+                    reviewModal.querySelector('#review-order-id').value = data.order_id;
+                    reviewModal.querySelector('#review-product-id').value = data.product_id;
+                    reviewModal.querySelector('#review-content').value = data.content;
+                    reviewModal.querySelector('#review-method').value = 'PUT';
+                    
+                    const starInput = reviewModal.querySelector(`.star-rating input[value="${data.rating}"]`);
+                    if (starInput) starInput.checked = true;
+
+                    reviewForm.action = `{{ route('tenant.customer.reviews.update', ['subdomain' => $subdomain, 'testimonial' => '__ID__']) }}`.replace('__ID__', data.id);
+                    reviewModal.style.display = 'block';
+                })
+                .catch(error => Swal.fire('Error', error.message, 'error'));
+        });
+    });
+
+    // Handle Review Form Submission (for both Create and Update)
+    reviewForm.addEventListener('submit', function (e) {
+        e.preventDefault();
+        const submitButton = reviewModal.querySelector('#submit-review-button');
+        submitButton.disabled = true;
+        submitButton.textContent = 'Mengirim...';
+        
+        fetch(this.action, {
+            method: 'POST', // Always POST, Laravel handles PUT/PATCH via _method field
+            headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+            body: new FormData(this)
+        })
+        .then(response => response.json().then(data => ({ ok: response.ok, data })))
+        .then(({ ok, data }) => {
+            if (ok) {
+                reviewModal.style.display = 'none';
+                Swal.fire({ icon: 'success', title: 'Berhasil!', text: data.message })
+                    .then(() => window.location.reload());
+            } else {
+                const errorMessage = data.errors ? Object.values(data.errors).join('\n') : data.message;
+                throw new Error(errorMessage || 'Terjadi kesalahan.');
+            }
+        })
+        .catch(error => Swal.fire('Error', error.message, 'error'))
+        .finally(() => {
+            submitButton.disabled = false;
+            submitButton.textContent = 'Kirim Ulasan';
+        });
+    });
+});
+</script>
 @endpush

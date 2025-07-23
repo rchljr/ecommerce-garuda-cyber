@@ -1,117 +1,70 @@
 @extends('layouts.mitra')
 
-@section('title', 'Daftar Pesanan')
-
-@section('head')
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- CDN Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Font Google: Inter -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f3f4f6;
-        }
-        .overflow-x-auto::-webkit-scrollbar {
-            height: 8px;
-        }
-        .overflow-x-auto::-webkit-scrollbar-track {
-            background: #f1f1f1;
-            border-radius: 10px;
-        }
-        .overflow-x-auto::-webkit-scrollbar-thumb {
-            background: #888;
-            border-radius: 10px;
-        }
-        .overflow-x-auto::-webkit-scrollbar-thumb:hover {
-            background: #555;
-        }
-    </style>
-@endsection
+@section('title', 'Manajemen Pesanan')
 
 @section('content')
-    <div class="p-4 sm:p-6 md:p-8">
-        <div class="max-w-7xl mx-auto bg-white p-6 rounded-xl shadow-lg">
-            <h1 class="text-3xl font-bold text-gray-800 mb-8 text-center">Daftar Pesanan Toko Anda</h1>
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold text-gray-800 mb-6">Manajemen Pesanan</h1>
 
-            <!-- Tombol Kembali ke Dashboard (opsional, jika ingin kembali ke dashboard mitra) -->
-            <div class="mb-6">
-                <a href="{{ route('mitra.dashboard') }}"
-                   class="inline-flex items-center px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 text-sm font-medium rounded-lg transition duration-300 ease-in-out">
-                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-                    Kembali ke Dashboard
-                </a>
-            </div>
+    @if (session('success'))
+        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
+            <span class="block sm:inline">{{ session('success') }}</span>
+        </div>
+    @endif
+    @if (session('error'))
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+            <span class="block sm:inline">{{ session('error') }}</span>
+        </div>
+    @endif
 
-            <!-- Bagian Daftar Pesanan -->
-            <div class="bg-white p-6 rounded-lg shadow-md">
-                <h2 class="text-2xl font-semibold text-gray-800 mb-6">Semua Pesanan</h2>
-                <div class="overflow-x-auto">
-                    <table class="min-w-full bg-white rounded-lg overflow-hidden">
-                        <thead class="bg-gray-100 border-b border-gray-200">
+    <div class="bg-white shadow-md rounded-lg overflow-hidden">
+        <div class="p-6">
+            <h2 class="text-xl font-semibold text-gray-700 mb-4">Daftar Pesanan Terbaru</h2>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order ID</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pelanggan</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Harga</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal Order</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        @forelse ($orders as $order)
                             <tr>
-                                <th class="py-3 px-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">ID Pesanan</th>
-                                <th class="py-3 px-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">Pelanggan</th>
-                                <th class="py-3 px-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">Tanggal</th>
-                                <th class="py-3 px-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">Total Harga</th>
-                                <th class="py-3 px-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">Status</th>
-                                <th class="py-3 px-4 text-left text-sm font-semibold text-gray-600 uppercase tracking-wider">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse($orders as $order)
-                            <tr class="border-b border-gray-200 last:border-b-0 hover:bg-gray-50">
-                                <td class="py-3 px-4 text-sm text-gray-700">{{ $order->id }}</td>
-                                <td class="py-3 px-4 text-sm text-gray-700">{{ optional($order->user)->name ?? 'Tamu' }}</td>
-                                <td class="py-3 px-4 text-sm text-gray-700">{{ \Carbon\Carbon::parse($order->created_at)->format('d M Y H:i') }}</td>
-                                <td class="py-3 px-4 text-sm text-gray-700">Rp {{ number_format($order->total_price, 0, ',', '.') }}</td>
-                                <td class="py-3 px-4 text-sm text-gray-700">
-                                    @php
-                                        $statusClass = '';
-                                        switch($order->status) {
-                                            case 'pending':
-                                                $statusClass = 'bg-yellow-100 text-yellow-800';
-                                                break;
-                                            case 'processing':
-                                                $statusClass = 'bg-blue-100 text-blue-800';
-                                                break;
-                                            case 'completed':
-                                                $statusClass = 'bg-green-100 text-green-800';
-                                                break;
-                                            case 'cancelled':
-                                                $statusClass = 'bg-red-100 text-red-800';
-                                                break;
-                                            case 'failed':
-                                                $statusClass = 'bg-red-100 text-red-800';
-                                                break;
-                                            default:
-                                                $statusClass = 'bg-gray-100 text-gray-800';
-                                        }
-                                    @endphp
-                                    <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full {{ $statusClass }}">
-                                        {{ ucfirst($order->status) }}
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ $order->id }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $order->user->name ?? 'N/A' }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ format_rupiah($order->total_price) }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
+                                        @if($order->status == 'completed') bg-green-100 text-green-800
+                                        @elseif($order->status == 'pending' || $order->status == 'processing') bg-yellow-100 text-yellow-800
+                                        @elseif($order->status == 'cancelled' || $order->status == 'failed') bg-red-100 text-red-800
+                                        @else bg-gray-100 text-gray-800
+                                        @endif">
+                                        {{ ucfirst(str_replace('_', ' ', $order->status)) }}
                                     </span>
                                 </td>
-                                <td class="py-3 px-4 text-sm text-gray-700">
-                                    <a href="{{ route('mitra.orders.show', $order->id) }}" class="text-blue-600 hover:text-blue-800 font-medium">Lihat Detail</a>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $order->order_date->format('d M Y H:i') }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                    <a href="{{ route('mitra.orders.show', $order->id) }}" class="text-blue-600 hover:text-blue-900">Lihat Detail</a>
                                 </td>
                             </tr>
-                            @empty
+                        @empty
                             <tr>
-                                <td colspan="6" class="py-6 px-4 text-center text-gray-500">Belum ada pesanan yang tersedia.</td>
+                                <td colspan="6" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">Tidak ada pesanan.</td>
                             </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
-
-                <!-- Pagination Links -->
-                <div class="mt-6">
-                    {{ $orders->links() }}
-                </div>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+            <div class="mt-4">
+                {{ $orders->links() }}
             </div>
         </div>
     </div>
+</div>
 @endsection

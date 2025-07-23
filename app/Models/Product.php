@@ -59,46 +59,6 @@ class Product extends Model
         'created_at' => 'datetime', // Opsional: jika ingin Carbon object
         'updated_at' => 'datetime', // Opsional: jika ingin Carbon object
     ];
-
-    // HAPUS ATAU KOMENTARI BLOK boot() INI karena sudah menggunakan HasUuids
-    // protected static function boot()
-    // {
-    //     parent::boot();
-    //
-    //     static::creating(function ($model) {
-    //         if (empty($model->{$model->getKeyName()})) {
-    //             $model->{$model->getKeyName()} = (string) Str::uuid();
-    //         }
-    //     });
-    // }
-
-    // HAPUS accessor ini karena ini adalah logika untuk Varian, bukan Product
-    // public function getSellingPriceAttribute()
-    // {
-    //     if ($this->modal_price !== null && $this->profit_percentage !== null) {
-    //         return $this->modal_price * (1 + ($this->profit_percentage / 100));
-    //     }
-    //     return $this->price;
-    // }
-
-    // HAPUS mutator ini karena logika harga sudah di level Varian
-    // public function setModalPriceAttribute($value)
-    // {
-    //     $this->attributes['modal_price'] = $value;
-    //     if (isset($this->attributes['profit_percentage']) && $this->attributes['profit_percentage'] !== null) {
-    //         $this->attributes['price'] = $value * (1 + ($this->attributes['profit_percentage'] / 100));
-    //     }
-    // }
-
-    // HAPUS mutator ini karena logika harga sudah di level Varian
-    // public function setProfitPercentageAttribute($value)
-    // {
-    //     $this->attributes['profit_percentage'] = $value;
-    //     if (isset($this->attributes['modal_price']) && $this->attributes['modal_price'] !== null) {
-    //         $this->attributes['price'] = $this->attributes['modal_price'] * (1 + ($value / 100));
-    //     }
-    // }
-
     // --- QUERY SCOPES ---
 
     public function scopeActive(Builder $query): void

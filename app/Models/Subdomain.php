@@ -13,7 +13,7 @@ class Subdomain extends Model
     use HasFactory, HasUuids;
     public $incrementing = false;
     protected $keyType = 'string';
-    protected $fillable = ['user_id', 'shop_id','subdomain_name', 'status'];
+    protected $fillable = ['user_id', 'shop_id','subdomain_name', 'status', 'publication_status'];
 
     public function user()
     {

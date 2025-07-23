@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tim Pengembang - E-commerce Garuda</title>
+    <title>Developer - E-commerce Garuda</title>
     <meta name="keywords" content="ecommerce, garuda cyber, toko online, produk, jasa">
     <meta name="description" content="E-Commerce Garuda Cyber: Temukan berbagai produk dan layanan terbaik.">
     <meta name="author" content="Garuda Cyber">

@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
-
+use Illuminate\Support\Str;
 
 class VoucherProductController extends Controller
 {
@@ -25,9 +25,9 @@ class VoucherProductController extends Controller
      */
     public function create()
     {
-        // Ambil produk milik mitra untuk ditampilkan di dropdown
-        $products = Auth::user()->products;
-        return view('dashboard-mitra.vouchers.create', compact('products'));
+        $products = Auth::user()->products; // Ambil produk mitra
+        $voucher = new \App\Models\Voucher(); // Inisialisasi objek Voucher kosong
+        return view('dashboard-mitra.vouchers.create', compact('products', 'voucher'));
     }
 
     /**
@@ -36,19 +36,31 @@ class VoucherProductController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'code' => 'required|string|unique:vouchers,code',
+            // UBAH: Validasi 'voucher_code' dari input 'name' di form
+            'voucher_code' => ['required', 'string', 'max:100', 'unique:vouchers,voucher_code'],
+            'description' => 'nullable|string', // Pastikan ini ada di form dan validasi
             'type' => 'required|in:percentage,fixed_amount',
-            'value' => 'required|numeric|min:0',
-            'min_purchase' => 'nullable|numeric|min:0',
-            'valid_until' => 'required|date|after:today',
+            'discount' => 'required|numeric|min:0', // UBAH: Validasi 'discount' dari input 'value'
+            'min_spending' => 'nullable|numeric|min:0', // UBAH: Validasi 'min_spending' dari input 'min_purchase'
+            'start_date' => 'required|date', // Pastikan ini ada di form dan validasi
+            'expired_date' => 'required|date|after_or_equal:start_date', // UBAH: Validasi 'expired_date' dari input 'valid_until'
             'is_for_new_customer' => 'nullable|boolean',
             'products' => 'nullable|array',
-            'products.*' => 'exists:products,id', // Pastikan semua ID produk valid
+            'products.*' => 'exists:products,id',
+        ], [
+            'voucher_code.unique' => 'Kode voucher ini sudah digunakan. Harap gunakan kode lain.',
+            'expired_date.after_or_equal' => 'Tanggal berakhir voucher harus sama atau setelah tanggal mulai.',
         ]);
 
-        $validated['is_for_new_customer'] = $request->has('is_for_new_customer');
-        $voucher = Auth::user()->vouchers()->create($validated);
+        $validated['is_for_new_customer'] = $request->has('is_for_new_customer'); // Checkbox
+
+        // Mapping nama input form ke nama kolom database jika berbeda
+        $validated['user_id'] = Auth::id();
+        $validated['subdomain_id'] = Auth::user()->shop->subdomain->id;
+        // Tidak perlu generate kode otomatis lagi karena sudah diinput di form
+        // $validated['code'] = Str::upper($validated['name']); // Ini dihapus jika 'name' jadi 'voucher_code'
+        
+        $voucher = Voucher::create($validated);
 
         if (!empty($validated['products'])) {
             $voucher->products()->sync($validated['products']);
@@ -62,12 +74,11 @@ class VoucherProductController extends Controller
      */
     public function show(Voucher $voucher)
     {
-        // Otorisasi: Pastikan voucher ini milik user yang login
         if ($voucher->user_id !== Auth::id()) {
             abort(403);
         }
 
-        $voucher->load('products'); // Muat produk yang terhubung dengan voucher ini
+        $voucher->load('products');
         return view('dashboard-mitra.vouchers.show', compact('voucher'));
     }
 
@@ -76,13 +87,12 @@ class VoucherProductController extends Controller
      */
     public function edit(Voucher $voucher)
     {
-        // Otorisasi
         if ($voucher->user_id !== Auth::id()) {
             abort(403);
         }
 
         $products = Auth::user()->products;
-        $voucher->load('products'); // Muat produk yang sudah terpilih sebelumnya
+        $voucher->load('products');
 
         return view('dashboard-mitra.vouchers.edit', compact('voucher', 'products'));
     }
@@ -92,29 +102,42 @@ class VoucherProductController extends Controller
      */
     public function update(Request $request, Voucher $voucher)
     {
-        // Otorisasi
         if ($voucher->user_id !== Auth::id()) {
             abort(403);
         }
 
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            // Pastikan kode unik, tapi abaikan voucher yang sedang diedit
-            'code' => ['required', 'string', Rule::unique('vouchers')->ignore($voucher->id)],
+            // UBAH: Validasi 'voucher_code' dari input 'name' di form, abaikan ID sendiri
+            'voucher_code' => ['required', 'string', 'max:100', Rule::unique('vouchers', 'voucher_code')->ignore($voucher->id)],
+            'description' => 'nullable|string',
             'type' => 'required|in:percentage,fixed_amount',
-            'value' => 'required|numeric|min:0',
-            'min_purchase' => 'nullable|numeric|min:0',
-            'valid_until' => 'required|date|after:today',
+            'discount' => 'required|numeric|min:0',
+            'min_spending' => 'nullable|numeric|min:0',
+            'start_date' => 'required|date',
+            'expired_date' => 'required|date|after_or_equal:start_date',
             'is_for_new_customer' => 'nullable|boolean',
             'products' => 'nullable|array',
             'products.*' => 'exists:products,id',
+        ], [
+            'voucher_code.unique' => 'Kode voucher ini sudah digunakan. Harap gunakan kode lain.',
+            'expired_date.after_or_equal' => 'Tanggal berakhir voucher harus sama atau setelah tanggal mulai.',
         ]);
 
         $validated['is_for_new_customer'] = $request->has('is_for_new_customer');
-        $voucher->update($validated);
+        
+        // --- BARU: Gunakan nilai 'name' dari request untuk kolom 'voucher_code' ---
+        // $validated['voucher_code'] = Str::upper($validated['name']); // Tidak diperlukan jika form sudah mengirim 'voucher_code'
+        
+        // Hapus 'name' dari $validated jika kolom 'name' tidak ada di DB
+        // unset($validated['name']); // Tidak perlu unset jika sudah validasi sebagai 'voucher_code'
 
-        // Jika tidak ada produk yang dikirim, hapus semua relasi. Jika ada, sinkronkan.
-        $voucher->products()->sync($request->products ?? []);
+        $voucher->update($validated); // Update voucher dengan data yang divalidasi
+
+        if (!empty($validated['products'])) {
+            $voucher->products()->sync($validated['products']);
+        } else {
+            $voucher->products()->sync([]); // Jika tidak ada produk dipilih, kosongkan relasi
+        }
 
         return redirect()->route('mitra.vouchers.index')->with('success', 'Voucher berhasil diperbarui!');
     }
@@ -124,7 +147,6 @@ class VoucherProductController extends Controller
      */
     public function destroy(Voucher $voucher)
     {
-        // Otorisasi
         if ($voucher->user_id !== Auth::id()) {
             abort(403);
         }

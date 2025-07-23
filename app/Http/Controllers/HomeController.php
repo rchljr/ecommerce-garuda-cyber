@@ -29,7 +29,7 @@ class HomeController extends Controller
             }
             $templatePath = $tenant->template->path;
 
-            // 2. Ambil data shop berdasarkan user_id dari tenant. Ini adalah PUSAT LOGIKA BARU.
+            // 2. Ambil data shop berdasarkan user_id dari tenant.
             $shop = Shop::where('user_id', $tenant->user_id)->first();
             if (!$shop) {
                 Log::error("Toko tidak ditemukan untuk tenant dengan user_id: {$tenant->user_id}");
@@ -54,8 +54,10 @@ class HomeController extends Controller
                 ->get();
 
             // 5. Buat query dasar untuk produk berdasarkan shop_id
+            // PENTING: Eager load 'varians' di sini
             $baseProductQuery = Product::where('shop_id', $shopId)
-                ->where('status', 'active');
+                ->where('status', 'active')
+                ->with('varians'); // TAMBAHKAN INI
 
             // 6. Ambil koleksi produk yang berbeda dari query dasar
             $bestSellers = (clone $baseProductQuery)->where('is_best_seller', true)->latest()->limit(8)->get();
@@ -75,7 +77,6 @@ class HomeController extends Controller
             ]);
 
         } catch (Throwable $e) {
-            // JIKA TERJADI ERROR APAPUN, TANGKAP DAN LOG DI SINI
             Log::error('====================================================================');
             Log::error('TERJADI FATAL ERROR SAAT MENCOBA MERENDER VIEW HOMEPAGE');
             Log::error('Subdomain: ' . $subdomain);
@@ -85,7 +86,6 @@ class HomeController extends Controller
             Log::error('Stack Trace: ' . $e->getTraceAsString());
             Log::error('====================================================================');
 
-            // Tampilkan halaman error 500 yang lebih sesuai
             abort(500, 'Terjadi kesalahan pada server. Silakan periksa log untuk detail.');
         }
     }
