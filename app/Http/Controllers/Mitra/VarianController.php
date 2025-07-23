@@ -3,12 +3,14 @@
 namespace App\Http\Controllers\Mitra;
 
 use App\Http\Controllers\Controller;
-use App\Models\Product; // Pastikan Product Model sudah terimport
-use App\Models\Varian;   // Pastikan Varian Model sudah terimport
+use App\Models\Product;
+use App\Models\Varian;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage; // Import Storage facade
-use Illuminate\Validation\Rule; // Import Rule for validation
-use Illuminate\Support\Facades\DB; // Tambahkan untuk transaksi database
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str; // Untuk Slug atau UUID jika diperlukan
+use Illuminate\Support\Facades\Log; // Untuk logging
 
 class VarianController extends Controller
 {
@@ -23,60 +25,51 @@ class VarianController extends Controller
     public function store(Request $request, Product $product)
     {
         // Validasi untuk seluruh array varian yang dikirim dari frontend
-        // Catatan: Jika ada gambar per varian, frontend Alpine.js dan validasi di sini perlu disesuaikan.
         $request->validate([
-            'variants' => 'required|array', // Pastikan ada array 'variants'
-            'variants.*.name' => 'nullable|string|max:255', // Nama varian gabungan (misal: S / Merah)
-            'variants.*.price' => 'required|numeric|min:0',
+            'variants' => 'required|array',
+            'variants.*.name' => 'nullable|string|max:255',
+            'variants.*.modal_price' => 'required|numeric|min:0', // BARU: Validasi modal_price per varian
+            'variants.*.profit_percentage' => 'required|numeric|min:0|max:100', // BARU: Validasi profit_percentage per varian
             'variants.*.stock' => 'required|integer|min:0',
-            'variants.*.options' => 'required|json', // Data opsi varian dalam format JSON string dari Alpine
+            'variants.*.options' => 'required|json', // Data opsi varian dalam format JSON string
         ]);
 
-        DB::beginTransaction(); // Mulai transaksi database
+        DB::beginTransaction();
 
         try {
-            // Opsional: Hapus semua varian lama yang terkait dengan produk ini
-            // Jika Anda ingin sepenuhnya MENGGANTI varian setiap kali form disubmit (mode update/edit product)
-            // HATI-HATI: Ini akan menghapus semua varian yang ada untuk produk ini.
-            // Biasanya, ini dilakukan di ProductController@update, bukan VarianController@store.
-            // Jika ini hanya untuk MENAMBAH varian baru, Anda bisa hapus baris ini.
-            // $product->varians()->delete();
-
             foreach ($request->variants as $variantData) {
-                $optionsData = json_decode($variantData['options'], true); // Dekode JSON string ke array PHP
+                $optionsData = json_decode($variantData['options'], true);
 
-                // Buat 'name' varian dari kombinasi opsi (e.g., "Merah / XL")
-                // Menggunakan `implode` yang lebih efisien daripada `join` pada collection
+                // Buat 'name' varian dari kombinasi opsi
                 $variantName = collect($optionsData)->pluck('value')->implode(' / ');
 
-                // Logika penyimpanan gambar per varian jika ada input di frontend:
-                // $imagePath = null;
-                // if (isset($variantData['image_file']) && $variantData['image_file'] instanceof \Illuminate\Http\UploadedFile) {
-                //     $imagePath = $variantData['image_file']->store('variants', 'public');
-                // }
+                // Hitung harga jual varian
+                $sellingPrice = (float) $variantData['modal_price'] * (1 + ((float) $variantData['profit_percentage'] / 100));
 
                 $product->varians()->create([
                     'name' => $variantName, // Nama varian yang dihasilkan (misal: "Merah / XL")
-                    'description' => null, // Diasumsikan deskripsi tidak spesifik per varian fleksibel
-                    'status' => 'active', // Default status, bisa juga dari frontend jika ada input
-                    'price' => $variantData['price'],
+                    'modal_price' => $variantData['modal_price'], // Simpan harga modal varian
+                    'profit_percentage' => $variantData['profit_percentage'], // Simpan persentase profit varian
+                    'price' => $sellingPrice, // Simpan harga jual di kolom 'price'
                     'stock' => $variantData['stock'],
-                    // 'size' dan 'color' akan dihapus atau tidak diisi karena diganti oleh options_data
-                    // 'size' => null, // Set null jika kolom masih ada di DB tapi tidak digunakan
-                    // 'color' => null, // Set null jika kolom masih ada di DB tapi tidak digunakan
                     'options_data' => $optionsData, // Simpan array opsi ke kolom JSON
-                    'image_path' => null, // Atau $imagePath jika ada gambar per varian
+                    // Hapus 'size' dan 'color' jika sudah tidak ada di DB
+                    // 'size' => null,
+                    // 'color' => null,
+                    'description' => null, // Default
+                    'status' => 'active', // Default
+                    'image_path' => null, // Default atau jika ada logika upload gambar varian
                 ]);
             }
 
-            DB::commit(); // Commit transaksi jika berhasil
+            DB::commit();
 
-            return redirect()->route('products.show', $product->id) // Sesuaikan rute redirect Anda
+            return redirect()->route('mitra.products.show', $product->id) // Sesuaikan rute redirect Anda
                              ->with('success', 'Varian(s) berhasil ditambahkan!');
 
         } catch (\Exception $e) {
-            DB::rollBack(); // Rollback transaksi jika terjadi error
-            // Log error atau tampilkan pesan error yang lebih spesifik
+            DB::rollBack();
+            Log::error("Error saving varian(s): " . $e->getMessage(), ['exception' => $e]);
             return redirect()->back()->withInput()->withErrors(['error' => 'Gagal menyimpan varian: ' . $e->getMessage()]);
         }
     }
@@ -107,56 +100,62 @@ class VarianController extends Controller
     {
         $request->validate([
             'name' => 'nullable|string|max:255', // Nama varian gabungan (opsional)
-            'price' => 'required|numeric|min:0',
+            'modal_price' => 'required|numeric|min:0', // BARU: Validasi modal_price
+            'profit_percentage' => 'required|numeric|min:0|max:100', // BARU: Validasi profit_percentage
             'stock' => 'required|integer|min:0',
             'options' => 'required|json', // Data opsi varian dalam format JSON string
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
             'clear_image' => 'nullable|boolean',
         ]);
 
-        DB::beginTransaction(); // Mulai transaksi database
+        DB::beginTransaction();
 
         try {
-            $imagePath = $varian->image_path; // Ambil path gambar lama
+            $imagePath = $varian->image_path;
 
-            // Logika upload/hapus gambar
             if ($request->hasFile('image')) {
                 if ($imagePath && Storage::disk('public')->exists($imagePath)) {
-                    Storage::disk('public')->delete($imagePath); // Hapus gambar lama
+                    Storage::disk('public')->delete($imagePath);
                 }
-                $imagePath = $request->file('image')->store('variants', 'public'); // Simpan gambar baru
-            } elseif ($request->boolean('clear_image')) { // Gunakan boolean() untuk input checkbox
-                if ($imagePath && Storage::disk('public')->exists($imagePath)) {
-                    Storage::disk('public')->delete($imagePath); // Hapus gambar lama jika dicentang
+                $imagePath = $request->file('image')->store('variants', 'public');
+            } elseif ($request->boolean('clear_image') && $varian->image_path) {
+                if (Storage::disk('public')->exists($varian->image_path)) {
+                    Storage::disk('public')->delete($varian->image_path);
                 }
                 $imagePath = null;
             }
 
-            $optionsData = json_decode($request->options, true); // Dekode JSON string
+            $optionsData = json_decode($request->options, true);
 
-            // Siapkan data untuk update
+            // Hitung harga jual varian yang baru
+            $sellingPrice = (float) $request->modal_price * (1 + ((float) $request->profit_percentage / 100));
+
             $updateData = [
                 'name' => $request->name,
-                'price' => $request->price,
+                'modal_price' => $request->modal_price, // Update modal_price
+                'profit_percentage' => $request->profit_percentage, // Update profit_percentage
+                'price' => $sellingPrice, // Update harga jual
                 'stock' => $request->stock,
-                'options_data' => $optionsData, // Update kolom JSON
+                'options_data' => $optionsData,
                 'image_path' => $imagePath,
                 // Kolom lain yang mungkin di-update atau tetap
                 'description' => $request->description ?? $varian->description,
                 'status' => $request->status ?? $varian->status,
-                'size' => null, // Set null jika kolom masih ada di DB tapi tidak digunakan
-                'color' => null, // Set null jika kolom masih ada di DB tapi tidak digunakan
+                // Hapus 'size' dan 'color' jika sudah tidak ada di DB
+                // 'size' => null,
+                // 'color' => null,
             ];
 
             $varian->update($updateData);
 
-            DB::commit(); // Commit transaksi jika berhasil
+            DB::commit();
 
-            return redirect()->route('products.show', $varian->product_id) // Sesuaikan rute redirect Anda
+            return redirect()->route('mitra.products.show', $varian->product_id)
                              ->with('success', 'Varian berhasil diperbarui.');
 
         } catch (\Exception $e) {
-            DB::rollBack(); // Rollback transaksi jika terjadi error
+            DB::rollBack();
+            Log::error("Error updating varian: " . $e->getMessage(), ['exception' => $e]);
             return redirect()->back()->withInput()->withErrors(['error' => 'Gagal memperbarui varian: ' . $e->getMessage()]);
         }
     }
@@ -169,7 +168,7 @@ class VarianController extends Controller
      */
     public function destroy(Varian $varian)
     {
-        DB::beginTransaction(); // Mulai transaksi database
+        DB::beginTransaction();
 
         try {
             // Hapus gambar terkait jika ada
@@ -179,13 +178,14 @@ class VarianController extends Controller
 
             $varian->delete();
 
-            DB::commit(); // Commit transaksi jika berhasil
+            DB::commit();
 
-            return redirect()->route('products.show', $varian->product_id) // Sesuaikan rute redirect Anda
+            return redirect()->route('mitra.products.show', $varian->product_id)
                              ->with('success', 'Varian berhasil dihapus.');
 
         } catch (\Exception $e) {
-            DB::rollBack(); // Rollback transaksi jika terjadi error
+            DB::rollBack();
+            Log::error("Error deleting varian: " . $e->getMessage(), ['exception' => $e]);
             return redirect()->back()->withErrors(['error' => 'Gagal menghapus varian: ' . $e->getMessage()]);
         }
     }

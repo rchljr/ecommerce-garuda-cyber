@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Product;
 use App\Models\Category;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB; // Import DB facade
 
 class ShopController extends Controller
 {
@@ -39,8 +40,10 @@ class ShopController extends Controller
         $sidebarCategories = $mainCategory ? $mainCategory->subcategories()->orderBy('name')->get() : collect();
 
         // 5. Query dasar HANYA untuk produk milik mitra ini
-        $query = Product::where('shop_id', $shop->id)->where('status', 'active');
-
+        // PENTING: Eager load varian untuk accessor harga
+        $query = Product::where('shop_id', $shop->id)
+                        ->where('status', 'active')
+                        ->with('varians'); // Eager load varian di sini
 
         // 6. Terapkan filter berdasarkan sub-kategori yang dipilih
         if ($request->filled('category')) {
@@ -51,31 +54,46 @@ class ShopController extends Controller
 
         // 7. Terapkan filter harga
         if ($request->filled('min_price')) {
-            // Membersihkan nilai non-numerik dari input harga
             $minPrice = preg_replace('/[^0-9]/', '', $request->min_price);
-            $query->where('price', '>=', $minPrice);
+            // Filter produk yang memiliki setidaknya satu varian dengan harga >= minPrice
+            $query->whereHas('varians', function ($q) use ($minPrice) {
+                $q->where('price', '>=', $minPrice); // Menggunakan kolom 'price' di tabel varian
+            });
         }
         if ($request->filled('max_price')) {
-            // Membersihkan nilai non-numerik dari input harga
             $maxPrice = preg_replace('/[^0-9]/', '', $request->max_price);
-            $query->where('price', '<=', $maxPrice);
+            // Filter produk yang memiliki setidaknya satu varian dengan harga <= maxPrice
+            $query->whereHas('varians', function ($q) use ($maxPrice) {
+                $q->where('price', '<=', $maxPrice); // Menggunakan kolom 'price' di tabel varian
+            });
         }
 
         // 8. Terapkan pengurutan
-        if ($request->input('sort') == 'price_asc') {
-            $query->orderBy('price', 'asc');
-        } elseif ($request->input('sort') == 'price_desc') {
-            $query->orderBy('price', 'desc');
+        // Untuk mengurutkan berdasarkan harga varian terendah, kita perlu join dan group
+        if ($request->input('sort') == 'price_asc' || $request->input('sort') == 'price_desc') {
+            $sortDirection = ($request->input('sort') == 'price_asc') ? 'asc' : 'desc';
+
+            // Join dengan tabel varians untuk mendapatkan harga varian terendah
+            // Gunakan subquery untuk mendapatkan min_price per produk, lalu join
+            $products = $query->with(['varians' => function($q) {
+                        $q->orderBy('price', 'asc'); // Urutkan varian berdasarkan harga untuk memastikan min() bekerja
+                    }])
+                    ->select('products.*') // Pilih semua kolom produk
+                    ->addSelect(DB::raw('(SELECT MIN(price) FROM varians WHERE varians.product_id = products.id) as min_variant_price'))
+                    ->orderBy('min_variant_price', $sortDirection)
+                    ->paginate(9)
+                    ->withQueryString();
+
         } else {
-            $query->latest();
+            // Default sorting: terbaru
+            $products = $query->latest()->paginate(9)->withQueryString();
         }
 
-        $products = $query->paginate(9)->withQueryString();
 
         // 9. Kirim data yang sudah difilter ke view yang benar
         return view($tenant->template->path . '.shop', [
             'tenant' => $tenant,
-            'shop' => $shop, // <--- VARIABEL INI DITAMBAHKAN
+            'shop' => $shop,
             'products' => $products,
             'categories' => $sidebarCategories,
         ]);
@@ -105,7 +123,7 @@ class ShopController extends Controller
         }
 
         // Load relasi
-        $product->load('subCategory.category', 'variants', 'gallery', 'tags');
+        $product->load('subCategory.category', 'varians', 'gallery', 'tags'); // Pastikan 'varians' bukan 'variants'
 
         // Ambil produk terkait
         $relatedProducts = Product::where('shop_id', $shop->id) // Pastikan produk terkait juga dari toko yang sama

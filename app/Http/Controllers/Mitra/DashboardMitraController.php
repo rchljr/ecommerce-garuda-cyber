@@ -4,28 +4,25 @@ namespace App\Http\Controllers\Mitra;
 
 use App\Http\Controllers\Controller;
 use App\Models\Order;
-use App\Models\Product;
-use Illuminate\Support\Facades\DB;
+use App\Models\Product; // Pastikan Product diimport
+use App\Models\Varian;  // Pastikan Varian diimport
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log; // Import Log untuk debugging
 
 class DashboardMitraController extends Controller
 {
     public function index()
     {
         $user = Auth::user();
-
-        // Mengambil objek Shop dari user yang sedang login
         $shop = $user->shop;
 
-        // Pastikan user memiliki toko (shop)
         if (!$shop) {
-            // Jika tidak, tolak akses atau redirect
             abort(403, 'Anda tidak memiliki toko yang terdaftar untuk mengakses dashboard ini.');
         }
 
-        $shopId = $shop->id; // ID toko (shop) mitra yang sedang login
-
+        $shopId = $shop->id;
         $thirtyDaysAgo = Carbon::now()->subDays(30);
 
         // 1. Metrik Utama
@@ -40,26 +37,28 @@ class DashboardMitraController extends Controller
         $averageOrderValue = $totalOrders > 0 ? $totalRevenue / $totalOrders : 0;
 
         // Hitung Keuntungan Bersih (Total Net Profit)
-        // Membutuhkan order yang completed, dengan item dan produk terkait (untuk modal_price)
+        // Membutuhkan order yang completed, dengan item dan VARIAN terkait (untuk modal_price)
         $completedOrders = Order::where('status', 'completed')
                                 ->where('shop_id', $shopId)
-                                ->with(['items.product']) // Eager load order items dan produknya
+                                ->with(['items.variant']) // PENTING: Eager load order items dan variannya
                                 ->get();
 
         $totalNetProfit = 0;
         foreach ($completedOrders as $order) {
             foreach ($order->items as $item) {
-                // Pastikan produk dan harga modal ada sebelum menghitung keuntungan
-                if ($item->product && $item->product->modal_price !== null) {
-                    // Keuntungan per item = (harga jual saat order - harga modal produk) * kuantitas
-                    // Asumsi $item->price adalah harga jual saat order dibuat
-                    $profitPerItem = ($item->price - $item->product->modal_price);
+                // Pastikan varian dan harga modalnya ada sebelum menghitung keuntungan
+                // $item->price adalah harga jual saat order dibuat (sudah disimpan di OrderItem)
+                // $item->variant->modal_price adalah harga modal dari varian saat ini
+                if ($item->variant && $item->variant->modal_price !== null) {
+                    $profitPerItem = ($item->price - $item->variant->modal_price);
                     $totalNetProfit += ($profitPerItem * $item->quantity);
+                } else {
+                    // Log peringatan jika ada item order tanpa varian atau modal_price
+                    Log::warning("Melewati perhitungan keuntungan untuk OrderItem ID: {$item->id}. Varian tidak ditemukan atau modal_price NULL.");
                 }
             }
         }
-        // Pastikan keuntungan bersih tidak negatif (misalnya jika ada data modal_price yang hilang atau harga jual lebih rendah dari modal)
-        $totalNetProfit = max(0, $totalNetProfit);
+        $totalNetProfit = max(0, $totalNetProfit); // Pastikan keuntungan bersih tidak negatif
 
 
         // 2. Data untuk Grafik (difilter berdasarkan shop_id)
@@ -73,7 +72,7 @@ class DashboardMitraController extends Controller
 
         // 3. Tabel Produk Terlaris (difilter berdasarkan shop_id)
         // Mengambil produk yang dimiliki oleh toko ini dan menghitung berapa banyak yang terjual
-        $topSellingProducts = Product::where('shop_id', $shopId) // Filter langsung berdasarkan shop_id produk
+        $topSellingProducts = Product::where('shop_id', $shopId)
             ->withCount([
                 'orderItems as sold_count' => function ($query) {
                     $query->select(DB::raw('SUM(quantity)'));
@@ -89,7 +88,7 @@ class DashboardMitraController extends Controller
             'averageOrderValue',
             'salesData',
             'topSellingProducts',
-            'totalNetProfit' // Meneruskan metrik baru ke view
+            'totalNetProfit'
         ));
     }
 }

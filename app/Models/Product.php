@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids; // Import HasUuids
 
 class Product extends Model
 {
-    use HasFactory, HasUuids; // Tambahkan HasUuids di sini
+    use HasFactory, HasUuids;
 
     protected $connection = 'mysql';
     protected $primaryKey = 'id';
@@ -29,11 +29,13 @@ class Product extends Model
         'slug',
         'short_description',
         'description',
-        'price',
-        'modal_price',
-        'profit_percentage',
+        // HAPUS 'price', 'modal_price', 'profit_percentage' dari sini karena kolomnya sudah tidak ada di tabel products
+        // 'price',
+        // 'modal_price',
+        // 'profit_percentage',
         'sku',
         'main_image',
+        'gallery_image_paths', // TAMBAHKAN INI ke fillable karena disimpan di tabel products
         'status',
         'is_best_seller',
         'is_new_arrival',
@@ -46,15 +48,19 @@ class Product extends Model
      * @var array
      */
     protected $casts = [
-        'price' => 'float',
-        'modal_price' => 'float', // Tambahkan casting untuk modal_price
-        'profit_percentage' => 'float', // Tambahkan casting untuk profit_percentage
+        // HAPUS casting untuk 'price', 'modal_price', 'profit_percentage' dari sini
+        // 'price' => 'float',
+        // 'modal_price' => 'float',
+        // 'profit_percentage' => 'float',
+        'gallery_image_paths' => 'array', // TAMBAHKAN casting untuk gallery_image_paths (penting!)
         'is_best_seller' => 'boolean',
         'is_new_arrival' => 'boolean',
         'is_hot_sale' => 'boolean',
+        'created_at' => 'datetime', // Opsional: jika ingin Carbon object
+        'updated_at' => 'datetime', // Opsional: jika ingin Carbon object
     ];
 
-    // HAPUS ATAU KOMENTARI BLOK boot() INI
+    // HAPUS ATAU KOMENTARI BLOK boot() INI karena sudah menggunakan HasUuids
     // protected static function boot()
     // {
     //     parent::boot();
@@ -66,31 +72,32 @@ class Product extends Model
     //     });
     // }
 
-    public function getSellingPriceAttribute()
-    {
-        if ($this->modal_price !== null && $this->profit_percentage !== null) {
-            return $this->modal_price * (1 + ($this->profit_percentage / 100));
-        }
-        return $this->price;
-    }
+    // HAPUS accessor ini karena ini adalah logika untuk Varian, bukan Product
+    // public function getSellingPriceAttribute()
+    // {
+    //     if ($this->modal_price !== null && $this->profit_percentage !== null) {
+    //         return $this->modal_price * (1 + ($this->profit_percentage / 100));
+    //     }
+    //     return $this->price;
+    // }
 
-    public function setModalPriceAttribute($value)
-    {
-        $this->attributes['modal_price'] = $value;
-        // Pastikan profit_percentage sudah ada sebelum menghitung price
-        if (isset($this->attributes['profit_percentage']) && $this->attributes['profit_percentage'] !== null) {
-            $this->attributes['price'] = $value * (1 + ($this->attributes['profit_percentage'] / 100));
-        }
-    }
+    // HAPUS mutator ini karena logika harga sudah di level Varian
+    // public function setModalPriceAttribute($value)
+    // {
+    //     $this->attributes['modal_price'] = $value;
+    //     if (isset($this->attributes['profit_percentage']) && $this->attributes['profit_percentage'] !== null) {
+    //         $this->attributes['price'] = $value * (1 + ($this->attributes['profit_percentage'] / 100));
+    //     }
+    // }
 
-    public function setProfitPercentageAttribute($value)
-    {
-        $this->attributes['profit_percentage'] = $value;
-        // Pastikan modal_price sudah ada sebelum menghitung price
-        if (isset($this->attributes['modal_price']) && $this->attributes['modal_price'] !== null) {
-            $this->attributes['price'] = $this->attributes['modal_price'] * (1 + ($value / 100));
-        }
-    }
+    // HAPUS mutator ini karena logika harga sudah di level Varian
+    // public function setProfitPercentageAttribute($value)
+    // {
+    //     $this->attributes['profit_percentage'] = $value;
+    //     if (isset($this->attributes['modal_price']) && $this->attributes['modal_price'] !== null) {
+    //         $this->attributes['price'] = $this->attributes['modal_price'] * (1 + ($value / 100));
+    //     }
+    // }
 
     // --- QUERY SCOPES ---
 
@@ -121,24 +128,32 @@ class Product extends Model
         return $this->belongsTo(User::class, 'user_id');
     }
 
-    public function shop(): BelongsTo // Tambahkan relasi shop jika belum ada
+    public function shop(): BelongsTo
     {
         return $this->belongsTo(Shop::class, 'shop_id');
     }
 
-    public function subCategory()
+    public function subCategory(): BelongsTo
     {
         return $this->belongsTo(SubCategory::class, 'sub_category_id');
     }
 
-    public function variants(): HasMany
+    // HAPUS relasi 'variants' yang duplikat atau salah nama jika 'varians' yang benar
+    // public function variants(): HasMany
+    // {
+    //     return $this->hasMany(ProductVariant::class); // Asumsi ProductVariant adalah model lama/berbeda
+    // }
+
+    // Ini adalah relasi yang benar ke model Varian (nama sesuai convention Laravel)
+    public function varians(): HasMany
     {
-        return $this->hasMany(ProductVariant::class);
+        return $this->hasMany(Varian::class); // Pastikan ini menunjuk ke model Varian yang benar
     }
 
+    // Relasi ke ProductGallery (jika Anda punya model terpisah untuk gambar galeri)
     public function gallery(): HasMany
     {
-        return $this->hasMany(ProductGallery::class);
+        return $this->hasMany(ProductGallery::class, 'product_id'); // Pastikan ini menunjuk ke model Gallery yang benar
     }
 
     public function tags(): BelongsToMany
@@ -150,17 +165,12 @@ class Product extends Model
     {
         return $this->hasMany(OrderItem::class);
     }
-    public function varians()
-    {
-        return $this->hasMany(Varian::class);
-    }
-
-    /**
-     * Get the tags for the product.
-     */
 
     // --- ACCESSORS ---
 
+    /**
+     * Accessor untuk mendapatkan URL gambar utama produk.
+     */
     public function getImageUrlAttribute(): string
     {
         $path = $this->main_image;
@@ -168,11 +178,37 @@ class Product extends Model
             return asset('storage/' . $path);
         }
 
-        $legacyPath = 'product_primary_images/' . $this->main_image;
+        $legacyPath = 'product_primary_images/' . $this->main_image; // Contoh path lama
         if ($this->main_image && Storage::disk('public')->exists($legacyPath)) {
             return asset('storage/' . $legacyPath);
         }
 
-        return asset('images/default-product.png');
+        return asset('images/default-product.png'); // Gambar default jika tidak ada gambar
+    }
+
+    /**
+     * Accessor untuk mendapatkan harga produk yang ditampilkan.
+     * Ini akan mengambil harga jual terendah dari semua variannya.
+     * Jika tidak ada varian, default ke 0.
+     */
+    public function getPriceAttribute()
+    {
+        // Ini akan mengambil harga jual terendah dari varian yang dimuat
+        if ($this->relationLoaded('varians') && $this->varians->isNotEmpty()) {
+            return $this->varians->min('selling_price');
+        }
+        return 0.00; // Default jika tidak ada varian atau belum dimuat
+    }
+
+    // Jika Anda juga memiliki accessor untuk gallery_image_paths, tambahkan di sini
+    public function getGalleryImagesAttribute(): array
+    {
+        // Jika gallery_image_paths disimpan sebagai JSON array di DB
+        if (is_array($this->gallery_image_paths)) {
+            return array_map(function ($path) {
+                return Storage::url($path);
+            }, $this->gallery_image_paths);
+        }
+        return [];
     }
 }
