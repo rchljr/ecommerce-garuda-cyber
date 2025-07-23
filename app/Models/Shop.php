@@ -85,4 +85,9 @@ class Shop extends Model
     {
         return $this->hasMany(Banner::class);
     }
+    //Digunakan untuk panel internal mitra agar selalu bisa melihat preview.
+    public function anySubdomain()
+    {
+        return $this->hasOne(Subdomain::class);
+    }
 }

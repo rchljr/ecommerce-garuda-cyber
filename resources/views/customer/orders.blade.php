@@ -194,6 +194,22 @@
                                     <span class="font-bold text-lg text-red-600">{{ format_rupiah($order->total_price) }}</span>
                                 </div>
                                 <div class="flex items-center gap-2 flex-wrap">
+                                    @php
+                                        $finalStatuses = ['completed', 'cancelled', 'failed', 'refunded'];
+                                    @endphp
+                                    @if(in_array($order->status, $finalStatuses))
+                                        <button 
+                                            class="buy-again-btn text-white font-semibold bg-blue-600 rounded-lg px-5 py-2 text-sm hover:bg-blue-700 transition"
+                                            data-items="{{ json_encode($order->items->map(function($item) {
+                                                if ($item->variant) { // Pastikan varian masih ada
+                                                    return ['variant_id' => $item->product_variant_id, 'quantity' => $item->quantity];
+                                                }
+                                                return null;
+                                            })->filter()) }}">
+                                            Beli Lagi
+                                        </button>
+                                    @endif
+                                    
                                     @if($order->status == 'pending')
                                         <button class="cancel-order-btn text-white font-semibold bg-red-600 rounded-lg px-5 py-2 text-sm hover:bg-red-700 transition" data-order-id="{{ $order->id }}">Batalkan Pesanan</button>
                                     @endif
@@ -491,11 +507,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 cancelButtonText: 'Belum'
             }).then((result) => {
                 if (result.isConfirmed) {
-                     fetch(`/tenant/${currentSubdomain}/account/orders/${orderId}/receive`, {
+                    fetch(`/tenant/${currentSubdomain}/account/orders/${orderId}/receive`, {
                         method: 'POST',
                         headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken }
                     }).then(res => res.json().then(data => ({ok: res.ok, data})))
-                      .then(({ok, data}) => {
+                    .then(({ok, data}) => {
                         if (ok) {
                             Swal.fire('Berhasil!', data.message, 'success').then(() => window.location.reload());
                         } else {
@@ -595,6 +611,63 @@ document.addEventListener('DOMContentLoaded', function () {
                     reviewModal.style.display = 'block';
                 })
                 .catch(error => Swal.fire('Error', error.message, 'error'));
+        });
+    });
+
+    // 5. Buy Again Button Logic ==
+    document.querySelectorAll('.buy-again-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const items = JSON.parse(this.dataset.items);
+            
+            if (!items || items.length === 0) {
+                Swal.fire('Gagal', 'Produk dari pesanan ini sudah tidak tersedia.', 'error');
+                return;
+            }
+
+            Swal.fire({
+                title: 'Menambahkan ke Keranjang...',
+                text: 'Mohon tunggu sebentar.',
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading(); }
+            });
+
+            fetch(`/tenant/${currentSubdomain}/cart/add-multiple`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken
+                },
+                body: JSON.stringify({ items: items })
+            })
+            .then(res => res.json().then(data => ({ok: res.ok, data})))
+            .then(({ok, data}) => {
+                if (ok) {
+                    // Update cart count in header
+                    const cartCountElement = document.getElementById('cart-count-badge');
+                    if(cartCountElement && data.cart_count) {
+                        cartCountElement.textContent = data.cart_count;
+                        cartCountElement.classList.remove('hidden');
+                    }
+
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Berhasil!',
+                        text: data.message,
+                        showCancelButton: true,
+                        confirmButtonText: 'Lihat Keranjang',
+                        cancelButtonText: 'Lanjut Belanja',
+                        confirmButtonColor: '#10B981', // emerald-500
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            window.location.href = `{{ route('tenant.cart.index', ['subdomain' => $subdomain]) }}`;
+                        }
+                    });
+                } else {
+                    Swal.fire('Gagal!', data.message || 'Beberapa produk mungkin sudah tidak tersedia.', 'error');
+                }
+            })
+            .catch(() => Swal.fire('Error!', 'Tidak dapat menghubungi server. Silakan coba lagi.', 'error'));
         });
     });
 

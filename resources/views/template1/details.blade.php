@@ -152,53 +152,63 @@
                             <h3>Rp {{ number_format($product->price, 0, ',', '.') }}</h3>
                             <p>{{ $product->short_description ?? 'Deskripsi singkat produk akan muncul di sini.' }}</p>
 
-                            <form id="add-to-cart-form"
-                                action="{{ !$isPreview ? route('tenant.cart.add', ['subdomain' => $currentSubdomain]) : '#' }}"
-                                method="POST">
-                                @csrf
-                                <input type="hidden" name="product_id" value="{{ $product->id }}">
-                                <input type="hidden" id="selected-variant-id" name="variant_id" value="">
+                            @if($product->varians && $product->varians->count() > 0)
+                                <form id="add-to-cart-form"
+                                    action="{{ !$isPreview ? route('tenant.cart.add', ['subdomain' => $currentSubdomain]) : '#' }}"
+                                    method="POST">
+                                    @csrf
+                                    <input type="hidden" name="product_id" value="{{ $product->id }}">
+                                    <input type="hidden" id="selected-variant-id" name="variant_id" value="">
 
-                                @php
-                                    $uniqueColors = $product->variants->pluck('color')->unique();
-                                    $allVariants = $product->variants;
-                                @endphp
+                                    @php
+                                        // [PERBAIKAN] Gunakan 'varians' (dengan 's') sesuai nama relasi di Model
+                                        $uniqueColors = $product->varians->pluck('color')->unique()->filter();
+                                        $allVariants = $product->varians;
+                                    @endphp
 
-                                <div class="product__details__option">
-                                    <div class="product__details__option__color">
-                                        <span>Color:</span>
-                                        @foreach($uniqueColors as $color)
-                                            <label for="color-{{$color}}" style="background-color: {{ strtolower($color) }};">
-                                                <input type="radio" id="color-{{$color}}" name="color" value="{{$color}}">
-                                            </label>
-                                        @endforeach
-                                    </div>
-                                    <div class="product__details__option__size">
-                                        <span>Size:</span>
-                                        <div id="size-options-container">
-                                            {{-- Opsi ukuran akan di-generate oleh JavaScript --}}
-                                            <p class="text-muted small" style="display: inline-block;">Pilih warna terlebih
-                                                dahulu</p>
+                                    <div class="product__details__option">
+                                        @if($uniqueColors->count() > 0)
+                                            <div class="product__details__option__color">
+                                                <span>Color:</span>
+                                                @foreach($uniqueColors as $color)
+                                                    <label for="color-{{$color}}" style="background-color: {{ strtolower($color) }};">
+                                                        <input type="radio" id="color-{{$color}}" name="color" value="{{$color}}">
+                                                    </label>
+                                                @endforeach
+                                            </div>
+                                        @endif
+
+                                        <div class="product__details__option__size">
+                                            <span>Size:</span>
+                                            <div id="size-options-container">
+                                                <p class="text-muted small" style="display: inline-block;">
+                                                    {{ $uniqueColors->count() > 0 ? 'Pilih warna terlebih dahulu' : 'Pilih ukuran' }}
+                                                </p>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
 
-                                <div class="product__details__cart__option">
-                                    <div class="quantity">
-                                        <div class="pro-qty">
-                                            <input type="text" name="quantity" value="1">
+                                    <div class="product__details__cart__option">
+                                        <div class="quantity">
+                                            <div class="pro-qty">
+                                                <input type="text" name="quantity" value="1">
+                                            </div>
                                         </div>
+                                        <button type="submit" class="primary-btn" id="add-to-cart-btn" disabled>add to
+                                            cart</button>
                                     </div>
-                                    <button type="submit" class="primary-btn" id="add-to-cart-btn" disabled>add to
-                                        cart</button>
+                                </form>
+                            @else
+                                <div class="my-4 p-4 bg-yellow-100 text-yellow-800 rounded-lg">
+                                    Produk ini sedang tidak tersedia atau tidak memiliki varian.
                                 </div>
-                            </form>
+                            @endif
                             <div class="product__details__btns__option">
                                 <a href="#" class="toggle-wishlist" data-product-id="{{ $product->id }}"><i
                                         class="fa fa-heart"></i> add to wishlist</a>
                             </div>
 
-                            <div class="product__details__last__option">
+                            {{-- <div class="product__details__last__option">
                                 <h5><span>Guaranteed Safe Checkout</span></h5>
                                 <img src="{{ asset('template1/img/shop-details/details-payment.png') }}" alt="">
                                 <ul>
@@ -212,7 +222,7 @@
                                         @endforelse
                                     </li>
                                 </ul>
-                            </div>
+                            </div> --}}
                         </div>
                     </div>
                 </div>
@@ -279,10 +289,10 @@
                         availableSizes.forEach(item => {
                             const isDisabled = item.stock <= 0;
                             const optionHtml = `
-                                    <label for="size-${item.size}" class="${isDisabled ? 'disabled' : ''}">
-                                        <input type="radio" id="size-${item.size}" name="size" value="${item.size}" ${isDisabled ? 'disabled' : ''}> ${item.size}
-                                    </label>
-                                `;
+                                        <label for="size-${item.size}" class="${isDisabled ? 'disabled' : ''}">
+                                            <input type="radio" id="size-${item.size}" name="size" value="${item.size}" ${isDisabled ? 'disabled' : ''}> ${item.size}
+                                        </label>
+                                    `;
                             sizeContainer.innerHTML += optionHtml;
                         });
                     } else {

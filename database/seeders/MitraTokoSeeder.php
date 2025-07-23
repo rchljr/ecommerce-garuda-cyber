@@ -172,15 +172,21 @@ class MitraTokoSeeder extends Seeder
                         'varians' => [ // Definisi varian untuk produk ini
                             [
                                 'options_data' => [['name' => 'Warna', 'value' => 'Merah'], ['name' => 'Ukuran', 'value' => 'S']],
-                                'modal_price' => 200000, 'profit_percentage' => 25, 'stock' => 10,
+                                'modal_price' => 200000,
+                                'profit_percentage' => 25,
+                                'stock' => 10,
                             ],
                             [
                                 'options_data' => [['name' => 'Warna', 'value' => 'Merah'], ['name' => 'Ukuran', 'value' => 'M']],
-                                'modal_price' => 210000, 'profit_percentage' => 25, 'stock' => 15,
+                                'modal_price' => 210000,
+                                'profit_percentage' => 25,
+                                'stock' => 15,
                             ],
                             [
                                 'options_data' => [['name' => 'Warna', 'value' => 'Biru'], ['name' => 'Ukuran', 'value' => 'L']],
-                                'modal_price' => 220000, 'profit_percentage' => 25, 'stock' => 12,
+                                'modal_price' => 220000,
+                                'profit_percentage' => 25,
+                                'stock' => 12,
                             ],
                         ]
                     ],
@@ -192,11 +198,15 @@ class MitraTokoSeeder extends Seeder
                         'varians' => [
                             [
                                 'options_data' => [['name' => 'Warna', 'value' => 'Jingga'], ['name' => 'Ukuran', 'value' => 'S']],
-                                'modal_price' => 280000, 'profit_percentage' => 25, 'stock' => 8,
+                                'modal_price' => 280000,
+                                'profit_percentage' => 25,
+                                'stock' => 8,
                             ],
                             [
                                 'options_data' => [['name' => 'Warna', 'value' => 'Hijau'], ['name' => 'Ukuran', 'value' => 'M']],
-                                'modal_price' => 290000, 'profit_percentage' => 25, 'stock' => 10,
+                                'modal_price' => 290000,
+                                'profit_percentage' => 25,
+                                'stock' => 10,
                             ],
                         ]
                     ],
@@ -207,11 +217,15 @@ class MitraTokoSeeder extends Seeder
                         'varians' => [
                             [
                                 'options_data' => [['name' => 'Warna Kayu', 'value' => 'Coklat Tua']],
-                                'modal_price' => 68000, 'profit_percentage' => 25, 'stock' => 30,
+                                'modal_price' => 68000,
+                                'profit_percentage' => 25,
+                                'stock' => 30,
                             ],
                             [
                                 'options_data' => [['name' => 'Warna Kayu', 'value' => 'Coklat Muda']],
-                                'modal_price' => 65000, 'profit_percentage' => 25, 'stock' => 25,
+                                'modal_price' => 65000,
+                                'profit_percentage' => 25,
+                                'stock' => 25,
                             ],
                         ]
                     ],
@@ -222,15 +236,21 @@ class MitraTokoSeeder extends Seeder
                         'varians' => [
                             [
                                 'options_data' => [['name' => 'Ukuran', 'value' => '39'], ['name' => 'Warna', 'value' => 'Hitam']],
-                                'modal_price' => 360000, 'profit_percentage' => 25, 'stock' => 5,
+                                'modal_price' => 360000,
+                                'profit_percentage' => 25,
+                                'stock' => 5,
                             ],
                             [
                                 'options_data' => [['name' => 'Ukuran', 'value' => '40'], ['name' => 'Warna', 'value' => 'Hitam']],
-                                'modal_price' => 360000, 'profit_percentage' => 25, 'stock' => 7,
+                                'modal_price' => 360000,
+                                'profit_percentage' => 25,
+                                'stock' => 7,
                             ],
                             [
                                 'options_data' => [['name' => 'Ukuran', 'value' => '41'], ['name' => 'Warna', 'value' => 'Coklat']],
-                                'modal_price' => 370000, 'profit_percentage' => 25, 'stock' => 6,
+                                'modal_price' => 370000,
+                                'profit_percentage' => 25,
+                                'stock' => 6,
                             ],
                         ]
                     ],
@@ -242,11 +262,15 @@ class MitraTokoSeeder extends Seeder
                         'varians' => [
                             [
                                 'options_data' => [['name' => 'Warna', 'value' => 'Natural']],
-                                'modal_price' => 120000, 'profit_percentage' => 50, 'stock' => 15,
+                                'modal_price' => 120000,
+                                'profit_percentage' => 50,
+                                'stock' => 15,
                             ],
                             [
                                 'options_data' => [['name' => 'Warna', 'value' => 'Coklat Gelap']],
-                                'modal_price' => 125000, 'profit_percentage' => 50, 'stock' => 10,
+                                'modal_price' => 125000,
+                                'profit_percentage' => 50,
+                                'stock' => 10,
                             ],
                         ]
                     ],
@@ -292,11 +316,15 @@ class MitraTokoSeeder extends Seeder
                         'varians' => [
                             [
                                 'options_data' => [['name' => 'Warna', 'value' => 'Putih'], ['name' => 'Ukuran', 'value' => 'S']],
-                                'modal_price' => 176000, 'profit_percentage' => 25, 'stock' => 10,
+                                'modal_price' => 176000,
+                                'profit_percentage' => 25,
+                                'stock' => 10,
                             ],
                             [
                                 'options_data' => [['name' => 'Warna', 'value' => 'Hitam'], ['name' => 'Ukuran', 'value' => 'M']],
-                                'modal_price' => 180000, 'profit_percentage' => 25, 'stock' => 12,
+                                'modal_price' => 180000,
+                                'profit_percentage' => 25,
+                                'stock' => 12,
                             ],
                         ]
                     ],
@@ -308,11 +336,15 @@ class MitraTokoSeeder extends Seeder
                         'varians' => [
                             [
                                 'options_data' => [['name' => 'Warna', 'value' => 'Krem'], ['name' => 'Ukuran', 'value' => '30']],
-                                'modal_price' => 220000, 'profit_percentage' => 25, 'stock' => 15,
+                                'modal_price' => 220000,
+                                'profit_percentage' => 25,
+                                'stock' => 15,
                             ],
                             [
                                 'options_data' => [['name' => 'Warna', 'value' => 'Abu-abu'], ['name' => 'Ukuran', 'value' => '32']],
-                                'modal_price' => 225000, 'profit_percentage' => 25, 'stock' => 10,
+                                'modal_price' => 225000,
+                                'profit_percentage' => 25,
+                                'stock' => 10,
                             ],
                         ]
                     ],
@@ -323,11 +355,15 @@ class MitraTokoSeeder extends Seeder
                         'varians' => [
                             [
                                 'options_data' => [['name' => 'Warna', 'value' => 'Hijau Army']],
-                                'modal_price' => 100000, 'profit_percentage' => 50, 'stock' => 20,
+                                'modal_price' => 100000,
+                                'profit_percentage' => 50,
+                                'stock' => 20,
                             ],
                             [
                                 'options_data' => [['name' => 'Warna', 'value' => 'Biru Dongker']],
-                                'modal_price' => 105000, 'profit_percentage' => 50, 'stock' => 18,
+                                'modal_price' => 105000,
+                                'profit_percentage' => 50,
+                                'stock' => 18,
                             ],
                         ]
                     ],
@@ -338,15 +374,21 @@ class MitraTokoSeeder extends Seeder
                         'varians' => [
                             [
                                 'options_data' => [['name' => 'Ukuran', 'value' => '38']],
-                                'modal_price' => 256000, 'profit_percentage' => 25, 'stock' => 8,
+                                'modal_price' => 256000,
+                                'profit_percentage' => 25,
+                                'stock' => 8,
                             ],
                             [
                                 'options_data' => [['name' => 'Ukuran', 'value' => '39']],
-                                'modal_price' => 256000, 'profit_percentage' => 25, 'stock' => 12,
+                                'modal_price' => 256000,
+                                'profit_percentage' => 25,
+                                'stock' => 12,
                             ],
                             [
                                 'options_data' => [['name' => 'Ukuran', 'value' => '40']],
-                                'modal_price' => 260000, 'profit_percentage' => 25, 'stock' => 10,
+                                'modal_price' => 260000,
+                                'profit_percentage' => 25,
+                                'stock' => 10,
                             ],
                         ]
                     ],
@@ -357,11 +399,15 @@ class MitraTokoSeeder extends Seeder
                         'varians' => [
                             [
                                 'options_data' => [['name' => 'Warna', 'value' => 'Maroon']],
-                                'modal_price' => 76000, 'profit_percentage' => 25, 'stock' => 25,
+                                'modal_price' => 76000,
+                                'profit_percentage' => 25,
+                                'stock' => 25,
                             ],
                             [
                                 'options_data' => [['name' => 'Warna', 'value' => 'Navy']],
-                                'modal_price' => 78000, 'profit_percentage' => 25, 'stock' => 20,
+                                'modal_price' => 78000,
+                                'profit_percentage' => 25,
+                                'stock' => 20,
                             ],
                         ]
                     ],
@@ -407,11 +453,15 @@ class MitraTokoSeeder extends Seeder
                         'varians' => [
                             [
                                 'options_data' => [['name' => 'Porsi', 'value' => 'Reguler']],
-                                'modal_price' => 28000, 'profit_percentage' => 25, 'stock' => 20,
+                                'modal_price' => 28000,
+                                'profit_percentage' => 25,
+                                'stock' => 20,
                             ],
                             [
                                 'options_data' => [['name' => 'Porsi', 'value' => 'Jumbo']],
-                                'modal_price' => 35000, 'profit_percentage' => 25, 'stock' => 10,
+                                'modal_price' => 35000,
+                                'profit_percentage' => 25,
+                                'stock' => 10,
                             ],
                         ]
                     ],
@@ -422,11 +472,15 @@ class MitraTokoSeeder extends Seeder
                         'varians' => [
                             [
                                 'options_data' => [['name' => 'Ukuran', 'value' => 'Kecil']],
-                                'modal_price' => 12000, 'profit_percentage' => 50, 'stock' => 30,
+                                'modal_price' => 12000,
+                                'profit_percentage' => 50,
+                                'stock' => 30,
                             ],
                             [
                                 'options_data' => [['name' => 'Ukuran', 'value' => 'Besar']],
-                                'modal_price' => 15000, 'profit_percentage' => 50, 'stock' => 20,
+                                'modal_price' => 15000,
+                                'profit_percentage' => 50,
+                                'stock' => 20,
                             ],
                         ]
                     ],
@@ -438,11 +492,15 @@ class MitraTokoSeeder extends Seeder
                         'varians' => [
                             [
                                 'options_data' => [['name' => 'Paket', 'value' => 'Isi 5']],
-                                'modal_price' => 20000, 'profit_percentage' => 25, 'stock' => 25,
+                                'modal_price' => 20000,
+                                'profit_percentage' => 25,
+                                'stock' => 25,
                             ],
                             [
                                 'options_data' => [['name' => 'Paket', 'value' => 'Isi 10']],
-                                'modal_price' => 35000, 'profit_percentage' => 25, 'stock' => 10,
+                                'modal_price' => 35000,
+                                'profit_percentage' => 25,
+                                'stock' => 10,
                             ],
                         ]
                     ],
@@ -453,11 +511,15 @@ class MitraTokoSeeder extends Seeder
                         'varians' => [
                             [
                                 'options_data' => [['name' => 'Ukuran', 'value' => 'Mini']],
-                                'modal_price' => 36000, 'profit_percentage' => 25, 'stock' => 15,
+                                'modal_price' => 36000,
+                                'profit_percentage' => 25,
+                                'stock' => 15,
                             ],
                             [
                                 'options_data' => [['name' => 'Ukuran', 'value' => 'Standar']],
-                                'modal_price' => 50000, 'profit_percentage' => 25, 'stock' => 8,
+                                'modal_price' => 50000,
+                                'profit_percentage' => 25,
+                                'stock' => 8,
                             ],
                         ]
                     ],
@@ -469,11 +531,15 @@ class MitraTokoSeeder extends Seeder
                         'varians' => [
                             [
                                 'options_data' => [['name' => 'Berat', 'value' => '100gr']],
-                                'modal_price' => 20000, 'profit_percentage' => 50, 'stock' => 40,
+                                'modal_price' => 20000,
+                                'profit_percentage' => 50,
+                                'stock' => 40,
                             ],
                             [
                                 'options_data' => [['name' => 'Berat', 'value' => '250gr']],
-                                'modal_price' => 35000, 'profit_percentage' => 50, 'stock' => 20,
+                                'modal_price' => 35000,
+                                'profit_percentage' => 50,
+                                'stock' => 20,
                             ],
                         ]
                     ],
@@ -516,10 +582,11 @@ class MitraTokoSeeder extends Seeder
         // 2. Buat Subdomain
         $subdomain = Subdomain::create([
             'user_id' => $mitra->id,
+            'shop_id' => null, // Dikosongkan sementara
             'subdomain_name' => $data['subdomain_name'],
             'status' => 'active'
         ]);
-        $this->command->info("Subdomain {$subdomain->subdomain_name} dibuat.");
+        $this->command->info("Subdomain {$subdomain->subdomain_name} dibuat (sementara tanpa shop_id).");
 
         // 3. Buat Toko (Shop)
         $shop = Shop::create(array_merge($data['shop'], [
@@ -529,6 +596,10 @@ class MitraTokoSeeder extends Seeder
             'ktp' => 'seeders/defaults/ktp.jpg',
         ]));
         $this->command->info("Toko {$shop->shop_name} dibuat.");
+
+        $subdomain->shop_id = $shop->id;
+        $subdomain->save();
+        $this->command->info("Subdomain {$subdomain->subdomain_name} diupdate dengan Shop ID: {$shop->id}.");
 
 
         // 4. Buat Tenant

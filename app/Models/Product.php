@@ -29,13 +29,9 @@ class Product extends Model
         'slug',
         'short_description',
         'description',
-        // HAPUS 'price', 'modal_price', 'profit_percentage' dari sini karena kolomnya sudah tidak ada di tabel products
-        // 'price',
-        // 'modal_price',
-        // 'profit_percentage',
         'sku',
         'main_image',
-        'gallery_image_paths', // TAMBAHKAN INI ke fillable karena disimpan di tabel products
+        'gallery_image_paths', 
         'status',
         'is_best_seller',
         'is_new_arrival',
@@ -97,12 +93,6 @@ class Product extends Model
     {
         return $this->belongsTo(SubCategory::class, 'sub_category_id');
     }
-
-    // HAPUS relasi 'variants' yang duplikat atau salah nama jika 'varians' yang benar
-    // public function variants(): HasMany
-    // {
-    //     return $this->hasMany(ProductVariant::class); // Asumsi ProductVariant adalah model lama/berbeda
-    // }
 
     // Ini adalah relasi yang benar ke model Varian (nama sesuai convention Laravel)
     public function varians(): HasMany

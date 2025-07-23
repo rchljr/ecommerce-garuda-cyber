@@ -25,7 +25,7 @@ use App\Models\Customer;
 use App\Models\Varian;
 use App\Models\OrderItem;
 use App\Models\Testimoni;
-use App\Models\Shipping; // PENTING: Import model Shipping
+use App\Models\Shipping;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -44,7 +44,7 @@ class OrderSeeder extends Seeder
         DB::statement('SET FOREIGN_KEY_CHECKS=0;');
         OrderItem::truncate();
         Order::truncate();
-        Testimoni::truncate();
+        Testimoni::whereNotNull('product_id')->delete();
         Shipping::truncate(); // PENTING: Hapus juga data Shipping lama
         DB::statement('SET FOREIGN_KEY_CHECKS=1;');
         $this->command->info('Data pesanan, item pesanan, testimoni, dan pengiriman lama dihapus.');
@@ -63,9 +63,8 @@ class OrderSeeder extends Seeder
         }
         $customers = collect([$customer]);
 
-        // UBAH: Semua order akan berstatus 'completed'
-        $targetOrderStatus = 'completed'; 
-        $deliveryMethods = ['delivery', 'pickup']; // Pilihan metode pengiriman
+        $targetOrderStatus = 'completed';
+        $deliveryMethods = ['shipped', 'ready_for_pickup'];
 
         $numOrdersPerShop = 15;
 
@@ -77,8 +76,8 @@ class OrderSeeder extends Seeder
             }
 
             $mitraProducts = Product::where('user_id', $mitra->id)
-                                    ->with('varians')
-                                    ->get();
+                ->with('varians')
+                ->get();
 
             if ($mitraProducts->isEmpty()) {
                 $this->command->warn("Mitra {$mitra->email} tidak memiliki produk. Melewati pembuatan pesanan.");
@@ -89,14 +88,14 @@ class OrderSeeder extends Seeder
 
             for ($i = 0; $i < $numOrdersPerShop; $i++) {
                 $selectedCustomer = $customers->random();
-                $deliveryMethod = $deliveryMethods[array_rand($deliveryMethods)]; // Pilih metode pengiriman acak
+                $deliveryMethod = $deliveryMethods[array_rand($deliveryMethods)];
                 $createdAt = Carbon::now()->subDays(rand(0, 45))->subHours(rand(0, 23))->subMinutes(rand(0, 59));
 
                 $order = Order::create([
                     'user_id' => $selectedCustomer->id,
                     'shop_id' => $shop->id,
                     'total_price' => 0, // Akan dihitung nanti
-                    'status' => $targetOrderStatus, // BARU: Selalu set ke 'completed'
+                    'status' => $targetOrderStatus,
                     'order_date' => $createdAt,
                     'delivery_method' => $deliveryMethod,
                     'shipping_address' => 'Jl. Dummy No. ' . rand(1, 100) . ', Kota Dummy',
@@ -109,6 +108,7 @@ class OrderSeeder extends Seeder
 
                 $orderTotalPrice = 0;
                 $numItems = rand(1, 3);
+                $productIdsInOrder = []; // <<== [MODIFIKASI 1] Siapkan array untuk menampung ID produk
 
                 for ($j = 0; $j < $numItems; $j++) {
                     $product = $mitraProducts->random();
@@ -125,9 +125,9 @@ class OrderSeeder extends Seeder
                         $this->command->warn("Harga jual (selling_price) varian {$selectedVarian->id} adalah NULL. Menggunakan 0.");
                         $itemPrice = 0.00;
                     }
-                    
+
                     if ($itemPrice == 0.00 && ($selectedVarian->modal_price > 0 || $selectedVarian->profit_percentage > 0)) {
-                         $this->command->warn("PERINGATAN KRITIS: Harga item varian {$selectedVarian->name} (ID: {$selectedVarian->id}) adalah 0 padahal Modal Price: {$selectedVarian->modal_price}, Profit: {$selectedVarian->profit_percentage}.");
+                        $this->command->warn("PERINGATAN KRITIS: Harga item varian {$selectedVarian->name} (ID: {$selectedVarian->id}) adalah 0 padahal Modal Price: {$selectedVarian->modal_price}, Profit: {$selectedVarian->profit_percentage}.");
                     }
 
                     OrderItem::create([
@@ -138,39 +138,47 @@ class OrderSeeder extends Seeder
                         'price' => $itemPrice,
                     ]);
                     $orderTotalPrice += ($quantity * $itemPrice);
+                    $productIdsInOrder[] = $product->id; // <<== [MODIFIKASI 2] Simpan ID produk ke dalam array
                 }
                 $order->update(['total_price' => $orderTotalPrice]);
 
-                // --- BARU: Buat record Shipping berdasarkan deliveryMethod yang dipilih ---
+                // --- Logika Shipping ---
                 if ($order->delivery_method === 'delivery') {
-                    // Untuk order 'delivery', set statusnya menjadi 'shipped'
                     Shipping::create([
                         'order_id' => $order->id,
                         'delivery_service' => ['JNE', 'J&T', 'SiCepat'][array_rand(['JNE', 'J&T', 'SiCepat'])],
-                        'status' => 'delivered', // BARU: Status pengiriman di Shipping langsung 'delivered'
+                        'status' => 'delivered',
                         'receipt_number' => Str::random(12),
                         'shipping_cost' => rand(10000, 30000),
                         'estimated_delivery' => Carbon::parse($createdAt)->addDays(rand(2, 7)),
                     ]);
                 } elseif ($order->delivery_method === 'pickup') {
-                     // Untuk order 'pickup', set statusnya menjadi 'ready_for_pickup'
-                     Shipping::create([
+                    Shipping::create([
                         'order_id' => $order->id,
                         'delivery_service' => 'Pickup',
-                        'status' => 'picked_up', // BARU: Status pengiriman di Shipping 'picked_up'
+                        'status' => 'picked_up',
                         'receipt_number' => null,
                         'shipping_cost' => 0,
                         'estimated_delivery' => null,
                     ]);
                 }
-                // Jika order sudah completed, maka testimoni juga dibuat
-                Testimoni::create([
-                    'name' => optional($selectedCustomer)->name ?? 'Pelanggan Anonim',
-                    'content' => 'Sangat puas dengan produk dan layanan dari toko ' . $shop->shop_name . '! Pesanan tiba tepat waktu dan kualitasnya luar biasa.',
-                    'rating' => rand(4, 5),
-                    'status' => 'published',
-                    'shop_id' => $shop->id,
-                ]);
+
+                // <<== [MODIFIKASI 3] Membuat testimoni dengan order_id dan product_id
+                if (!empty($productIdsInOrder)) { // Pastikan pesanan memiliki item produk
+                    // Pilih satu product_id secara acak dari item yang ada di pesanan ini
+                    $testimonialProductId = $productIdsInOrder[array_rand($productIdsInOrder)];
+
+                    Testimoni::create([
+                        'user_id' => optional($selectedCustomer)->id,
+                        'product_id' => $testimonialProductId, // <- DATA BARU
+                        'order_id' => $order->id, // <- DATA BARU
+                        'name' => optional($selectedCustomer)->name ?? 'Pelanggan Anonim',
+                        'content' => 'Sangat puas dengan produk dan layanan dari toko ' . $shop->shop_name . '! Pesanan tiba tepat waktu dan kualitasnya luar biasa.',
+                        'rating' => rand(4, 5),
+                        'status' => 'published',
+                        'shop_id' => $shop->id,
+                    ]);
+                }
             }
             $this->command->info("{$numOrdersPerShop} pesanan dummy dibuat untuk toko '{$shop->shop_name}'.");
         }

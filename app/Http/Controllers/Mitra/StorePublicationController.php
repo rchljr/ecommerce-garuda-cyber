@@ -16,7 +16,7 @@ class StorePublicationController extends Controller
     {
         /** @var \App\Models\User $user */
         $user = Auth::user();
-        $subdomain = $user->shop->subdomain;
+        $subdomain = $user->shop?->anySubdomain;
 
         try {
             // Validasi penting: Pastikan langganan mitra masih aktif
@@ -44,7 +44,7 @@ class StorePublicationController extends Controller
     {
         /** @var \App\Models\User $user */
         $user = Auth::user();
-        $subdomain = $user->shop->subdomain;
+        $subdomain = $user->shop?->anySubdomain;
 
         try {
             if ($subdomain) {
