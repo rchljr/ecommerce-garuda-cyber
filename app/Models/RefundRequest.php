@@ -20,6 +20,7 @@ class RefundRequest extends Model
         'amount',
         'status',
         'reason',
+        'refund_method',
     ];
 
     public function order()

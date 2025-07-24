@@ -26,6 +26,7 @@ class Order extends Model
     const STATUS_REFUNDED = 'refunded';
 
     protected $fillable = [
+        'order_number',
         'user_id',
         'shop_id',
         'order_group_id',

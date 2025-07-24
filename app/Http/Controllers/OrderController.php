@@ -90,95 +90,47 @@ class OrderController extends Controller
 
 
         DB::beginTransaction();
-
         try {
-            DB::transaction(function () use ($order, $validated) {
-                // Update status pesanan utama
-                $order->update(['status' => $validated['status']]);
+            // 1. Update status pesanan utama
+            $order->status = $validated['status'];
+            $order->save();
 
-                // Logika khusus jika status diubah menjadi 'shipped'
-                if ($validated['status'] === 'shipped') {
-                    $order->shipping()->updateOrCreate(
-                        ['order_id' => $order->id],
-                        [
-                            'receipt_number' => $validated['receipt_number'],
-                            'status' => 'shipped', // Update juga status di tabel shipping
-                        ]
-                    );
+            // 2. Update atau buat data pengiriman terkait
+            if ($validated['status'] === 'shipped') {
+                $order->shipping()->updateOrCreate(
+                    ['order_id' => $order->id], // Kondisi pencarian
+                    [ // Data untuk di-update atau di-create
+                        'delivery_service' => $validated['delivery_service'],
+                        'receipt_number' => $validated['receipt_number'],
+                        'status' => 'shipped',
+                    ]
+                );
+            } elseif ($validated['status'] === 'ready_for_pickup') {
+                $order->shipping()->updateOrCreate(
+                    ['order_id' => $order->id],
+                    ['status' => 'ready_for_pickup']
+                );
+            } elseif ($validated['status'] === 'completed') {
+                // Jika pesanan selesai, update juga status di tabel shipping jika ada
+                if ($order->shipping) {
+                    $newShippingStatus = $order->delivery_method === 'pickup' ? 'picked_up' : 'delivered';
+                    $order->shipping->status = $newShippingStatus;
+                    $order->shipping->save();
                 }
+            }
 
-                // Logika khusus jika status diubah menjadi 'ready_for_pickup'
-                if ($validated['status'] === 'ready_for_pickup') {
-                    $order->shipping()->updateOrCreate(
-                        ['order_id' => $order->id],
-                        ['status' => 'ready_for_pickup']
-                    );
-                }
-            });
-
-            // Logika untuk detail pengiriman di model Shipping
-            // if ($order->delivery_method === 'delivery' && $order->status === Order::STATUS_PROCESSING) {
-            //     // Jika diantar dan statusnya 'Dikirim', nomor resi dan layanan wajib
-            //     if (empty($validated['receipt_number'])) {
-            //         throw new \Exception('Nomor resi wajib diisi jika metode pengiriman "Diantar" dan status diubah menjadi "Dikirim".');
-            //     }
-            //     if (empty($validated['delivery_service'])) {
-            //         throw new \Exception('Layanan pengiriman wajib diisi jika metode pengiriman "Diantar" dan status diubah menjadi "Dikirim".');
-            //     }
-
-            //     $shipping = $order->shipping()->firstOrCreate(
-            //         ['order_id' => $order->id], // Cari berdasarkan order_id
-            //         [ // Data untuk create jika belum ada
-            //             'delivery_service' => $validated['delivery_service'],
-            //             'status' => 'on_transit',
-            //             'receipt_number' => $validated['receipt_number'],
-            //             'shipping_cost' => $order->shipping_cost,
-            //             'estimated_delivery' => null,
-            //         ]
-            //     );
-            //     $shipping->update([
-            //         'delivery_service' => $validated['delivery_service'],
-            //         'status' => 'on_transit',
-            //         'receipt_number' => $validated['receipt_number'],
-            //     ]);
-
-            // } elseif ($order->delivery_method === 'pickup' && $order->status === Order::STATUS_READY_FOR_PICKUP) {
-            //     $shipping = $order->shipping()->firstOrCreate(
-            //         ['order_id' => $order->id], // Cari berdasarkan order_id
-            //         [
-            //             'delivery_service' => 'Pickup',
-            //             'status' => 'ready_for_pickup',
-            //             'receipt_number' => null,
-            //             'shipping_cost' => 0,
-            //             'estimated_delivery' => null,
-            //         ]
-            //     );
-            //     $shipping->update([
-            //         'status' => 'ready_for_pickup',
-            //     ]);
-            // } else {
-            //     // Jika status atau metode tidak lagi membutuhkan detail shipping, hapus jika ada
-            //     if ($order->shipping) {
-            //         $order->shipping->delete();
-            //     }
-            // }
-
-            // DB::commit();
-
-            // return response()->json([
-            //     'success' => true,
-            //     'message' => 'Status pesanan berhasil diperbarui!', // Pesan lebih umum
-            //     'new_status' => $order->status,
-            //     'new_delivery_method' => $order->delivery_method, // Mengambil dari DB, bukan dari request
-            //     'new_tracking_number' => $order->shipping->receipt_number ?? null,
-            //     'new_delivery_service' => $order->shipping->delivery_service ?? null,
-            // ]);
+            // 3. Jika semua berhasil, commit transaksi
+            DB::commit();
 
             return back()->with('success', 'Status pesanan berhasil diperbarui!');
 
         } catch (\Exception $e) {
-            Log::error("Failed to update order status or shipping for ID: {$order->id}. Error: " . $e->getMessage(), ['exception' => $e]);
-            return response()->json(['success' => false, 'message' => 'Gagal memperbarui status pesanan: ' . $e->getMessage()], 500);
+            // 4. Jika ada error, rollback semua perubahan
+            DB::rollBack();
+
+            Log::error("Failed to update order status for ID: {$order->id}. Error: " . $e->getMessage(), ['exception' => $e]);
+
+            return back()->with('error', 'Terjadi kesalahan internal. Gagal memperbarui status pesanan.');
         }
     }
 
@@ -188,14 +140,14 @@ class OrderController extends Controller
     public function approveRefund(Order $order)
     {
         $user = Auth::user();
-        if ($order->shop_id !== $user->shop->id || $order->status !== 'refund_requested' || !$order->refundRequest) {
+        if ($order->shop_id !== $user->shop->id || $order->status !== 'refund_pending' || !$order->refundRequest) {
             return back()->with('error', 'Aksi tidak valid atau tidak diizinkan.');
         }
 
         try {
             DB::transaction(function () use ($order) {
                 $order->update(['status' => 'refunded']);
-                $order->refundRequest->update(['status' => 'accepted']);
+                $order->refundRequest->update(['status' => 'approved']);
 
                 // TODO (Opsional): Tambahkan logika untuk mengembalikan stok produk.
                 // foreach($order->items as $item) {
@@ -216,7 +168,7 @@ class OrderController extends Controller
     public function rejectRefund(Order $order)
     {
         $user = Auth::user();
-        if ($order->shop_id !== $user->shop->id || $order->status !== 'refund_requested' || !$order->refundRequest) {
+        if ($order->shop_id !== $user->shop->id || $order->status !== 'refund_pending' || !$order->refundRequest) {
             return back()->with('error', 'Aksi tidak valid atau tidak diizinkan.');
         }
 

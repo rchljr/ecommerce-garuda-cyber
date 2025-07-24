@@ -296,14 +296,14 @@
             </div>
             <div class="mb-4">
                 <label for="refund-method" class="block text-gray-700 text-sm font-bold mb-2">Metode Pengembalian</label>
-                <select id="refund-method" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                <select id="refund-method" name="refund_method" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
                     <option value="bca">Transfer Bank - BCA</option>
                     <option value="bri">Transfer Bank - BRI</option>
-                    <option value="gopay">e-Wallet - Gopay</option>
+                    <option value="gopay">E-Wallet - Gopay</option>
                 </select>
             </div>
             <div class="mb-4">
-                <label for="refund-account-number" class="block text-gray-700 text-sm font-bold mb-2">Nomor Rekening / Gopay</label>
+                <label for="refund-account-number" class="block text-gray-700 text-sm font-bold mb-2">Nomor Rekening / E-Wallet</label>
                 <input type="text" id="refund-account-number" name="bank_account_number" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="Contoh: 1234567890" required>
             </div>
             <div class="mb-6">
@@ -381,7 +381,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const order = JSON.parse(this.dataset.orderJson);
             
             // Basic Info
-            modal.querySelector('#detail-order-id').textContent = order.id;
+            modal.querySelector('#detail-order-id').textContent = order.order_number;
             modal.querySelector('#detail-order-date').textContent = new Date(order.order_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
             modal.querySelector('#detail-order-shop').textContent = order.subdomain?.user?.shop?.shop_name ?? 'Toko Dihapus';
 

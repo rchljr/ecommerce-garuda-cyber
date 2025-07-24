@@ -215,10 +215,20 @@ class CheckoutController extends Controller
                     }
                 }
 
+                $shopName = $firstItem->product->shopOwner->shop->shop_name;
+                $shopCode = strtoupper(substr(preg_replace('/[^a-zA-Z0-9]/', '', $shopName), 0, 3));
+
+                do {
+                    $datePart = now()->format('ym'); // Format: 2507 (TahunBulan)
+                    $uniquePart = rand(10000, 99999);
+                    $orderNumber = "{$shopCode}-{$datePart}-{$uniquePart}";
+                } while (Order::where('order_number', $orderNumber)->exists());
+
                 $order = Order::create([
-                    'order_group_id' => $orderGroupId,
+                    'order_number' => $orderNumber,
                     'user_id' => $customer->id,
                     'shop_id' => $shopId,
+                    'order_group_id' => $orderGroupId,
                     'subdomain_id' => $firstItem->product->shopOwner->subdomain->id,
                     'voucher_id' => $voucherId,
                     'total_price' => ($shopSubtotal - $shopDiscount) + $shopShippingCost,

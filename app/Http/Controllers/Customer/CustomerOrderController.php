@@ -167,6 +167,7 @@ class CustomerOrderController extends Controller
 
         // Validasi input
         $validated = $request->validate([
+            'refund_method' => 'required|string',
             'bank_account_number' => 'required|string|numeric|min:8',
             'reason' => 'required|string|min:10|max:500',
         ]);
@@ -185,6 +186,7 @@ class CustomerOrderController extends Controller
                 'amount' => $order->total_price,
                 'status' => 'pending',
                 'reason' => $validated['reason'],
+                'refund_method' => $validated['refund_method'],
             ]);
 
             // Ubah status order menjadi 'refund_pending' atau sejenisnya

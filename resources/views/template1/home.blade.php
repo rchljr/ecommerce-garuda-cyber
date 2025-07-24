@@ -179,7 +179,11 @@
                                     <span class="label">Sale</span>
                                 @endif
                                 <ul class="product__hover">
-                                    <li><a href="#"><img src="{{ asset('template1/img/icon/heart.png') }}" alt=""></a></li>
+                                    <li>
+                                        <a href="javascript:void(0)" class="toggle-wishlist" data-product-id="{{ $product->id }}">
+                                            <img src="{{ asset('template1/img/icon/heart.png') }}" alt="Wishlist">
+                                        </a>
+                                    </li>
                                     @if(isset($isPreview) && $isPreview)
                                         <li><a href="#"><img src="{{ asset('template1/img/icon/search.png') }}" alt=""></a></li>
                                     @else
@@ -504,6 +508,48 @@
                 toast.className = `toast-notification ${type} show`;
                 window.toastTimeout = setTimeout(() => toast.classList.remove('show'), 3000);
             }
+        });
+        document.querySelectorAll('.toggle-wishlist').forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+
+                if (isPreview) {
+                    showToast('Fitur ini tidak tersedia dalam mode pratinjau.', 'error');
+                    return;
+                }
+
+                const productId = this.dataset.productId;
+                const icon = this.querySelector('img'); // Untuk mengubah ikon jika perlu
+
+                axios.post(`/tenant/${subdomain}/wishlist/toggle`, {
+                    product_id: productId
+                })
+                .then(res => {
+                    if (res.data.success) {
+                        // Perbarui jumlah wishlist di header
+                        const wishlistCountEl = document.getElementById('wishlist-count'); // Pastikan Anda punya elemen ini di header
+                        if (wishlistCountEl) {
+                            wishlistCountEl.textContent = res.data.wishlist_count;
+                        }
+
+                        // Tampilkan notifikasi
+                        if (res.data.action === 'added') {
+                            showToast('Produk ditambahkan ke wishlist!', 'success');
+                            // Opsional: ubah ikon menjadi 'hati terisi'
+                            // icon.src = 'path/to/filled-heart.png';
+                        } else {
+                            showToast('Produk dihapus dari wishlist.', 'success');
+                            // Opsional: ubah ikon kembali ke 'hati kosong'
+                            // icon.src = `{{ asset('template1/img/icon/heart.png') }}`;
+                        }
+                    }
+                })
+                .catch(err => {
+                    // Tangani error, termasuk jika pengguna belum login (status 401)
+                    const errorMessage = err.response?.data?.message || 'Gagal memperbarui wishlist. Silakan coba lagi.';
+                    showToast(errorMessage, 'error');
+                });
+            });
         });
     </script>
 @endpush

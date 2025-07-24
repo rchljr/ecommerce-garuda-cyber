@@ -19,12 +19,22 @@ class WishlistController extends Controller
         return view($templatePath . '.wishlist', compact('tenant', 'wishlistItems'));
     }
 
-    // PERBAIKAN: Menambahkan parameter $subdomain
+    // app/Http/Controllers/WishlistController.php
+
     public function toggle(Request $request, $subdomain)
     {
+        // 1. Cek apakah pengguna sudah login atau belum
+        if (!Auth::guard('customers')->check()) {
+            // Jika belum, kirim respon JSON dengan pesan error dan status 401 (Unauthorized)
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda harus login terlebih dahulu untuk menambahkan produk ke wishlist.'
+            ], 401);
+        }
+
+        // Kode di bawah ini hanya akan berjalan jika pengguna sudah login
         $request->validate(['product_id' => 'required|exists:products,id']);
 
-        // PERBAIKAN: Menggunakan guard 'customers'
         $userId = Auth::guard('customers')->id();
         $productId = $request->product_id;
 

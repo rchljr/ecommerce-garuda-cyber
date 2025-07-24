@@ -1,6 +1,6 @@
 @extends('layouts.mitra')
 
-@section('title', 'Detail Pesanan #' . $order->id)
+@section('title', 'Detail Pesanan #' . $order->order_number)
 
 @push('styles')
     <style>
@@ -257,7 +257,7 @@
 
 @section('content')
     <div class="container mx-auto px-4 py-8">
-        <h1 class="text-3xl font-bold text-gray-800 mb-6">Detail Pesanan #{{ $order->id }}</h1>
+        <h1 class="text-3xl font-bold text-gray-800 mb-6">Detail Pesanan #{{ $order->order_number }}</h1>
 
         @if (session('success'))
             <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
@@ -270,16 +270,34 @@
             </div>
         @endif
 
-        {{-- [BARU] Bagian Khusus untuk Menangani Permintaan Refund --}}
-        @if ($order->status == 'refund_requested' && $order->refundRequest)
+        @if ($order->status == 'refund_pending' && $order->refundRequest)
             <div class="bg-orange-100 border-l-4 border-orange-500 text-orange-800 p-6 mb-6 rounded-lg shadow-md">
                 <h2 class="text-xl font-bold mb-3 flex items-center gap-3">
                     <i class="fas fa-exclamation-triangle"></i> Permintaan Pengembalian Dana
                 </h2>
-                <div class="bg-white p-4 rounded-md border border-orange-200">
-                    <p class="text-sm font-semibold mb-1">Alasan dari Pelanggan:</p>
-                    <p class="text-gray-700 italic">"{{ $order->refundRequest->reason }}"</p>
+                
+                {{-- Detail Permintaan Refund --}}
+                <div class="bg-white p-4 rounded-md border border-orange-200 space-y-3">
+                    <div>
+                        <p class="text-sm font-semibold text-gray-800 mb-1">Alasan dari Pelanggan:</p>
+                        <p class="text-gray-700 italic">"{{ $order->refundRequest->reason }}"</p>
+                    </div>
+                    <hr>
+                    <div>
+                        <p class="text-sm font-semibold text-gray-800">Metode Pegembalian:</p>
+                        <p class="text-gray-700 font-medium">{{ $order->refundRequest->refund_method ?? 'Tidak ditentukan' }}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm font-semibold text-gray-800">Nomor Rekening/Akun:</p>
+                        <p class="text-gray-700 font-medium">{{ $order->refundRequest->bank_account_number ?? 'Tidak ditentukan' }}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm font-semibold text-gray-800">Total Refund Diajukan:</p>
+                        <p class="text-gray-700 font-bold text-lg">{{ format_rupiah($order->refundRequest->amount ?? 0) }}</p>
+                    </div>
                 </div>
+
+                {{-- Tombol Aksi --}}
                 <div class="mt-4 flex flex-col sm:flex-row gap-3">
                     {{-- Form untuk Menerima Refund --}}
                     <form action="{{ route('mitra.orders.refund.approve', $order->id) }}" method="POST" onsubmit="return confirm('Anda yakin ingin MENERIMA permintaan pengembalian dana ini? Status pesanan akan menjadi DANA DIKEMBALIKAN.');">
