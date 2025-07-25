@@ -13,14 +13,16 @@
             padding: 8px;
             border: 1px solid #d1d5db;
             border-radius: 0.375rem;
-            min-height: 42px; /* Agar tidak terlalu kecil jika belum ada tag */
+            min-height: 42px;
+            /* Agar tidak terlalu kecil jika belum ada tag */
             align-items: center;
         }
 
         .tag {
             display: inline-flex;
             align-items: center;
-            background-color: #3b82f6; /* Tailwind blue-600 */
+            background-color: #3b82f6;
+            /* Tailwind blue-600 */
             color: white;
             padding: 4px 8px;
             border-radius: 0.375rem;
@@ -44,7 +46,8 @@
             position: relative;
             width: 120px;
             height: 120px;
-            overflow: hidden; /* Pastikan gambar tidak keluar dari batas */
+            overflow: hidden;
+            /* Pastikan gambar tidak keluar dari batas */
             border-radius: 0.375rem;
         }
 
@@ -60,7 +63,8 @@
             position: absolute;
             top: -8px;
             right: -8px;
-            background-color: #ef4444; /* Tailwind red-500 */
+            background-color: #ef4444;
+            /* Tailwind red-500 */
             color: white;
             border-radius: 50%;
             width: 24px;
@@ -77,7 +81,8 @@
         /* Style untuk penanda wajib isi */
         .required-label::after {
             content: '*';
-            color: #ef4444; /* Warna merah */
+            color: #ef4444;
+            /* Warna merah */
             margin-left: 4px;
         }
 
@@ -93,10 +98,13 @@
         .option-value-tag {
             display: inline-flex;
             align-items: center;
-            background-color: #e2e8f0; /* bg-gray-200 */
-            color: #2d3748; /* text-gray-800 */
+            background-color: #e2e8f0;
+            /* bg-gray-200 */
+            color: #2d3748;
+            /* text-gray-800 */
             padding: 0.25rem 0.75rem;
-            border-radius: 9999px; /* rounded-full */
+            border-radius: 9999px;
+            /* rounded-full */
             margin-right: 0.5rem;
             margin-bottom: 0.5rem;
             font-size: 0.875rem;
@@ -106,7 +114,8 @@
             margin-left: 0.5rem;
             background: none;
             border: none;
-            color: #4a5568; /* text-gray-600 */
+            color: #4a5568;
+            /* text-gray-600 */
             cursor: pointer;
             font-weight: bold;
             line-height: 1;
@@ -114,15 +123,18 @@
         }
 
         .option-value-tag button:hover {
-            color: #e53e3e; /* text-red-600 */
+            color: #e53e3e;
+            /* text-red-600 */
         }
-        
+
         /* Styling for the file input button inside table cell */
         /* ini untuk input file yang disembunyikan dan diganti dengan label */
         .file-input-button {
             display: inline-block;
-            background-color: #eff6ff; /* blue-50 */
-            color: #1d4ed8; /* blue-700 */
+            background-color: #eff6ff;
+            /* blue-50 */
+            color: #1d4ed8;
+            /* blue-700 */
             padding: 8px 16px;
             border-radius: 6px;
             border: none;
@@ -133,12 +145,17 @@
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            max-width: 100%; /* Agar tidak melebihi sel tabel */
-            box-sizing: border-box; /* Agar padding tidak menyebabkan overflow */
+            max-width: 100%;
+            /* Agar tidak melebihi sel tabel */
+            box-sizing: border-box;
+            /* Agar padding tidak menyebabkan overflow */
         }
+
         .file-input-button:hover {
-            background-color: #dbeafe; /* blue-100 */
+            background-color: #dbeafe;
+            /* blue-100 */
         }
+
         /* Sembunyikan input file asli */
         .file-input-hidden {
             width: 0.1px;
@@ -200,7 +217,8 @@
                             <label for="description" class="block text-sm font-medium text-gray-700 mb-1">Deskripsi Lengkap
                             </label>
                             {{-- Disarankan menggunakan editor WYSIWYG seperti TinyMCE atau CKEditor di sini --}}
-                            <textarea id="description" name="description" rows="8" class="w-full border-gray-300 rounded-md shadow-sm resize-y focus:ring-blue-500 focus:border-blue-500">{{ old('description') }}</textarea> {{-- Menambahkan focus style --}}
+                            <textarea id="description" name="description" rows="8"
+                                class="w-full border-gray-300 rounded-md shadow-sm resize-y focus:ring-blue-500 focus:border-blue-500">{{ old('description') }}</textarea> {{-- Menambahkan focus style --}}
                         </div>
                     </div>
 
@@ -335,14 +353,12 @@
                                                     }
                                                 });">
                                                     <input type="file" :id="`variant-image-${index}`"
-                                                        :name="`variants[${index}][image_file]`"
-                                                        x-ref="imageInput"
-                                                        @change="fileInput = $event.target.files"
-                                                        accept="image/*"
-                                                        class="file-input-hidden"> {{-- Input file asli disembunyikan --}}
-                                                    <label :for="`variant-image-${index}`"
-                                                        class="file-input-button">
-                                                        <span x-text="fileInput && fileInput.length > 0 ? fileInput[0].name : (filePreview ? 'Ubah File' : 'Pilih File')"></span>
+                                                        :name="`variants[${index}][image]`" {{-- <-- UBAH DI SINI --}}
+                                                        x-ref="imageInput" @change="fileInput = $event.target.files"
+                                                        accept="image/*" class="file-input-hidden">{{-- Input file asli disembunyikan --}}
+                                                    <label :for="`variant-image-${index}`" class="file-input-button">
+                                                        <span
+                                                            x-text="fileInput && fileInput.length > 0 ? fileInput[0].name : (filePreview ? 'Ubah File' : 'Pilih File')"></span>
                                                     </label>
                                                     <template x-if="filePreview">
                                                         <div class="image-preview-wrapper mt-2">
@@ -367,8 +383,8 @@
                                             {{-- Input Persentase Keuntungan per Varian --}}
                                             <td class="px-6 py-4 whitespace-nowrap">
                                                 <input type="number" :name="`variants[${index}][profit_percentage]`"
-                                                    x-model.number="variant.profit_percentage" min="0" max="100"
-                                                    step="0.01" required
+                                                    x-model.number="variant.profit_percentage" min="0"
+                                                    max="100" step="0.01" required
                                                     class="w-24 block px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                                                     @input="generateVariants">
                                             </td>
@@ -587,12 +603,14 @@
 
                         if (targetInput) {
                             if (isMultipleInput) {
-                                alert('Untuk menghapus gambar dari galeri, silakan unggah ulang semua gambar yang diinginkan.');
+                                alert(
+                                    'Untuk menghapus gambar dari galeri, silakan unggah ulang semua gambar yang diinginkan.');
                                 targetInput.value = ''; // Clear actual file input
                                 container.innerHTML = ''; // Clear all previews
                             } else {
                                 targetInput.value = ''; // Clear actual file input
-                                e.target.closest('.image-preview-wrapper').remove(); // Remove only this preview
+                                e.target.closest('.image-preview-wrapper')
+                            .remove(); // Remove only this preview
                             }
                         } else {
                             e.target.closest('.image-preview-wrapper').remove(); // Fallback
@@ -625,7 +643,7 @@
                     } else {
                         this.addOption();
                     }
-                    
+
                     const oldGeneratedVariants = @json(old('variants', []));
                     const oldVariantsMap = new Map();
                     if (oldGeneratedVariants.length > 0) {
@@ -637,7 +655,8 @@
                                         .value).join(';');
                                     oldVariantsMap.set(variantId, {
                                         modal_price: parseFloat(oldV.modal_price) || 0,
-                                        profit_percentage: parseFloat(oldV.profit_percentage) || 0,
+                                        profit_percentage: parseFloat(oldV
+                                            .profit_percentage) || 0,
                                         stock: parseInt(oldV.stock) || 0,
                                         image_path_url: oldV.image_path_url || ''
                                     });
@@ -722,7 +741,8 @@
                             let modalPrice = 0;
                             let profitPercentage = 0;
                             let stock = 0;
-                            let imagePathUrl = ''; // Untuk menyimpan URL gambar varian (jika ada)
+                            let imagePathUrl =
+                            ''; // Untuk menyimpan URL gambar varian (jika ada)
 
                             // Prioritaskan old input (dari validasi gagal), lalu data yang sudah digenerate
                             if (this.oldVariantsMap && this.oldVariantsMap.has(variantId)) {
@@ -730,22 +750,27 @@
                                 modalPrice = parseFloat(oldData.modal_price) || 0;
                                 profitPercentage = parseFloat(oldData.profit_percentage) || 0;
                                 stock = parseInt(oldData.stock) || 0;
-                                imagePathUrl = oldData.image_path_url || ''; // Ambil URL gambar dari old input
+                                imagePathUrl = oldData.image_path_url ||
+                                ''; // Ambil URL gambar dari old input
                             } else {
                                 const existingVariant = this.generatedVariants.find(v => v
                                     .id === variantId);
                                 if (existingVariant) {
                                     modalPrice = parseFloat(existingVariant.modal_price) || 0;
-                                    profitPercentage = parseFloat(existingVariant.profit_percentage) || 0;
+                                    profitPercentage = parseFloat(existingVariant
+                                        .profit_percentage) || 0;
                                     stock = parseInt(existingVariant.stock) || 0;
-                                    imagePathUrl = existingVariant.image_path_url || ''; // Ambil URL gambar dari varian yang sudah ada
+                                    imagePathUrl = existingVariant.image_path_url ||
+                                    ''; // Ambil URL gambar dari varian yang sudah ada
                                 }
                             }
 
                             // Pastikan modalPrice dan profitPercentage adalah angka sebelum perhitungan
                             const finalModalPrice = !isNaN(modalPrice) ? modalPrice : 0;
-                            const finalProfitPercentage = !isNaN(profitPercentage) ? profitPercentage : 0;
-                            const sellingPrice = finalModalPrice * (1 + (finalProfitPercentage / 100));
+                            const finalProfitPercentage = !isNaN(profitPercentage) ?
+                                profitPercentage : 0;
+                            const sellingPrice = finalModalPrice * (1 + (finalProfitPercentage /
+                                100));
 
                             newGeneratedVariants.push({
                                 id: variantId,
@@ -770,7 +795,10 @@
 
                 formatRupiah(amount) { // Fungsi helper untuk format rupiah
                     if (typeof amount !== 'number' || isNaN(amount)) return 'Rp 0'; // Tangani NaN
-                    return 'Rp ' + amount.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+                    return 'Rp ' + amount.toLocaleString('id-ID', {
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 0
+                    });
                 }
             }));
         });

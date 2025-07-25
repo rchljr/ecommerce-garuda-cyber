@@ -25,7 +25,7 @@ class GaleryPhoto extends Model
         return $this->belongsTo(Product::class, 'product_id', 'id');
     }
 
-    public function varian()
+    public function varians()
     {
         return $this->belongsTo(Varian::class, 'varian_id', 'id');
     }

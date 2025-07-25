@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\Hero;
 use App\Models\Banner;
 use App\Models\Product;
+use App\Models\Varian;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -54,15 +55,17 @@ class HomeController extends Controller
                 ->get();
 
             // 5. Buat query dasar untuk produk berdasarkan shop_id
-            // PENTING: Eager load 'varians' di sini
-            $baseProductQuery = Product::where('shop_id', $shopId)
+            // PENTING: Eager load 'variants' di sini (SUDAH DIPERBAIKI)
+           $baseProductQuery = Product::where('shop_id', $shopId)
                 ->where('status', 'active')
-                ->with('varians'); // TAMBAHKAN INI
+                ->with('varians'); // *** PERBAIKAN DI SINI: 'varians' -> 'variants' ***
 
             // 6. Ambil koleksi produk yang berbeda dari query dasar
             $bestSellers = (clone $baseProductQuery)->where('is_best_seller', true)->latest()->limit(8)->get();
             $newArrivals = (clone $baseProductQuery)->where('is_new_arrival', true)->latest()->limit(8)->get();
             $hotSales = (clone $baseProductQuery)->where('is_hot_sale', true)->latest()->limit(8)->get();
+            $allProducts = $bestSellers->merge($newArrivals)->merge($hotSales)->unique('id');
+            // dd($allProducts);
 
             // 7. Tampilkan view dengan semua data yang dibutuhkan
             return view($templatePath . '.home', [
@@ -74,6 +77,7 @@ class HomeController extends Controller
                 'hotSales' => $hotSales,
                 'tenant' => $tenant,
                 'subdomainName' => $subdomain,
+                'allProducts' => $bestSellers->merge($newArrivals)->merge($hotSales)->unique('id'),
             ]);
 
         } catch (Throwable $e) {
@@ -89,4 +93,5 @@ class HomeController extends Controller
             abort(500, 'Terjadi kesalahan pada server. Silakan periksa log untuk detail.');
         }
     }
+
 }

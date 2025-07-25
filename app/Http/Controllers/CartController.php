@@ -28,6 +28,7 @@ class CartController extends Controller
 
     public function add(Request $request, $subdomain)
     {
+        // dd($request->all());
         $request->validate([
             'product_id' => 'required|exists:products,id',
             'variant_id' => 'required|exists:varians,id',
