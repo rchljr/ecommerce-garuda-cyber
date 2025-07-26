@@ -26,7 +26,7 @@ class VoucherProductController extends Controller
     public function create()
     {
         $products = Auth::user()->products; // Ambil produk mitra
-        $voucher = new \App\Models\Voucher(); // Inisialisasi objek Voucher kosong
+        $voucher = new Voucher(); // Inisialisasi objek Voucher kosong
         return view('dashboard-mitra.vouchers.create', compact('products', 'voucher'));
     }
 
@@ -36,23 +36,21 @@ class VoucherProductController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            // UBAH: Validasi 'voucher_code' dari input 'name' di form
             'voucher_code' => ['required', 'string', 'max:100', 'unique:vouchers,voucher_code'],
             'description' => 'nullable|string', // Pastikan ini ada di form dan validasi
-            'type' => 'required|in:percentage,fixed_amount',
-            'discount' => 'required|numeric|min:0', // UBAH: Validasi 'discount' dari input 'value'
             'min_spending' => 'nullable|numeric|min:0', // UBAH: Validasi 'min_spending' dari input 'min_purchase'
             'start_date' => 'required|date', // Pastikan ini ada di form dan validasi
             'expired_date' => 'required|date|after_or_equal:start_date', // UBAH: Validasi 'expired_date' dari input 'valid_until'
+            'discount' => 'required|numeric|min:0', // UBAH: Validasi 'discount' dari input 'value'
             'is_for_new_customer' => 'nullable|boolean',
-            'products' => 'nullable|array',
-            'products.*' => 'exists:products,id',
+            'max_uses_per_customer' => 'nullable|boolean',
         ], [
             'voucher_code.unique' => 'Kode voucher ini sudah digunakan. Harap gunakan kode lain.',
             'expired_date.after_or_equal' => 'Tanggal berakhir voucher harus sama atau setelah tanggal mulai.',
         ]);
 
         $validated['is_for_new_customer'] = $request->has('is_for_new_customer'); // Checkbox
+        $validated['max_uses_per_customer'] = $request->has('max_uses_per_customer'); // Checkbox
 
         // Mapping nama input form ke nama kolom database jika berbeda
         $validated['user_id'] = Auth::id();
@@ -107,23 +105,21 @@ class VoucherProductController extends Controller
         }
 
         $validated = $request->validate([
-            // UBAH: Validasi 'voucher_code' dari input 'name' di form, abaikan ID sendiri
             'voucher_code' => ['required', 'string', 'max:100', Rule::unique('vouchers', 'voucher_code')->ignore($voucher->id)],
             'description' => 'nullable|string',
-            'type' => 'required|in:percentage,fixed_amount',
-            'discount' => 'required|numeric|min:0',
             'min_spending' => 'nullable|numeric|min:0',
             'start_date' => 'required|date',
             'expired_date' => 'required|date|after_or_equal:start_date',
+            'discount' => 'required|numeric|min:0',
             'is_for_new_customer' => 'nullable|boolean',
-            'products' => 'nullable|array',
-            'products.*' => 'exists:products,id',
+            'max_uses_per_customer' => 'nullable|boolean',
         ], [
             'voucher_code.unique' => 'Kode voucher ini sudah digunakan. Harap gunakan kode lain.',
             'expired_date.after_or_equal' => 'Tanggal berakhir voucher harus sama atau setelah tanggal mulai.',
         ]);
 
         $validated['is_for_new_customer'] = $request->has('is_for_new_customer');
+        $validated['max_uses_per_customer'] = $request->has('max_uses_per_customer');
         
         // --- BARU: Gunakan nilai 'name' dari request untuk kolom 'voucher_code' ---
         // $validated['voucher_code'] = Str::upper($validated['name']); // Tidak diperlukan jika form sudah mengirim 'voucher_code'

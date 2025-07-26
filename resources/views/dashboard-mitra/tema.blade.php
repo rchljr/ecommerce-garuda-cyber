@@ -15,24 +15,30 @@
             {{-- Grid for Templates --}}
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 @forelse ($templates as $template)
-                    {{-- [MODIFIKASI] Tambahkan kondisi untuk hover effect --}}
+                    @php
+                        // [LOGIKA BARU] Tentukan apakah tema ini diizinkan berdasarkan paket langganan.
+                        // Asumsi: 'template1' adalah path unik untuk Template 1.
+                        $isAllowedByPlan = !$isStarterPlan || ($isStarterPlan && $template->path === 'template1');
+                    @endphp
+
                     <div
-                        class="bg-white rounded-xl shadow-md overflow-hidden flex flex-col transition-all duration-300 {{ $template->status === 'active' ? 'hover:shadow-xl hover:-translate-y-1' : '' }}">
+                        class="bg-white rounded-xl shadow-md overflow-hidden flex flex-col transition-all duration-300 {{ ($template->status === 'active' && $isAllowedByPlan) ? 'hover:shadow-xl hover:-translate-y-1' : '' }}">
 
                         {{-- Image Preview with Overlay --}}
                         <div class="relative group">
-                            {{-- [MODIFIKASI] Link preview tidak aktif jika status bukan 'active' --}}
-                            <a href="{{ $template->status === 'active' ? route('template.preview', $template) : '#' }}"
-                                target="_blank" class="block {{ $template->status !== 'active' ? 'pointer-events-none' : '' }}">
+                            {{-- Tautan preview hanya aktif jika template aktif DAN diizinkan oleh paket --}}
+                            <a href="{{ ($template->status === 'active' && $isAllowedByPlan) ? route('template.preview', $template) : '#' }}"
+                                target="_blank"
+                                class="block {{ !($template->status === 'active' && $isAllowedByPlan) ? 'pointer-events-none' : '' }}">
 
-                                {{-- [MODIFIKASI] Tambahkan filter grayscale jika status bukan 'active' --}}
+                                {{-- Gambar menjadi grayscale jika tidak aktif ATAU tidak diizinkan oleh paket --}}
                                 <img src="{{ asset('storage/' . $template->image_preview) }}"
                                     alt="Preview {{ $template->name }}"
-                                    class="w-full h-56 object-cover object-top transition-transform duration-300 {{ $template->status === 'active' ? 'group-hover:scale-105' : 'filter grayscale' }}"
+                                    class="w-full h-56 object-cover object-top transition-transform duration-300 {{ ($template->status === 'active' && $isAllowedByPlan) ? 'group-hover:scale-105' : 'filter grayscale' }}"
                                     onerror="this.onerror=null;this.src='https://placehold.co/600x400/f1f5f9/cbd5e1?text={{ urlencode($template->name) }}';">
 
-                                {{-- [MODIFIKASI] Hanya tampilkan overlay preview jika template aktif --}}
-                                @if($template->status === 'active')
+                                {{-- Overlay hanya muncul jika template aktif DAN diizinkan oleh paket --}}
+                                @if($template->status === 'active' && $isAllowedByPlan)
                                     <div
                                         class="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                                         <div
@@ -58,8 +64,8 @@
 
                             {{-- Action Button/Status Badge --}}
                             <div class="mt-6">
-                                {{-- [MODIFIKASI] Tambahkan kondisi untuk status 'coming_soon' atau lainnya --}}
                                 @if ($template->status !== 'active')
+                                    {{-- Status: Segera Hadir --}}
                                     <div
                                         class="w-full text-center bg-gray-200 text-gray-600 font-bold py-2.5 px-4 rounded-lg flex items-center justify-center gap-2 cursor-not-allowed">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
@@ -69,7 +75,20 @@
                                         </svg>
                                         <span>Segera Hadir</span>
                                     </div>
+                                @elseif (!$isAllowedByPlan)
+                                    {{-- [LOGIKA BARU] Status: Perlu Upgrade Paket --}}
+                                    <a href="#" {{-- Ganti # dengan route ke halaman langganan Anda --}}
+                                        class="w-full text-center bg-yellow-400 hover:bg-yellow-500 text-yellow-900 font-bold py-2.5 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors duration-300">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20"
+                                            fill="currentColor">
+                                            <path fill-rule="evenodd"
+                                                d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
+                                                clip-rule="evenodd" />
+                                        </svg>
+                                        <span>Upgrade Paket Berlangganan</span>
+                                    </a>
                                 @elseif ($currentTemplateId === $template->id)
+                                    {{-- Status: Tema Sedang Aktif --}}
                                     <div
                                         class="w-full text-center bg-green-100 text-green-800 font-bold py-2.5 px-4 rounded-lg flex items-center justify-center gap-2">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20"
@@ -81,6 +100,7 @@
                                         <span>Tema Aktif</span>
                                     </div>
                                 @else
+                                    {{-- Aksi: Gunakan Template --}}
                                     <form method="POST" action="{{ route('mitra.editor.updateTheme') }}">
                                         @csrf
                                         <input type="hidden" name="template_id" value="{{ $template->id }}">
