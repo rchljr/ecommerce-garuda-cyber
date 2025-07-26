@@ -16,7 +16,7 @@ class OrderController extends Controller
     /**
      * Menampilkan daftar semua pesanan untuk toko user.
      */
-    public function index()
+    public function index(Request $request) // 1. Tambahkan Request $request
     {
         $user = Auth::user();
         $shop = $user->shop;
@@ -27,11 +27,26 @@ class OrderController extends Controller
 
         $shopId = $shop->id;
 
-        $orders = Order::where('shop_id', $shopId)
-            ->with(['user', 'items.product', 'items.variant'])
-            ->latest()
-            ->paginate(15);
+        // 2. Mulai query builder, jangan langsung get() atau paginate()
+        $query = Order::where('shop_id', $shopId)
+            ->with(['user']); // Eager load relasi user
 
+        // 3. Terapkan filter berdasarkan input dari form
+        // Filter berdasarkan Status
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        // Filter berdasarkan Metode Pengiriman
+        if ($request->filled('delivery_method')) {
+            // Pastikan Anda memiliki kolom 'shipping_method' di tabel 'orders'
+            $query->where('delivery_method', $request->delivery_method);
+        }
+
+        // 4. Lakukan sorting dan pagination setelah semua filter diterapkan
+        $orders = $query->latest()->paginate(10); // Ubah paginate ke 10
+
+        // 5. Kirim data ke view
         return view('dashboard-mitra.orders.index', compact('orders'));
     }
 
@@ -123,7 +138,6 @@ class OrderController extends Controller
             DB::commit();
 
             return back()->with('success', 'Status pesanan berhasil diperbarui!');
-
         } catch (\Exception $e) {
             // 4. Jika ada error, rollback semua perubahan
             DB::rollBack();
@@ -156,7 +170,6 @@ class OrderController extends Controller
             });
 
             return back()->with('success', 'Permintaan refund berhasil diterima. Status pesanan diubah menjadi "Dana Dikembalikan".');
-
         } catch (\Exception $e) {
             return back()->with('error', 'Gagal memproses permintaan refund: ' . $e->getMessage());
         }
@@ -180,7 +193,6 @@ class OrderController extends Controller
             });
 
             return back()->with('success', 'Permintaan refund berhasil ditolak. Status pesanan dikembalikan menjadi "Diproses".');
-
         } catch (\Exception $e) {
             return back()->with('error', 'Gagal memproses permintaan refund: ' . $e->getMessage());
         }

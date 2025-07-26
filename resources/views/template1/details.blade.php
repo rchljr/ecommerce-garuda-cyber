@@ -37,8 +37,10 @@
         }
 
         /* Style untuk ikon wishlist yang aktif */
-        .product__details__btns__option .toggle-wishlist.active i {
+        .product__details__btns__option .toggle-wishlist.active i,
+        .product__hover .toggle-wishlist.active i {
             color: #e53636;
+            font-weight: 900; /* Make it bold */
         }
 
         /* Style untuk tombol Add to Cart yang dinonaktifkan */
@@ -98,6 +100,34 @@
         #thumbnail-container img:hover {
             border-color: #ca1515;
         }
+        
+        /* Style untuk review */
+        .review-item {
+            border-bottom: 1px solid #eee;
+            padding-bottom: 15px;
+            margin-bottom: 15px;
+        }
+        .review-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+        .review-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+        .review-header h6 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 600;
+        }
+        .review-rating .fa {
+            color: #f7941d;
+        }
+        .review-content {
+            color: #666;
+        }
     </style>
 @endpush
 
@@ -114,15 +144,14 @@
                     <div class="col-lg-12">
                         <div class="product__details__breadcrumb">
                             <a
-                                href="{{ !$isPreview ? route('tenant.home', ['subdomain' => $currentSubdomain]) : '#' }}">Home</a>
+                                href="{{ !$isPreview ? route('tenant.home', ['subdomain' => $currentSubdomain]) : '#' }}">Beranda</a>
                             <a
-                                href="{{ !$isPreview ? route('tenant.shop', ['subdomain' => $currentSubdomain]) : '#' }}">Shop</a>
+                                href="{{ !$isPreview ? route('tenant.shop', ['subdomain' => $currentSubdomain]) : '#' }}">Toko</a>
                             <span>{{ $product->name ?? 'Detail Produk' }}</span>
                         </div>
                     </div>
                 </div>
                 <div class="row">
-                    {{-- PERBAIKAN: Struktur kolom diubah agar gambar dan deskripsi sejajar dengan benar di layar besar --}}
                     <div class="col-lg-6 col-md-6">
                         <div class="product__details__pic__container">
                             {{-- Kontainer Gambar Utama --}}
@@ -139,14 +168,14 @@
                     <div class="col-lg-6 col-md-6">
                         <div class="product__details__text">
                             <h4>{{ $product->name ?? 'Nama Produk' }}</h4>
+                            {{-- PERUBAHAN: Rating dan jumlah ulasan dinamis --}}
                             <div class="rating">
                                 @for ($i = 1; $i <= 5; $i++)
-                                    <i
-                                        class="fa {{ ($product->rating ?? 0) >= $i ? 'fa-star' : (($product->rating ?? 0) > $i - 1 ? 'fa-star-half-o' : 'fa-star-o') }}"></i>
+                                    <i class="fa {{ ($averageRating ?? 0) >= $i ? 'fa-star' : (($averageRating ?? 0) > $i - 1 ? 'fa-star-half-o' : 'fa-star-o') }}"></i>
                                 @endfor
-                                <span> - {{ $product->reviews_count ?? 0 }} Reviews</span>
+                                <span> - {{ $reviewCount ?? 0 }} Ulasan</span>
                             </div>
-                            <h3 id="product-display-price">Rp {{ number_format($product->price, 0, ',', '.') }}</h3>
+                            <h3 id="product-display-price">{{ format_rupiah($product->price) }}</h3>
                             <p>{{ $product->short_description ?? 'Deskripsi singkat produk akan muncul di sini.' }}</p>
 
                             <form id="add-to-cart-form"
@@ -154,49 +183,45 @@
                                 method="POST">
                                 @csrf
                                 <input type="hidden" name="product_id" value="{{ $product->id }}">
-                                <input type="hidden" id="selected-variant-id" name="varian_id" value="">
+                                <input type="hidden" id="selected-variant-id" name="variant_id" value="">
 
                                 <div class="product__details__option" id="dynamic-variant-options">
-                                    {{-- Opsi varian dinamis akan di-generate oleh JavaScript di sini --}}
                                     @if ($product->varians->isEmpty())
                                         <p class="text-muted">Produk ini tidak memiliki varian.</p>
                                     @endif
                                 </div>
 
-                                    <div class="product__details__cart__option">
-                                        <div class="quantity">
-                                            <div class="pro-qty">
-                                                <input type="text" name="quantity" value="1">
-                                            </div>
+                                <div class="product__details__cart__option">
+                                    <div class="quantity">
+                                        <div class="pro-qty">
+                                            <input type="text" name="quantity" value="1">
                                         </div>
-                                        <button type="submit" class="primary-btn" id="add-to-cart-btn" disabled>add to
-                                            cart</button>
                                     </div>
-                                    {{-- PERBAIKAN: Tombol add-to-cart di-disable jika produk tidak punya varian sama sekali --}}
                                     <button type="submit" class="primary-btn" id="add-to-cart-btn"
                                         {{ $product->varians->isEmpty() ? 'disabled' : '' }}>Tambah Keranjang</button>
                                 </div>
-                            @endif
+                            </form>
+
                             <div class="product__details__btns__option">
                                 <a href="#" class="toggle-wishlist" data-product-id="{{ $product->id }}"><i
-                                        class="fa fa-heart"></i> add to wishlist</a>
+                                        class="fa fa-heart"></i> Tambah ke Wishlist</a>
                             </div>
 
-                            {{-- <div class="product__details__last__option">
-                                <h5><span>Guaranteed Safe Checkout</span></h5>
-                                <img src="{{ asset('template1/img/shop-details/details-payment.png') }}" alt="">
+                            <div class="product__details__last__option">
+                                <h5><span>Garansi Pembelian</span></h5>
+                                <img src="{{ asset('images/Frame 8.png') }}" alt="Payment Methods" height="40">
                                 <ul>
                                     <li><span>SKU:</span> <span id="variant-sku">{{ $product->sku ?? 'N/A' }}</span></li>
                                     <li><span>Kategori:</span> {{ $product->subCategory->name ?? 'Uncategorized' }}</li>
                                     <li><span>Tag:</span>
                                         @forelse($product->tags as $tag)
-                                            {{ $tag->name }}{{ !$loop->last ? ',' : '' }}
+                                            {{ $tag->name }}{{ !$loop->last ? ', ' : '' }}
                                         @empty
                                             -
                                         @endforelse
                                     </li>
                                 </ul>
-                            </div> --}}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -204,7 +229,6 @@
         </div>
         <div class="product__details__content">
             <div class="container">
-                {{-- Bagian Deskripsi Produk Lengkap dan Ulasan --}}
                 <div class="row">
                     <div class="col-lg-12">
                         <div class="product__details__tab">
@@ -213,27 +237,41 @@
                                     <a class="nav-link active" data-toggle="tab" href="#tabs-1"
                                         role="tab">Description</a>
                                 </li>
-                                <li class="nav-item">
+                                {{-- <li class="nav-item">
                                     <a class="nav-link" data-toggle="tab" href="#tabs-2" role="tab">Specification</a>
-                                </li>
+                                </li> --}}
+                                {{-- PERUBAHAN: Jumlah ulasan di tab dinamis --}}
                                 <li class="nav-item">
-                                    <a class="nav-link" data-toggle="tab" href="#tabs-3" role="tab">Reviews (
-                                        {{ $product->reviews_count ?? 0 }} )</a>
+                                    <a class="nav-link" data-toggle="tab" href="#tabs-3" role="tab">Ulasan ({{ $reviewCount ?? 0 }})</a>
                                 </li>
                             </ul>
                             <div class="tab-content">
                                 <div class="tab-pane active" id="tabs-1" role="tabpanel">
-                                    <h6>Description</h6>
+                                    <h6>Deskipsi</h6>
                                     <p>{!! $product->description ?? 'Deskripsi lengkap produk akan muncul di sini.' !!}</p>
                                 </div>
-                                <div class="tab-pane" id="tabs-2" role="tabpanel">
+                                {{-- <div class="tab-pane" id="tabs-2" role="tabpanel">
                                     <h6>Specification</h6>
                                     <p>{!! $product->specification ?? 'Spesifikasi produk akan muncul di sini.' !!}</p>
-                                </div>
+                                </div> --}}
+                                {{-- PERUBAHAN: Konten tab ulasan dinamis --}}
                                 <div class="tab-pane" id="tabs-3" role="tabpanel">
-                                    <h6>Reviews ({{ $product->reviews_count ?? 0 }})</h6>
-                                    {{-- Anda bisa menambahkan logika untuk menampilkan ulasan di sini --}}
-                                    <p>...</p>
+                                    <h6>Ulasan Pelanggan ({{ $reviewCount ?? 0 }})</h6>
+                                    @forelse ($reviews as $review)
+                                        <div class="review-item">
+                                            <div class="review-header">
+                                                <h6>{{ $review->name }}</h6>
+                                                <div class="review-rating">
+                                                    @for ($i = 1; $i <= 5; $i++)
+                                                        <i class="fa {{ $review->rating >= $i ? 'fa-star' : 'fa-star-o' }}"></i>
+                                                    @endfor
+                                                </div>
+                                            </div>
+                                            <p class="review-content">{{ $review->content }}</p>
+                                        </div>
+                                    @empty
+                                        <p>Belum ada ulasan untuk produk ini. Jadilah yang pertama memberikan ulasan!</p>
+                                    @endforelse
                                 </div>
                             </div>
                         </div>
@@ -268,7 +306,7 @@
                                 <div class="product__item__text">
                                     <h6>{{ $relatedProduct->name }}</h6>
                                     <a href="{{ !$isPreview ? route('tenant.product.details', ['subdomain' => $currentSubdomain, 'product' => $relatedProduct->slug]) : '#' }}"
-                                        class="add-cart">View Product</a>
+                                        class="add-cart">Lihat Produk</a>
                                     <div class="rating">
                                         @for ($i = 1; $i <= 5; $i++)
                                             <i
@@ -289,10 +327,13 @@
 
 
 @push('scripts')
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Data produk lengkap, termasuk varian dan options_data
             const productData = @json($product);
+            
+            const isPreview = {{ $isPreview ? 'true' : 'false' }};
+            const currentSubdomain = '{{ $currentSubdomain }}';
 
             const dynamicOptionContainer = document.getElementById('dynamic-variant-options');
             const addToCartBtn = document.getElementById('add-to-cart-btn');
@@ -305,7 +346,7 @@
             let selectedOptions = {};
             let optionNamesOrder = [];
             let currentMatchingVarian = null;
-            let toastTimeout; // PERBAIKAN: Deklarasi variabel timeout untuk toast
+            let toastTimeout;
 
             // ===================================================================
             // FUNGSI BANTUAN (HELPERS)
@@ -324,61 +365,49 @@
                 }, 3000);
             }
 
+            function formatRupiah(number) {
+                return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(number);
+            }
+
             function getOptionValue(varian, optionName) {
                 if (!varian || !varian.options_data || !Array.isArray(varian.options_data)) {
                     return null;
                 }
-                const option = varian.options_data.find(opt => opt.name && opt.name.toLowerCase() === optionName
-                    .toLowerCase());
+                const option = varian.options_data.find(opt => opt.name && opt.name.toLowerCase() === optionName.toLowerCase());
                 return option ? option.value : null;
             }
-
-            // PERBAIKAN: Fungsi ini disederhanakan dan diperbaiki
+            
             function updateImages(varian) {
-                // Helper untuk membuat URL lengkap dari path storage
                 const getFullUrl = (path) => path ? `{{ asset('storage') }}/${path}` : null;
 
-                // Tentukan gambar utama dan galeri
-                let primaryImageUrl = null;
+                let primaryImageUrl = getFullUrl(varian?.image_path || productData.main_image);
                 let galleryImageUrls = [];
-
-                // Prioritas 1: Gambar dari varian yang dipilih
-                if (varian && varian.image_url) {
-                    primaryImageUrl = varian.image_url;
-                }
-                // Prioritas 2: Gambar utama produk
-                else if (productData.image_url) {
-                    primaryImageUrl = productData.image_url;
+                
+                if (productData.gallery_image_paths && productData.gallery_image_paths.length > 0) {
+                    galleryImageUrls = productData.gallery_image_paths.map(path => getFullUrl(path));
+                } else if (productData.gallery && productData.gallery.length > 0) {
+                    galleryImageUrls = productData.gallery.map(img => img.image_url); // Fallback
                 }
 
-                // Ambil galeri dari produk
-                if (productData.gallery && productData.gallery.length > 0) {
-                    galleryImageUrls = productData.gallery.map(img => img.image_url);
-                }
-
-                // Gabungkan semua gambar unik
                 const displayImages = new Set();
                 if (primaryImageUrl) displayImages.add(primaryImageUrl);
-                galleryImageUrls.forEach(url => displayImages.add(url));
+                galleryImageUrls.forEach(url => {
+                    if (url) displayImages.add(url);
+                });
 
                 const finalImages = Array.from(displayImages);
 
-                // Update DOM
                 if (finalImages.length === 0) {
                     mainImageDisplay.innerHTML = '<p>Gambar tidak tersedia.</p>';
                     thumbnailContainer.innerHTML = '';
                     return;
                 }
 
-                // Set gambar utama dengan gambar pertama dari daftar
                 mainImageDisplay.innerHTML = `<img src="${finalImages[0]}" alt="${productData.name}">`;
-
-                // Buat thumbnail
                 thumbnailContainer.innerHTML = finalImages.map((url, index) => `
                     <img src="${url}" alt="Thumbnail ${index + 1}" class="${index === 0 ? 'active' : ''}" data-full-src="${url}">
                 `).join('');
             }
-
 
             // ===================================================================
             // LOGIKA UTAMA VARIAN
@@ -387,13 +416,10 @@
             function initializeVariantSelection() {
                 if (!productData.varians || productData.varians.length === 0) {
                     addToCartBtn.disabled = true;
-                    updateImages(null); // Tampilkan gambar default produk
-                    dynamicOptionContainer.innerHTML =
-                        '<p class="text-muted">Produk ini tidak memiliki varian.</p>';
+                    updateImages(null);
                     return;
                 }
 
-                // Kumpulkan semua nama opsi unik (e.g., 'Warna', 'Ukuran')
                 productData.varians.forEach(varian => {
                     if (varian.options_data && Array.isArray(varian.options_data)) {
                         varian.options_data.forEach(option => {
@@ -404,7 +430,6 @@
                     }
                 });
 
-                // Urutkan opsi (opsional, untuk konsistensi UI)
                 optionNamesOrder.sort((a, b) => {
                     const order = ['size', 'ukuran', 'color', 'warna'];
                     let indexA = order.indexOf(a.toLowerCase());
@@ -414,7 +439,6 @@
                     return indexA - indexB;
                 });
 
-                // Buat HTML untuk dropdown
                 let optionsHtml = '';
                 optionNamesOrder.forEach(optionName => {
                     optionsHtml += `
@@ -423,82 +447,58 @@
                             <select id="select-${optionName.toLowerCase()}" class="variant-option-select" required data-option-name="${optionName}" disabled>
                                 <option value="">Pilih ${optionName}</option>
                             </select>
-                        </div>
-                    `;
+                        </div>`;
                 });
                 dynamicOptionContainer.innerHTML = optionsHtml;
 
-                // Tambahkan event listener untuk setiap dropdown
                 optionNamesOrder.forEach((optionName, index) => {
-                    const selectElement = dynamicOptionContainer.querySelector(
-                        `#select-${optionName.toLowerCase()}`);
+                    const selectElement = document.getElementById(`select-${optionName.toLowerCase()}`);
                     if (selectElement) {
                         selectElement.addEventListener('change', () => {
                             selectedOptions[optionName] = selectElement.value;
-
-                            // Reset dropdown berikutnya
                             for (let i = index + 1; i < optionNamesOrder.length; i++) {
                                 selectedOptions[optionNamesOrder[i]] = '';
-                                const nextSelect = dynamicOptionContainer.querySelector(
-                                    `#select-${optionNamesOrder[i].toLowerCase()}`);
+                                const nextSelect = document.getElementById(`select-${optionNamesOrder[i].toLowerCase()}`);
                                 if (nextSelect) nextSelect.value = '';
                             }
                             updateOptionDropdowns(index + 1);
-                            updateState();
                         });
                     }
                 });
 
-                updateOptionDropdowns(); // Isi dropdown pertama
-                updateState();
-                updateImages(null); // Tampilkan gambar awal produk
+                updateOptionDropdowns();
+                updateImages(null);
             }
 
             function updateOptionDropdowns(startIndex = 0) {
-                if (!productData.varians) return;
-
                 for (let i = startIndex; i < optionNamesOrder.length; i++) {
                     const currentOptionName = optionNamesOrder[i];
-                    const selectElement = dynamicOptionContainer.querySelector(
-                        `#select-${currentOptionName.toLowerCase()}`);
+                    const selectElement = document.getElementById(`select-${currentOptionName.toLowerCase()}`);
                     if (!selectElement) continue;
 
-                    // Filter varian yang cocok dengan pilihan sebelumnya
                     const filteredVarians = productData.varians.filter(varian => {
                         for (let j = 0; j < i; j++) {
                             const prevOptionName = optionNamesOrder[j];
-                            if (selectedOptions[prevOptionName] && getOptionValue(varian,
-                                    prevOptionName) !== selectedOptions[prevOptionName]) {
+                            if (selectedOptions[prevOptionName] && getOptionValue(varian, prevOptionName) !== selectedOptions[prevOptionName]) {
                                 return false;
                             }
                         }
                         return true;
                     });
 
-                    // Dapatkan nilai yang tersedia untuk dropdown saat ini
-                    const availableValues = [...new Set(filteredVarians.map(v => getOptionValue(v,
-                        currentOptionName)).filter(Boolean))];
-                    availableValues.sort();
-
+                    const availableValues = [...new Set(filteredVarians.map(v => getOptionValue(v, currentOptionName)).filter(Boolean))].sort();
+                    
                     let optionsHTML = `<option value="">Pilih ${currentOptionName}</option>`;
                     availableValues.forEach(value => {
-                        // Cek apakah ada stok untuk kombinasi ini
-                        const hasStock = filteredVarians.some(varian =>
-                            getOptionValue(varian, currentOptionName) === value && varian
-                            .stock > 0
-                        );
-                        optionsHTML +=
-                            `<option value="${value}" ${hasStock ? '' : 'disabled'}>${value} ${hasStock ? '' : '(Stok Habis)'}</option>`;
+                        const hasStock = filteredVarians.some(varian => getOptionValue(varian, currentOptionName) === value && varian.stock > 0);
+                        optionsHTML += `<option value="${value}" ${hasStock ? '' : 'disabled'}>${value} ${hasStock ? '' : '(Habis)'}</option>`;
                     });
-
                     selectElement.innerHTML = optionsHTML;
 
-                    // Aktifkan dropdown jika ada pilihan sebelumnya dan ada opsi tersedia
-                    const prevOptionSelected = i === 0 ? true : selectedOptions[optionNamesOrder[i - 1]];
+                    const prevOptionSelected = i === 0 || selectedOptions[optionNamesOrder[i - 1]];
                     selectElement.disabled = !prevOptionSelected || availableValues.length === 0;
 
                     if (selectElement.disabled) {
-                        selectElement.value = '';
                         selectedOptions[currentOptionName] = '';
                     }
                 }
@@ -506,65 +506,52 @@
             }
 
             function updateState() {
-                const allOptionsSelected = optionNamesOrder.every(name => selectedOptions[name]);
-
+                const allOptionsSelected = optionNamesOrder.length === 0 || optionNamesOrder.every(name => selectedOptions[name]);
+                
                 currentMatchingVarian = null;
-                if (allOptionsSelected && productData.varians) {
+                if (allOptionsSelected && productData.varians.length > 0) {
                     currentMatchingVarian = productData.varians.find(varian => {
-                        return optionNamesOrder.every(name => getOptionValue(varian, name) ===
-                            selectedOptions[name]);
+                        return optionNamesOrder.every(name => getOptionValue(varian, name) === selectedOptions[name]);
                     });
                 }
 
                 if (currentMatchingVarian && currentMatchingVarian.stock > 0) {
                     addToCartBtn.disabled = false;
-                    priceDisplayElement.textContent = new Intl.NumberFormat('id-ID', {
-                        style: 'currency',
-                        currency: 'IDR',
-                        minimumFractionDigits: 0
-                    }).format(currentMatchingVarian.price);
-                    skuElement.textContent = currentMatchingVarian.sku || 'N/A';
+                    priceDisplayElement.textContent = formatRupiah(currentMatchingVarian.price);
+                    if(skuElement) skuElement.textContent = currentMatchingVarian.sku || 'N/A';
                     selectedVariantInput.value = currentMatchingVarian.id;
-                    updateImages(currentMatchingVarian); // PERBAIKAN: Panggil fungsi yang benar
+                    updateImages(currentMatchingVarian);
                 } else {
                     addToCartBtn.disabled = true;
-                    priceDisplayElement.textContent = new Intl.NumberFormat('id-ID', {
-                        style: 'currency',
-                        currency: 'IDR',
-                        minimumFractionDigits: 0
-                    }).format(productData.price);
-                    skuElement.textContent = productData.sku || 'N/A';
+                    priceDisplayElement.textContent = formatRupiah(productData.price);
+                    if(skuElement) skuElement.textContent = productData.sku || 'N/A';
                     selectedVariantInput.value = '';
                     if (!allOptionsSelected) {
-                        updateImages(null); // PERBAIKAN: Kembali ke gambar default jika pilihan belum lengkap
+                        updateImages(null);
                     }
                 }
             }
-
 
             // ===================================================================
             // HANDLER UNTUK AKSI (CART, WISHLIST, GAMBAR)
             // ===================================================================
 
-            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-
             document.getElementById('add-to-cart-form').addEventListener('submit', function(e) {
                 e.preventDefault();
-
-                if (!currentMatchingVarian || optionNamesOrder.some(name => !selectedOptions[name])) {
-                    showToast('Silakan pilih semua opsi varian terlebih dahulu.', 'error');
-                    return;
-                }
+                if (isPreview) return;
 
                 const form = this;
                 const submitButton = form.querySelector('#add-to-cart-btn');
                 const quantity = parseInt(form.querySelector('input[name="quantity"]').value, 10);
 
+                if (!currentMatchingVarian) {
+                    showToast('Silakan pilih semua opsi varian.', 'error');
+                    return;
+                }
                 if (isNaN(quantity) || quantity < 1) {
                     showToast('Jumlah tidak valid.', 'error');
                     return;
                 }
-
                 if (currentMatchingVarian.stock < quantity) {
                     showToast(`Stok tidak mencukupi. Tersedia: ${currentMatchingVarian.stock}`, 'error');
                     return;
@@ -573,70 +560,75 @@
                 submitButton.disabled = true;
                 submitButton.innerHTML = 'MENAMBAHKAN...';
 
-                fetch(form.action, {
-                        method: 'POST',
-                        headers: {
-                            'Accept': 'application/json',
-                            'X-CSRF-TOKEN': csrfToken,
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            varian_id: currentMatchingVarian.id,
-                            quantity: quantity
-                        })
-                    })
-                    .then(res => res.json().then(data => ({
-                        status: res.status,
-                        body: data
-                    })))
-                    .then(obj => {
-                        if (obj.status >= 400) {
-                            throw new Error(obj.body.message || 'Gagal menambahkan produk.');
-                        }
-                        showToast(obj.body.message || 'Produk berhasil ditambahkan!', 'success');
-                        // Opsional: perbarui ikon keranjang
-                        if (obj.body.cart_count !== undefined) {
+                axios.post(form.action, {
+                    product_id: productData.id,
+                    variant_id: currentMatchingVarian.id,
+                    quantity: quantity
+                })
+                .then(res => {
+                    if (res.data.success) {
+                        showToast(res.data.message || 'Produk berhasil ditambahkan!', 'success');
+                        if (res.data.cart_count !== undefined) {
                             const cartCountElement = document.getElementById('cart-count');
-                            if (cartCountElement) cartCountElement.textContent = obj.body.cart_count;
+                            if (cartCountElement) cartCountElement.textContent = res.data.cart_count;
+                        }
+                    } else {
+                        throw new Error(res.data.message);
+                    }
+                })
+                .catch(err => {
+                    showToast(err.response?.data?.message || 'Gagal menambahkan produk.', 'error');
+                })
+                .finally(() => {
+                    submitButton.disabled = false;
+                    submitButton.innerHTML = 'Tambah Keranjang';
+                });
+            });
+
+            document.body.addEventListener('click', function(e) {
+                const wishlistBtn = e.target.closest('.toggle-wishlist');
+                if (wishlistBtn) {
+                    e.preventDefault();
+                    if (isPreview) return;
+                    
+                    const productId = wishlistBtn.dataset.productId;
+                    axios.post(`/tenant/${currentSubdomain}/wishlist/toggle`, { product_id: productId })
+                    .then(res => {
+                        if (res.data.success) {
+                            const wasAdded = res.data.action === 'added';
+                            showToast(wasAdded ? 'Ditambahkan ke wishlist!' : 'Dihapus dari wishlist.', 'success');
+                            document.querySelectorAll(`.toggle-wishlist[data-product-id="${productId}"]`).forEach(btn => {
+                                btn.classList.toggle('active', wasAdded);
+                            });
                         }
                     })
                     .catch(err => {
-                        showToast(err.message, 'error');
-                    })
-                    .finally(() => {
-                        submitButton.disabled = false;
-                        submitButton.innerHTML = 'Tambah Keranjang';
+                        if (err.response?.status === 401) {
+                            showToast('Silakan login untuk memakai wishlist.', 'error');
+                        } else {
+                            showToast(err.response?.data?.message || 'Terjadi kesalahan.', 'error');
+                        }
                     });
+                }
             });
 
-            // PENAMBAHAN: Event listener untuk klik pada thumbnail
             thumbnailContainer.addEventListener('click', function(e) {
                 if (e.target.tagName === 'IMG') {
-                    const mainImg = mainImageDisplay.querySelector('img');
-                    if (mainImg) {
-                        mainImg.src = e.target.dataset.fullSrc;
-                    }
-                    // Update class 'active'
+                    mainImageDisplay.querySelector('img').src = e.target.dataset.fullSrc;
                     thumbnailContainer.querySelectorAll('img').forEach(img => img.classList.remove('active'));
                     e.target.classList.add('active');
                 }
             });
 
-
             // Inisialisasi PRO-QTY (Quantity Selector)
             var proQty = $('.pro-qty');
             if (proQty.length) {
-                proQty.prepend('<span class="fa fa-angle-down dec qtybtn"></span>');
-                proQty.append('<span class="fa fa-angle-up inc qtybtn"></span>');
-                proQty.off('click', '.qtybtn').on('click', '.qtybtn', function() {
+                proQty.prepend('<span class="fa fa-angle-left dec qtybtn"></span>');
+                proQty.append('<span class="fa fa-angle-right inc qtybtn"></span>');
+                proQty.on('click', '.qtybtn', function() {
                     var $button = $(this);
                     var oldValue = $button.parent().find('input').val();
-                    var newVal;
-                    if ($button.hasClass('inc')) {
-                        newVal = parseFloat(oldValue) + 1;
-                    } else {
-                        newVal = (oldValue > 1) ? parseFloat(oldValue) - 1 : 1;
-                    }
+                    var newVal = $button.hasClass('inc') ? parseFloat(oldValue) + 1 : (oldValue > 1 ? parseFloat(oldValue) - 1 : 1);
                     $button.parent().find('input').val(newVal);
                 });
             }

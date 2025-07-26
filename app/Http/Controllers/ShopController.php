@@ -5,7 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Product;
 use App\Models\Category;
 use App\Models\Shop; // Pastikan model Shop diimpor
-use App\Models\User; // Pastikan model User diimpor jika digunakan
+use App\Models\User; 
+use App\Models\Testimoni;// Pastikan model User diimpor jika digunakan
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log; // Import Log facade untuk debugging
@@ -164,7 +165,16 @@ class ShopController extends Controller
                 ->limit(4)
                 ->get();
 
-            return view($templatePath . '.details', compact('tenant', 'product', 'relatedProducts'));
+            $reviews = Testimoni::where('product_id', $product->id)
+                                ->where('status', 'published') // Hanya tampilkan yang sudah disetujui
+                                ->latest() // Urutkan dari yang terbaru
+                                ->get();
+
+            // 3. HITUNG RATA-RATA RATING & JUMLAH ULASAN
+            $averageRating = $reviews->avg('rating');
+            $reviewCount = $reviews->count();
+
+            return view($templatePath . '.details', compact('tenant', 'product', 'relatedProducts','reviews','averageRating', 'reviewCount' ));
 
         } catch (\Throwable $e) {
             Log::error('ShopController@show: Fatal error rendering product details page.', [

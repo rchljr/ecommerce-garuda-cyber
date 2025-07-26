@@ -14,7 +14,6 @@
             border: 1px solid #d1d5db;
             border-radius: 0.375rem;
             min-height: 42px;
-            /* Agar tidak terlalu kecil jika belum ada tag */
             align-items: center;
         }
 
@@ -22,7 +21,6 @@
             display: inline-flex;
             align-items: center;
             background-color: #3b82f6;
-            /* Tailwind blue-600 */
             color: white;
             padding: 4px 8px;
             border-radius: 0.375rem;
@@ -47,7 +45,6 @@
             width: 120px;
             height: 120px;
             overflow: hidden;
-            /* Pastikan gambar tidak keluar dari batas */
             border-radius: 0.375rem;
         }
 
@@ -64,7 +61,6 @@
             top: -8px;
             right: -8px;
             background-color: #ef4444;
-            /* Tailwind red-500 */
             color: white;
             border-radius: 50%;
             width: 24px;
@@ -78,15 +74,12 @@
             z-index: 10;
         }
 
-        /* Style untuk penanda wajib isi */
         .required-label::after {
             content: '*';
             color: #ef4444;
-            /* Warna merah */
             margin-left: 4px;
         }
 
-        /* Tambahan CSS untuk tampilan varian fleksibel */
         .option-group {
             border: 1px solid #e0e0e0;
             border-radius: 0.5rem;
@@ -99,12 +92,9 @@
             display: inline-flex;
             align-items: center;
             background-color: #e2e8f0;
-            /* bg-gray-200 */
             color: #2d3748;
-            /* text-gray-800 */
             padding: 0.25rem 0.75rem;
             border-radius: 9999px;
-            /* rounded-full */
             margin-right: 0.5rem;
             margin-bottom: 0.5rem;
             font-size: 0.875rem;
@@ -115,7 +105,6 @@
             background: none;
             border: none;
             color: #4a5568;
-            /* text-gray-600 */
             cursor: pointer;
             font-weight: bold;
             line-height: 1;
@@ -124,17 +113,12 @@
 
         .option-value-tag button:hover {
             color: #e53e3e;
-            /* text-red-600 */
         }
 
-        /* Styling for the file input button inside table cell */
-        /* ini untuk input file yang disembunyikan dan diganti dengan label */
         .file-input-button {
             display: inline-block;
             background-color: #eff6ff;
-            /* blue-50 */
             color: #1d4ed8;
-            /* blue-700 */
             padding: 8px 16px;
             border-radius: 6px;
             border: none;
@@ -146,17 +130,13 @@
             overflow: hidden;
             text-overflow: ellipsis;
             max-width: 100%;
-            /* Agar tidak melebihi sel tabel */
             box-sizing: border-box;
-            /* Agar padding tidak menyebabkan overflow */
         }
 
         .file-input-button:hover {
             background-color: #dbeafe;
-            /* blue-100 */
         }
 
-        /* Sembunyikan input file asli */
         .file-input-hidden {
             width: 0.1px;
             height: 0.1px;
@@ -164,6 +144,48 @@
             overflow: hidden;
             position: absolute;
             z-index: -1;
+        }
+
+        /* PENAMBAHAN: Style untuk Modal Informasi */
+        .info-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10001;
+        }
+        .info-modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 0.5rem;
+            width: 90%;
+            max-width: 600px;
+        }
+        .info-modal-content h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+        .info-modal-content p {
+            margin-bottom: 1rem;
+            color: #4a5568;
+        }
+        .info-modal-content ul {
+            list-style-type: disc;
+            margin-left: 1.5rem;
+            margin-bottom: 1.5rem;
+            color: #4a5568;
+        }
+        .info-modal-content code {
+            background-color: #f3f4f6;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
         }
     </style>
 @endpush
@@ -190,7 +212,7 @@
                 <span>{{ session('error') }}</span>
             </div>
         @endif
-        {{-- Form utama --}}
+        
         <form action="{{ route('mitra.products.store') }}" method="POST" enctype="multipart/form-data">
             @csrf
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -216,9 +238,8 @@
                         <div>
                             <label for="description" class="block text-sm font-medium text-gray-700 mb-1">Deskripsi Lengkap
                             </label>
-                            {{-- Disarankan menggunakan editor WYSIWYG seperti TinyMCE atau CKEditor di sini --}}
                             <textarea id="description" name="description" rows="8"
-                                class="w-full border-gray-300 rounded-md shadow-sm resize-y focus:ring-blue-500 focus:border-blue-500">{{ old('description') }}</textarea> {{-- Menambahkan focus style --}}
+                                class="w-full border-gray-300 rounded-md shadow-sm resize-y focus:ring-blue-500 focus:border-blue-500">{{ old('description') }}</textarea>
                         </div>
                     </div>
 
@@ -245,7 +266,15 @@
                     {{-- Varian Produk (Fleksibel dengan Alpine.js) --}}
                     <div class="bg-white p-6 rounded-lg shadow" x-data="productVariantsHandler()">
                         <div class="flex items-center justify-between mb-6">
-                            <h2 class="text-2xl font-bold text-gray-800">Varian Produk</h2>
+                            <div class="flex items-center gap-2">
+                                <h2 class="text-2xl font-bold text-gray-800">Varian Produk</h2>
+                                {{-- PENAMBAHAN: Tombol Info --}}
+                                <button type="button" @click="infoModalOpen = true" class="text-blue-500 hover:text-blue-700 focus:outline-none">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </button>
+                            </div>
                             <button type="button" @click="addOption()"
                                 class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition duration-300">
                                 <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"
@@ -304,74 +333,52 @@
                             <table class="min-w-full divide-y divide-gray-200">
                                 <thead class="bg-gray-50">
                                     <tr>
-                                        <th scope="col"
-                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Varian</th>
-                                        <th scope="col"
-                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Gambar Varian</th>
-                                        <th scope="col"
-                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider required-label">
-                                            Harga Modal (Rp)</th>
-                                        <th scope="col"
-                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider required-label">
-                                            Profit (%)</th>
-                                        <th scope="col"
-                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Harga Jual (Rp)</th>
-                                        <th scope="col"
-                                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider required-label">
-                                            Stok</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Varian</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Gambar Varian</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider required-label">Harga Modal (Rp)</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider required-label">Profit (%)</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Harga Jual (Rp)</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider required-label">Stok</th>
                                     </tr>
                                 </thead>
                                 <tbody class="bg-white divide-y divide-gray-200">
                                     <template x-if="generatedVariants.length === 0">
                                         <tr>
-                                            <td colspan="6"
-                                                class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
+                                            <td colspan="6" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
                                                 Tambahkan opsi varian di atas untuk membuat daftar varian produk.
                                             </td>
                                         </tr>
                                     </template>
                                     <template x-for="(variant, index) in generatedVariants" :key="variant.id">
                                         <tr>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"
-                                                x-text="variant.name"></td>
-
-                                            {{-- Input Gambar Varian --}}
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900" x-text="variant.name"></td>
                                             <td class="px-6 py-4 whitespace-nowrap">
-                                                {{-- Menggunakan x-data terpisah untuk setiap gambar varian --}}
                                                 <div x-data="{ fileInput: null, filePreview: variant.image_path_url || '' }" x-init="$watch('fileInput', (newVal) => {
                                                     if (newVal && newVal[0]) {
                                                         const reader = new FileReader();
                                                         reader.onload = (e) => { filePreview = e.target.result; };
                                                         reader.readAsDataURL(newVal[0]);
                                                     } else if (variant.image_path_url) {
-                                                        filePreview = variant.image_path_url; // Revert to old if cleared
+                                                        filePreview = variant.image_path_url;
                                                     } else {
                                                         filePreview = '';
                                                     }
                                                 });">
                                                     <input type="file" :id="`variant-image-${index}`"
-                                                        :name="`variants[${index}][image]`" {{-- <-- UBAH DI SINI --}}
+                                                        :name="`variants[${index}][image]`"
                                                         x-ref="imageInput" @change="fileInput = $event.target.files"
-                                                        accept="image/*" class="file-input-hidden">{{-- Input file asli disembunyikan --}}
+                                                        accept="image/*" class="file-input-hidden">
                                                     <label :for="`variant-image-${index}`" class="file-input-button">
-                                                        <span
-                                                            x-text="fileInput && fileInput.length > 0 ? fileInput[0].name : (filePreview ? 'Ubah File' : 'Pilih File')"></span>
+                                                        <span x-text="fileInput && fileInput.length > 0 ? fileInput[0].name : (filePreview ? 'Ubah File' : 'Pilih File')"></span>
                                                     </label>
                                                     <template x-if="filePreview">
                                                         <div class="image-preview-wrapper mt-2">
-                                                            <img :src="filePreview" class="image-preview"
-                                                                alt="Varian Gambar">
-                                                            <span class="remove-image"
-                                                                @click="fileInput = null; filePreview = ''; $refs.imageInput.value = '';">&times;</span>
+                                                            <img :src="filePreview" class="image-preview" alt="Varian Gambar">
+                                                            <span class="remove-image" @click="fileInput = null; filePreview = ''; $refs.imageInput.value = '';">&times;</span>
                                                         </div>
                                                     </template>
                                                 </div>
                                             </td>
-
-                                            {{-- Input Harga Modal per Varian --}}
                                             <td class="px-6 py-4 whitespace-nowrap">
                                                 <input type="number" :name="`variants[${index}][modal_price]`"
                                                     x-model.number="variant.modal_price" min="0" step="any"
@@ -379,8 +386,6 @@
                                                     class="w-32 block px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                                                     @input="generateVariants">
                                             </td>
-
-                                            {{-- Input Persentase Keuntungan per Varian --}}
                                             <td class="px-6 py-4 whitespace-nowrap">
                                                 <input type="number" :name="`variants[${index}][profit_percentage]`"
                                                     x-model.number="variant.profit_percentage" min="0"
@@ -388,31 +393,48 @@
                                                     class="w-24 block px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                                                     @input="generateVariants">
                                             </td>
-
-                                            {{-- Tampilan Harga Jual Otomatis per Varian --}}
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 font-semibold"
-                                                x-text="formatRupiah(variant.selling_price)"></td>
-
-                                            {{-- Input Stok per Varian --}}
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 font-semibold" x-text="formatRupiah(variant.selling_price)"></td>
                                             <td class="px-6 py-4 whitespace-nowrap">
                                                 <input type="number" :name="`variants[${index}][stock]`"
                                                     x-model.number="variant.stock" min="0" required
                                                     class="w-24 block px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
                                             </td>
-
-                                            {{-- Hidden input untuk menyimpan kombinasi opsi varian --}}
-                                            <input type="hidden" :name="`variants[${index}][options]`"
-                                                :value="JSON.stringify(variant.options)">
-                                            {{-- Hidden input untuk mengirim nama varian gabungan ke backend --}}
-                                            <input type="hidden" :name="`variants[${index}][name]`"
-                                                :value="variant.name">
+                                            <input type="hidden" :name="`variants[${index}][options]`" :value="JSON.stringify(variant.options)">
+                                            <input type="hidden" :name="`variants[${index}][name]`" :value="variant.name">
                                         </tr>
                                     </template>
                                 </tbody>
                             </table>
                         </div>
-                        <p class="text-sm text-gray-600 mt-4">Total Stok Tersedia: <span class="font-bold"
-                                x-text="totalStock"></span></p>
+                        <p class="text-sm text-gray-600 mt-4">Total Stok Tersedia: <span class="font-bold" x-text="totalStock"></span></p>
+
+                        {{-- PENAMBAHAN: HTML untuk Modal Informasi --}}
+                        <div x-show="infoModalOpen" class="info-modal-overlay" @keydown.escape.window="infoModalOpen = false" x-cloak>
+                            <div class="info-modal-content" @click.outside="infoModalOpen = false">
+                                <h3>Cara Mengisi Varian Produk</h3>
+                                <p>Sistem varian memungkinkan Anda menjual satu produk dengan berbagai pilihan, seperti ukuran, warna, atau berat yang berbeda, di mana setiap kombinasi bisa memiliki harga dan stok sendiri.</p>
+                                
+                                <strong>1. Nama Opsi Varian</strong>
+                                <p>Ini adalah nama dari pilihan yang Anda tawarkan. Contoh: <code>Warna</code>, <code>Ukuran</code>, <code>Berat</code>, <code>Satuan</code>.</p>
+
+                                <strong>2. Nilai Opsi</strong>
+                                <p>Ini adalah pilihan spesifik untuk "Nama Opsi" di atas. Masukkan nilai satu per satu, lalu tekan <strong>Enter</strong> atau <strong>koma</strong>.</p>
+                                
+                                <ul>
+                                    <li>Jika Nama Opsi adalah <code>Warna</code>, maka Nilai Opsinya bisa: <code>Merah</code>, <code>Biru</code>, <code>Hitam</code>.</li>
+                                    <li>Jika Nama Opsi adalah <code>Ukuran</code>, maka Nilai Opsinya bisa: <code>S</code>, <code>M</code>, <code>L</code>, <code>XL</code>.</li>
+                                    <li>Jika Nama Opsi adalah <code>Berat</code>, maka Nilai Opsinya bisa: <code>250g</code>, <code>500g</code>, <code>1kg</code>.</li>
+                                    <li>Jika Nama Opsi adalah <code>Satuan</code>, maka Nilai Opsinya bisa: <code>Pcs</code>, <code>Lusin</code>, <code>Kiloan</code>.</li>
+                                </ul>
+
+                                <p>Setelah Anda menambahkan opsi dan nilainya, tabel di bawah akan otomatis membuat semua kemungkinan kombinasi varian untuk Anda isi harga dan stoknya.</p>
+
+                                <div class="text-right mt-6">
+                                    <button type="button" @click="infoModalOpen = false" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Mengerti</button>
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
 
@@ -421,12 +443,6 @@
                     <div class="bg-white p-6 rounded-lg shadow">
                         <h2 class="text-xl font-semibold mb-4">Pengaturan Tampilan</h2>
                         <div class="space-y-4">
-                            <label for="is_best_seller" class="flex items-center">
-                                <input type="checkbox" id="is_best_seller" name="is_best_seller" value="1"
-                                    {{ old('is_best_seller') ? 'checked' : '' }}
-                                    class="h-4 w-4 text-blue-600 border-gray-300 rounded">
-                                <span class="ml-2 text-sm text-gray-700">Tandai sebagai Best Seller</span>
-                            </label>
                             <label for="is_new_arrival" class="flex items-center">
                                 <input type="checkbox" id="is_new_arrival" name="is_new_arrival" value="1"
                                     {{ old('is_new_arrival') ? 'checked' : '' }}
@@ -442,7 +458,6 @@
                         </div>
                     </div>
 
-                    {{-- Bagian Organisasi dan SKU --}}
                     <div class="bg-white p-6 rounded-lg shadow">
                         <h2 class="text-xl font-semibold mb-4">Organisasi</h2>
                         <div class="mb-4">
@@ -493,7 +508,7 @@
 @endsection
 
 @push('scripts')
-    <script src="//unpkg.com/alpinejs" defer></script> {{-- Pastikan Alpine.js dimuat --}}
+    <script src="//unpkg.com/alpinejs" defer></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // --- Logika Tagging ---
@@ -502,14 +517,12 @@
             const tagsHidden = document.getElementById('tags-hidden');
             let tags = [];
 
-            // Inisialisasi tags dari old input atau nilai yang ada
             if (tagsHidden.value) {
                 tags = tagsHidden.value.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
             }
-            renderTags(); // Render tags awal
+            renderTags();
 
             function renderTags() {
-                console.log('Rendering tags. Current tags:', tags); // Debugging line
                 tagsContainer.innerHTML = '';
                 tagsHidden.value = tags.join(',');
                 tags.forEach((tag, index) => {
@@ -525,12 +538,11 @@
 
             function processTagInput(inputElement) {
                 const newTag = inputElement.value.trim().replace(/,/g, '');
-                // Hanya tambahkan tag jika panjangnya lebih dari 1 karakter dan belum ada
                 if (newTag.length > 1 && !tags.includes(newTag)) {
                     tags.push(newTag);
-                    renderTags(); // Render segera setelah menambahkan tag baru
+                    renderTags();
                 }
-                inputElement.value = ''; // Selalu kosongkan input setelah diproses
+                inputElement.value = '';
             }
 
             tagsInput.addEventListener('keyup', function(e) {
@@ -540,7 +552,7 @@
             });
 
             tagsInput.addEventListener('blur', function(e) {
-                processTagInput(e.target); // Proses tag saat input kehilangan fokus
+                processTagInput(e.target);
             });
 
             tagsContainer.addEventListener('click', function(e) {
@@ -557,64 +569,50 @@
                 const container = document.getElementById(containerId);
 
                 if (!input || !container) {
-                    console.warn(
-                        `Image previewer: Input with ID '${inputId}' or container with ID '${containerId}' not found.`
-                    );
+                    console.warn(`Image previewer: Input with ID '${inputId}' or container with ID '${containerId}' not found.`);
                     return;
                 }
-
-                // Add a flag to prevent multiple listeners
+                
                 if (input.dataset.listenerAttached === 'true') {
                     return;
                 }
                 input.dataset.listenerAttached = 'true';
 
                 input.addEventListener('change', function(event) {
-                    container.innerHTML = ''; // Always clear the container on change event
-
-                    const files = event.target.files;
-
-                    if (files.length === 0) {
-                        return; // No files selected (e.g., user clicked cancel)
+                    if(!multiple) {
+                        container.innerHTML = ''; 
                     }
 
-                    // Process files. For single, take only the first. For multiple, take all.
-                    const filesToProcess = multiple ? Array.from(files) : [files[0]];
+                    const files = event.target.files;
+                    if (files.length === 0) return;
+
+                    const filesToProcess = Array.from(files);
 
                     filesToProcess.forEach(file => {
                         const reader = new FileReader();
                         reader.onload = function(e) {
                             const wrapper = document.createElement('div');
                             wrapper.className = 'image-preview-wrapper';
-                            wrapper.innerHTML =
-                                `<img src="${e.target.result}" class="image-preview"><span class="remove-image" data-input-id="${inputId}" data-is-multiple="${multiple}">&times;</span>`;
+                            wrapper.innerHTML = `<img src="${e.target.result}" class="image-preview"><span class="remove-image" data-file-name="${file.name}">&times;</span>`;
                             container.appendChild(wrapper);
                         }
                         reader.readAsDataURL(file);
                     });
                 });
 
-                // Event listener for remove button on image previews
                 container.addEventListener('click', function(e) {
                     if (e.target.classList.contains('remove-image')) {
-                        const inputIdToClear = e.target.getAttribute('data-input-id');
-                        const isMultipleInput = e.target.getAttribute('data-is-multiple') === 'true';
-                        const targetInput = document.getElementById(inputIdToClear);
+                        const fileNameToRemove = e.target.dataset.fileName;
+                        const dt = new DataTransfer();
+                        const files = input.files;
 
-                        if (targetInput) {
-                            if (isMultipleInput) {
-                                alert(
-                                    'Untuk menghapus gambar dari galeri, silakan unggah ulang semua gambar yang diinginkan.');
-                                targetInput.value = ''; // Clear actual file input
-                                container.innerHTML = ''; // Clear all previews
-                            } else {
-                                targetInput.value = ''; // Clear actual file input
-                                e.target.closest('.image-preview-wrapper')
-                            .remove(); // Remove only this preview
+                        for (let i = 0; i < files.length; i++) {
+                            if (files[i].name !== fileNameToRemove) {
+                                dt.items.add(files[i]);
                             }
-                        } else {
-                            e.target.closest('.image-preview-wrapper').remove(); // Fallback
                         }
+                        input.files = dt.files; // Update the FileList
+                        e.target.closest('.image-preview-wrapper').remove();
                     }
                 });
             }
@@ -626,6 +624,8 @@
         // --- Alpine.js Data Handler for Flexible Variants ---
         document.addEventListener('alpine:init', () => {
             Alpine.data('productVariantsHandler', () => ({
+                // PENAMBAHAN: Properti untuk mengontrol modal info
+                infoModalOpen: false,
                 options: [],
                 generatedVariants: [],
                 nextOptionId: 1,
@@ -636,9 +636,7 @@
                         this.options = oldOptions.map((opt, index) => ({
                             id: this.nextOptionId++,
                             name: opt.name || '',
-                            values: Array.isArray(opt.values) ? opt.values : (typeof opt
-                                .values === 'string' ? opt.values.split(',').map(v => v
-                                    .trim()).filter(v => v.length > 0) : [])
+                            values: Array.isArray(opt.values) ? opt.values : (typeof opt.values === 'string' ? opt.values.split(',').map(v => v.trim()).filter(v => v.length > 0) : [])
                         }));
                     } else {
                         this.addOption();
@@ -651,18 +649,15 @@
                             if (oldV.options) {
                                 try {
                                     const parsedOptions = JSON.parse(oldV.options);
-                                    const variantId = parsedOptions.map(c => c.name + ':' + c
-                                        .value).join(';');
+                                    const variantId = parsedOptions.map(c => c.name + ':' + c.value).join(';');
                                     oldVariantsMap.set(variantId, {
                                         modal_price: parseFloat(oldV.modal_price) || 0,
-                                        profit_percentage: parseFloat(oldV
-                                            .profit_percentage) || 0,
+                                        profit_percentage: parseFloat(oldV.profit_percentage) || 0,
                                         stock: parseInt(oldV.stock) || 0,
                                         image_path_url: oldV.image_path_url || ''
                                     });
                                 } catch (e) {
-                                    console.error("Failed to parse old variant options JSON:",
-                                        oldV.options, e);
+                                    console.error("Failed to parse old variant options JSON:", oldV.options, e);
                                 }
                             }
                         });
@@ -687,8 +682,7 @@
                 },
 
                 addOptionValue(option, valueString) {
-                    const valuesToAdd = valueString.split(',').map(v => v.trim()).filter(v => v.length >
-                        0);
+                    const valuesToAdd = valueString.split(',').map(v => v.trim()).filter(v => v.length > 0);
                     valuesToAdd.forEach(newValue => {
                         if (!option.values.includes(newValue)) {
                             option.values.push(newValue);
@@ -704,15 +698,13 @@
 
                 generateVariants() {
                     let newGeneratedVariants = [];
-                    const currentOptionGroups = this.options.filter(opt => opt.name && opt.values
-                        .length > 0);
+                    const currentOptionGroups = this.options.filter(opt => opt.name && opt.values.length > 0);
 
                     if (currentOptionGroups.length === 0) {
                         this.generatedVariants = [];
                         return;
                     }
 
-                    // Function to get Cartesian product
                     const cartesianProduct = (arrays) => {
                         return arrays.reduce((a, b) =>
                             a.flatMap(d => b.map(e => [d, e].flat()))
@@ -728,49 +720,36 @@
 
                     if (optionValueArrays.length > 0) {
                         const combinations = cartesianProduct(optionValueArrays);
-
-                        // Ensure combinations is always an array of arrays
-                        const processedCombinations = combinations.map(combo => Array.isArray(combo) ?
-                            combo : [combo]);
+                        const processedCombinations = combinations.map(combo => Array.isArray(combo) ? combo : [combo]);
 
                         processedCombinations.forEach(combo => {
                             const variantName = combo.map(c => c.value).join(' / ');
-                            const variantId = combo.map(c => c.name + ':' + c.value).join(
-                                ';'); // Unique ID for matching
+                            const variantId = combo.map(c => c.name + ':' + c.value).join(';');
 
                             let modalPrice = 0;
                             let profitPercentage = 0;
                             let stock = 0;
-                            let imagePathUrl =
-                            ''; // Untuk menyimpan URL gambar varian (jika ada)
+                            let imagePathUrl = '';
 
-                            // Prioritaskan old input (dari validasi gagal), lalu data yang sudah digenerate
                             if (this.oldVariantsMap && this.oldVariantsMap.has(variantId)) {
                                 const oldData = this.oldVariantsMap.get(variantId);
                                 modalPrice = parseFloat(oldData.modal_price) || 0;
                                 profitPercentage = parseFloat(oldData.profit_percentage) || 0;
                                 stock = parseInt(oldData.stock) || 0;
-                                imagePathUrl = oldData.image_path_url ||
-                                ''; // Ambil URL gambar dari old input
+                                imagePathUrl = oldData.image_path_url || '';
                             } else {
-                                const existingVariant = this.generatedVariants.find(v => v
-                                    .id === variantId);
+                                const existingVariant = this.generatedVariants.find(v => v.id === variantId);
                                 if (existingVariant) {
                                     modalPrice = parseFloat(existingVariant.modal_price) || 0;
-                                    profitPercentage = parseFloat(existingVariant
-                                        .profit_percentage) || 0;
+                                    profitPercentage = parseFloat(existingVariant.profit_percentage) || 0;
                                     stock = parseInt(existingVariant.stock) || 0;
-                                    imagePathUrl = existingVariant.image_path_url ||
-                                    ''; // Ambil URL gambar dari varian yang sudah ada
+                                    imagePathUrl = existingVariant.image_path_url || '';
                                 }
                             }
 
-                            // Pastikan modalPrice dan profitPercentage adalah angka sebelum perhitungan
                             const finalModalPrice = !isNaN(modalPrice) ? modalPrice : 0;
-                            const finalProfitPercentage = !isNaN(profitPercentage) ?
-                                profitPercentage : 0;
-                            const sellingPrice = finalModalPrice * (1 + (finalProfitPercentage /
-                                100));
+                            const finalProfitPercentage = !isNaN(profitPercentage) ? profitPercentage : 0;
+                            const sellingPrice = finalModalPrice * (1 + (finalProfitPercentage / 100));
 
                             newGeneratedVariants.push({
                                 id: variantId,
@@ -779,8 +758,8 @@
                                 profit_percentage: finalProfitPercentage,
                                 selling_price: sellingPrice,
                                 stock: stock,
-                                options: combo, // Store the full option objects for backend
-                                image_path_url: imagePathUrl // URL gambar varian
+                                options: combo,
+                                image_path_url: imagePathUrl
                             });
                         });
                     }
@@ -789,12 +768,11 @@
                 },
 
                 get totalStock() {
-                    return this.generatedVariants.reduce((sum, variant) => sum + (variant.stock ||
-                        0), 0);
+                    return this.generatedVariants.reduce((sum, variant) => sum + (variant.stock || 0), 0);
                 },
 
-                formatRupiah(amount) { // Fungsi helper untuk format rupiah
-                    if (typeof amount !== 'number' || isNaN(amount)) return 'Rp 0'; // Tangani NaN
+                formatRupiah(amount) {
+                    if (typeof amount !== 'number' || isNaN(amount)) return 'Rp 0';
                     return 'Rp ' + amount.toLocaleString('id-ID', {
                         minimumFractionDigits: 0,
                         maximumFractionDigits: 0

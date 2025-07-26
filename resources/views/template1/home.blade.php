@@ -225,24 +225,64 @@
             @endforelse
         </div>
     </section>
+     <!-- Banner Section Begin -->
     <section class="banner spad">
         <div class="container">
             <div class="row">
                 @forelse ($banners as $banner)
-                    <div class="col-lg-4">
-                        <div class="banner__item">
+                    <div
+                        class="{{ $loop->first && $banners->count() > 1 ? 'col-lg-7 offset-lg-4' : ($loop->index === 1 && $banners->count() > 2 ? 'col-lg-5' : 'col-lg-7') }}">
+                        <div
+                            class="banner__item {{ $loop->index === 1 ? 'banner__item--middle' : ($loop->last && $banners->count() > 1 ? 'banner__item--last' : '') }}">
                             <div class="banner__item__pic">
                                 <img src="{{ $banner->image_url }}" alt="{{ $banner->title }}">
                             </div>
                             <div class="banner__item__text">
-                                <h2>{{ $banner->title }}</h2>
-                                <a href="{{ $banner->link_url }}">Belanja Sekarang</a>
+                                @if ($banner->title)
+                                    <h2>{{ $banner->title }}</h2>
+                                @endif
+                                @if ($banner->link_url)
+                                    <a href="{{ $banner->link_url }}">{{ $banner->button_text ?? 'Shop now' }}</a>
+                                @else
+                                    <p>{{ $banner->button_text ?? '' }}</p>
+                                @endif
                             </div>
                         </div>
                     </div>
                 @empty
-                    <div class="col-lg-12 text-center">
-                        <p>Banner belum diatur. Silakan tambahkan melalui dashboard.</p>
+                    {{-- Konten default jika tidak ada banner yang diatur --}}
+                    <div class="col-lg-7 offset-lg-4">
+                        <div class="banner__item">
+                            <div class="banner__item__pic">
+                                <img src="{{ asset('template1/img/banner/banner-1.jpg') }}" alt="Default Banner 1">
+                            </div>
+                            <div class="banner__item__text">
+                                <h2>Banner1</h2>
+                                <a href="#">Shop now</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-5">
+                        <div class="banner__item banner__item--middle">
+                            <div class="banner__item__pic">
+                                <img src="{{ asset('template1/img/banner/banner-2.jpg') }}" alt="Default Banner 2">
+                            </div>
+                            <div class="banner__item__text">
+                                <h2>Banner2</h2>
+                                <a href="#">Shop now</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-7">
+                        <div class="banner__item banner__item--last">
+                            <div class="banner__item__pic">
+                                <img src="{{ asset('template1/img/banner/banner-3.jpg') }}" alt="Default Banner 3">
+                            </div>
+                            <div class="banner__item__text">
+                                <h2>Banner3</h2>
+                                <a href="#">Shop now</a>
+                            </div>
+                        </div>
                     </div>
                 @endforelse
             </div>
