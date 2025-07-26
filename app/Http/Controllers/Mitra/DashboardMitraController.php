@@ -98,6 +98,7 @@ class DashboardMitraController extends Controller
                     $query->select(DB::raw('SUM(quantity)'));
                 }
             ])
+            ->having('sold_count', '>', 10) // hanya produk dengan jumlah terjual > 10
             ->orderBy('sold_count', 'desc')
             ->limit(10)
             ->get();

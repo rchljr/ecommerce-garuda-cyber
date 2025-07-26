@@ -97,7 +97,7 @@ class Product extends Model
     // Ini adalah relasi yang benar ke model Varian (nama sesuai convention Laravel)
     public function varians(): HasMany
     {
-        return $this->hasMany(Varian::class); // Pastikan ini menunjuk ke model Varian yang benar
+        return $this->hasMany(Varian::class, 'product_id', 'id'); // Pastikan ini menunjuk ke model Varian yang benar
     }
 
     // Relasi ke ProductGallery (jika Anda punya model terpisah untuk gambar galeri)

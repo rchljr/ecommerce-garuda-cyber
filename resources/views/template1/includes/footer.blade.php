@@ -2,6 +2,14 @@
     $isPreview = $isPreview ?? false;
     // Ambil subdomain saat ini sekali saja dari parameter rute agar lebih efisien.
     $currentSubdomain = request()->route('subdomain');
+    $currentShop = null;
+    $customTema = null;
+    // PERBAIKAN: Logika untuk logo dan deskripsi dipindahkan ke sini agar lebih bersih
+    // Asumsikan variabel $customTema tersedia dari View Composer atau Controller
+    $logoPath = optional($customTema)->shop_logo;
+    $logoUrl = $logoPath ? asset('storage/' . $logoPath) : asset('images/gci.png');
+    $shopName = optional($customTema)->shop_name ?? 'Nama Toko';
+    $shopDescription = optional($customTema)->shop_description ?? 'Pelanggan adalah inti dari model bisnis unik kami, yang mencakup proses desain.';
 @endphp
 
 <footer class="footer">
@@ -11,19 +19,15 @@
                 <div class="footer__about">
                     <div class="footer__logo">
                         <a href="{{ !$isPreview ? route('tenant.home', ['subdomain' => $currentSubdomain]) : '#' }}">
-                            {{-- Cek apakah toko memiliki logo kustom, jika tidak, gunakan logo default --}}
-                            @if(isset($currentShop) && $currentShop->shop_logo)
-                                <img src="{{ Storage::url($currentShop->shop_logo) }}"
-                                    alt="{{ $currentShop->shop_name ?? 'Store Logo' }}"
-                                    style="max-height: 35px; background: white; padding: 5px; border-radius: 5px;">
-                            @else
-                                <img src="{{ asset('template1/img/logo.png') }}" alt="Store Logo">
-                            @endif
+                            {{-- PERBAIKAN: Menggunakan variabel logo dan nama toko yang sudah disiapkan --}}
+                            <img src="{{ $logoUrl }}"
+                                 alt="{{ $shopName }}"
+                                 style="max-height: 65px; background: white; padding: 10px; border-radius: 100px;">
                         </a>
                     </div>
-                    <p>Pelanggan adalah inti dari model bisnis unik kami, yang mencakup proses desain.</p>
+                    {{-- PERBAIKAN: Menggunakan deskripsi toko yang dinamis --}}
+                    <p>{{ $shopDescription }}</p>
 
-                    {{-- PERBAIKAN: Mengganti ikon pembayaran dengan logo yang benar --}}
                     <div class="footer__payment" style="margin-top: 20px;">
                         <h6 style="margin-bottom: 15px; color: #b7b7b7; font-size: 15px;">Metode Pembayaran</h6>
                         <div class="d-flex align-items-center flex-wrap">
@@ -36,7 +40,6 @@
                         </div>
                     </div>
 
-                    {{-- PERBAIKAN: Menambahkan bagian pengiriman --}}
                     <div class="footer__shipping" style="margin-top: 20px;">
                         <h6 style="margin-bottom: 15px; color: #b7b7b7; font-size: 15px;">Pilihan Pengiriman</h6>
                         <div class="d-flex align-items-center flex-wrap">
@@ -101,7 +104,6 @@
                 </div>
             </div>
         </div>
-
     </div>
 </footer>
 

@@ -31,13 +31,14 @@ class VarianController extends Controller
             'variants.*.modal_price' => 'required|numeric|min:0', // BARU: Validasi modal_price per varian
             'variants.*.profit_percentage' => 'required|numeric|min:0|max:100', // BARU: Validasi profit_percentage per varian
             'variants.*.stock' => 'required|integer|min:0',
-            'variants.*.options' => 'required|json', // Data opsi varian dalam format JSON string
+            'variants.*.options' => 'required|json',
+            'variants.*.image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048', // Data opsi varian dalam format JSON string
         ]);
 
         DB::beginTransaction();
 
         try {
-            foreach ($request->variants as $variantData) {
+            foreach ($request->variants as $index => $variantData) { // Gunakan $index untuk mengakses file
                 $optionsData = json_decode($variantData['options'], true);
 
                 // Buat 'name' varian dari kombinasi opsi
@@ -46,19 +47,25 @@ class VarianController extends Controller
                 // Hitung harga jual varian
                 $sellingPrice = (float) $variantData['modal_price'] * (1 + ((float) $variantData['profit_percentage'] / 100));
 
+                $imagePath = null; // Default null jika tidak ada gambar
+
+                // Logika upload gambar varian
+                // Asumsi field input file di frontend adalah 'variants[INDEX][image]'
+                if ($request->hasFile("variants.{$index}.image")) {
+                    $uploadedFile = $request->file("variants.{$index}.image");
+                    $imagePath = $uploadedFile->store('variants', 'public'); // Simpan di folder 'variants' dalam 'storage/app/public'
+                }
+
                 $product->varians()->create([
-                    'name' => $variantName, // Nama varian yang dihasilkan (misal: "Merah / XL")
-                    'modal_price' => $variantData['modal_price'], // Simpan harga modal varian
-                    'profit_percentage' => $variantData['profit_percentage'], // Simpan persentase profit varian
-                    'price' => $sellingPrice, // Simpan harga jual di kolom 'price'
+                    'name' => $variantName,
+                    'modal_price' => $variantData['modal_price'],
+                    'profit_percentage' => $variantData['profit_percentage'],
+                    'price' => $sellingPrice,
                     'stock' => $variantData['stock'],
-                    'options_data' => $optionsData, // Simpan array opsi ke kolom JSON
-                    // Hapus 'size' dan 'color' jika sudah tidak ada di DB
-                    // 'size' => null,
-                    // 'color' => null,
-                    'description' => null, // Default
-                    'status' => 'active', // Default
-                    'image_path' => null, // Default atau jika ada logika upload gambar varian
+                    'options_data' => $optionsData, // Ini harusnya array PHP, akan di-cast oleh model
+                    'description' => null,
+                    'status' => 'active',
+                    'image_path' => $imagePath, // Default atau jika ada logika upload gambar varian
                 ]);
             }
 

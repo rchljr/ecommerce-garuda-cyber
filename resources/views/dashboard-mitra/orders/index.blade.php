@@ -17,6 +17,40 @@
         </div>
     @endif
 
+    {{-- PENAMBAHAN: Form Filter --}}
+    <div class="bg-white shadow-md rounded-lg p-6 mb-6">
+        <h2 class="text-xl font-semibold text-gray-700 mb-4">Filter Pesanan</h2>
+        <form action="{{ route('mitra.orders.index') }}" method="GET" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+                <label for="status" class="block text-sm font-medium text-gray-700">Status Pesanan</label>
+                <select name="status" id="status" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                    <option value="">Semua Status</option>
+                    <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pending</option>
+                    <option value="processing" {{ request('status') == 'processing' ? 'selected' : '' }}>Processing</option>
+                    <option value="completed" {{ request('status') == 'completed' ? 'selected' : '' }}>Completed</option>
+                    <option value="cancelled" {{ request('status') == 'cancelled' ? 'selected' : '' }}>Cancelled</option>
+                    <option value="failed" {{ request('status') == 'failed' ? 'selected' : '' }}>Failed</option>
+                </select>
+            </div>
+            <div>
+                <label for="delivery_method" class="block text-sm font-medium text-gray-700">Metode Pengiriman</label>
+                <select name="delivery_method" id="delivery_method" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                    <option value="">Semua Metode</option>
+                    <option value="shipped" {{ request('delivery_method') == 'delivery' ? 'selected' : '' }}>Delivery</option>
+                    <option value="ready_for_pickup" {{ request('delivery_method') == 'pickup' ? 'selected' : '' }}>Pick Up</option>
+                </select>
+            </div>
+            <div class="flex items-end space-x-2">
+                <button type="submit" class="w-full inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                    Filter
+                </button>
+                <a href="{{ route('mitra.orders.index') }}" class="w-full inline-flex justify-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                    Reset
+                </a>
+            </div>
+        </form>
+    </div>
+
     <div class="bg-white shadow-md rounded-lg overflow-hidden">
         <div class="p-6">
             <h2 class="text-xl font-semibold text-gray-700 mb-4">Daftar Pesanan Terbaru</h2>
@@ -55,14 +89,15 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">Tidak ada pesanan.</td>
+                                <td colspan="6" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">Tidak ada pesanan yang cocok dengan filter Anda.</td>
                             </tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
             <div class="mt-4">
-                {{ $orders->links() }}
+                {{-- PERBAIKAN: Menambahkan withQueryString agar filter tetap aktif saat pindah halaman --}}
+                {{ $orders->withQueryString()->links() }}
             </div>
         </div>
     </div>
