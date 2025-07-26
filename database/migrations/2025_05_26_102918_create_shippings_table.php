@@ -13,7 +13,7 @@ return new class extends Migration {
         Schema::create('shippings', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->uuid('order_id');
-            $table->string('delivery_service', 100);
+            $table->string('delivery_service', 100)->nullable();
             $table->string('status', 30)->nullable();
             $table->date('estimated_delivery')->nullable();
             $table->string('receipt_number', 100)->nullable();

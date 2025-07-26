@@ -91,7 +91,7 @@
             <p class="text-base text-gray-300">
                 Copyright &copy; <script>document.write(new Date().getFullYear())</script> All rights reserved | Ditenagai oleh
                 <a href="{{ route('tim.developer') }}" target="_blank" class="text-red-600 hover:underline font-medium">Tim E-Commerce Garuda</a>
-                by <a href="https://garudacyber.co.id" target="_blank" class="text-red-600 hover:underline font-medium">PT. Garuda Cyber Indonesia</a>.
+                by <a href="https://pcr.ac.id/" target="_blank" class="text-red-600 hover:underline font-medium">Politeknik Caltex Riau</a>.
             </p>
         </div>
     </div>

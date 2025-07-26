@@ -43,7 +43,7 @@ class OrderSeeder extends Seeder
 
         DB::statement('SET FOREIGN_KEY_CHECKS=0;');
         OrderItem::truncate();
-        Order::truncate();
+        Order::whereNotNull('shop_id')->delete();
         Testimoni::whereNotNull('product_id')->delete();
         Shipping::truncate(); // PENTING: Hapus juga data Shipping lama
         DB::statement('SET FOREIGN_KEY_CHECKS=1;');
@@ -75,6 +75,8 @@ class OrderSeeder extends Seeder
                 continue;
             }
 
+            $shopCode = strtoupper(substr(preg_replace('/[^a-zA-Z0-9]/', '', $shop->shop_name), 0, 3));
+
             $mitraProducts = Product::where('user_id', $mitra->id)
                 ->with('varians')
                 ->get();
@@ -91,7 +93,12 @@ class OrderSeeder extends Seeder
                 $deliveryMethod = $deliveryMethods[array_rand($deliveryMethods)];
                 $createdAt = Carbon::now()->subDays(rand(0, 45))->subHours(rand(0, 23))->subMinutes(rand(0, 59));
 
+                $datePart = $createdAt->format('ym'); // Format: 2507 (TahunBulan)
+                $uniquePart = rand(10000, 99999);
+                $orderNumber = "{$shopCode}-{$datePart}-{$uniquePart}";
+
                 $order = Order::create([
+                    'order_number' => $orderNumber,
                     'user_id' => $selectedCustomer->id,
                     'shop_id' => $shop->id,
                     'total_price' => 0, // Akan dihitung nanti

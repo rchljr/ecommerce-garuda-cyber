@@ -92,7 +92,7 @@ class CustomerNotificationController extends Controller
             return (object) [
                 'type' => 'Pesanan',
                 'title' => $detail['title'],
-                'message' => sprintf($detail['message'], $order->id),
+                'message' => sprintf($detail['message'], $order->order_number),
                 'date' => $order->updated_at,
                 'status' => $detail['style'],
                 'link' => optional($order->subdomain)->subdomain_name ? route('tenant.account.orders', ['subdomain' => $order->subdomain->subdomain_name]) : '#',
