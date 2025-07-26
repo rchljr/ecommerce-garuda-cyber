@@ -51,14 +51,13 @@ File 1: resources/views/mitra/editor/index.blade.php (Versi Diperbarui & Lengkap
                                 <div>
                                     <label for="hero_image" class="block text-sm font-medium text-gray-700">Gambar Latar
                                         Hero</label>
-                                    <input type="file" id="hero_image" name="hero_image"
-                                        data-target=".hero__items.set-bg" class="form-control-file mt-1">
+                                    <input type="file" id="hero_image" name="hero_image" data-target=".hero__items.set-bg"
+                                        class="form-control-file mt-1">
                                 </div>
                                 <div>
                                     <label for="subtitle" class="block text-sm font-medium text-gray-700">Subtitle</label>
-                                    <input type="text" id="subtitle" name="subtitle"
-                                        data-target="#preview-hero-subtitle" value="{{ $hero->subtitle ?? '' }}"
-                                        class="form-control">
+                                    <input type="text" id="subtitle" name="subtitle" data-target="#preview-hero-subtitle"
+                                        value="{{ $hero->subtitle ?? '' }}" class="form-control">
                                 </div>
                                 <div>
                                     <label for="title" class="block text-sm font-medium text-gray-700">Judul
@@ -69,7 +68,8 @@ File 1: resources/views/mitra/editor/index.blade.php (Versi Diperbarui & Lengkap
                                 <div>
                                     <label for="description"
                                         class="block text-sm font-medium text-gray-700">Deskripsi</label>
-                                    <textarea id="description" name="description" data-target="#preview-hero-description" class="form-control">{{ $hero->description ?? '' }}</textarea>
+                                    <textarea id="description" name="description" data-target="#preview-hero-description"
+                                        class="form-control">{{ $hero->description ?? '' }}</textarea>
                                 </div>
                                 <div>
                                     <label for="button_text" class="block text-sm font-medium text-gray-700">Teks
@@ -136,7 +136,7 @@ File 1: resources/views/mitra/editor/index.blade.php (Versi Diperbarui & Lengkap
 @push('scripts')
     <script>
         // Logika JavaScript untuk Live Preview & AJAX Save (Versi Lengkap)
-        $(document).ready(function() {
+        $(document).ready(function () {
             const iframe = $('#previewFrame');
 
             // Fungsi untuk memperbarui preview
@@ -164,7 +164,7 @@ File 1: resources/views/mitra/editor/index.blade.php (Versi Diperbarui & Lengkap
                 // Live preview untuk gambar
                 if (targetImgSelector && inputElement.files && inputElement.files[0]) {
                     const reader = new FileReader();
-                    reader.onload = function(e) {
+                    reader.onload = function (e) {
                         const targetElement = iframe.contents().find(targetImgSelector);
                         // Cek apakah targetnya adalah background atau <img>
                         if (targetElement.is('img')) {
@@ -178,13 +178,13 @@ File 1: resources/views/mitra/editor/index.blade.php (Versi Diperbarui & Lengkap
             }
 
             // Listener untuk semua input di form editor
-            $('#editorForm input, #editorForm textarea').on('input change keyup', function() {
+            $('#editorForm input, #editorForm textarea').on('input change keyup', function () {
                 updatePreview(this);
             });
 
             // Fungsi helper untuk AJAX
             function handleFormSubmit(formId, url, successMessage) {
-                $('#' + formId).on('submit', function(e) {
+                $('#' + formId).on('submit', function (e) {
                     e.preventDefault();
                     var formData = new FormData(this);
 
@@ -194,11 +194,11 @@ File 1: resources/views/mitra/editor/index.blade.php (Versi Diperbarui & Lengkap
                         data: formData,
                         processData: false,
                         contentType: false,
-                        success: function(response) {
+                        success: function (response) {
                             alert(successMessage);
                             iframe.attr('src', iframe.attr('src'));
                         },
-                        error: function() {
+                        error: function () {
                             alert('Gagal menyimpan perubahan. Periksa kembali input Anda.');
                         }
                     });

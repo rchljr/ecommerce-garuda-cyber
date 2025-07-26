@@ -138,12 +138,13 @@
                                 </button>
                                 <div id="customer-menu"
                                     class="dropdown-menu absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg py-1 z-40">
-                                    {{-- PERBAIKAN: Header dropdown baru --}}
                                     <div class="px-4 py-3 border-b">
                                         <p class="text-sm font-semibold text-gray-900">{{ $customer->name }}</p>
                                         <p class="text-xs text-gray-500 truncate">{{ $customer->phone }}</p>
                                     </div>
                                     <div class="py-1">
+                                        <a href="{{ route('tenant.shop', ['subdomain' => $currentSubdomain]) }}"
+                                            class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Belanja</a>
                                         <a href="{{ route('tenant.account.profile', ['subdomain' => $currentSubdomain]) }}"
                                             class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Profil Saya</a>
                                         <a href="{{ route('tenant.account.orders', ['subdomain' => $currentSubdomain]) }}"

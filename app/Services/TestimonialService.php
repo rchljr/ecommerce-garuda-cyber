@@ -18,6 +18,7 @@ class TestimonialService
             ->latest()
             ->get();
     }
+    
     public function getPaginatedTestimonials(Request $request)
     {
         $search = $request->input('search');

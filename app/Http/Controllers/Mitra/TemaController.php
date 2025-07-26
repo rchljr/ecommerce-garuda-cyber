@@ -40,14 +40,16 @@ class TemaController extends Controller
         $tenant = $user->tenant;
 
         // 1. Langsung update template yang dipilih oleh mitra
-        $tenant->template_id = $template->id;
-        $tenant->save();
+        if ($tenant) {
+            $tenant->template_id = $template->id;
+            $tenant->save();
+        }
 
         // 2. Siapkan data yang dibutuhkan oleh editor
-        $shop = $user->shop;
-        if (!$shop || !$shop->subdomain) {
-            abort(404, 'Konfigurasi akun mitra tidak lengkap (shop/subdomain tidak ditemukan).');
-        }
+            $shop = $user->shop;
+            if (!$shop || !$shop->subdomain) {
+                abort(404, 'Konfigurasi akun mitra tidak lengkap (shop/subdomain tidak ditemukan).');
+            }
 
         $tema = CustomTema::firstOrNew(['user_id' => $user->id]);
 
@@ -85,17 +87,17 @@ class TemaController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'template_name'    => 'required|string',
-            'shop_name'        => 'required|string|max:255',
+            'template_name' => 'required|string',
+            'shop_name' => 'required|string|max:255',
             'shop_description' => 'nullable|string',
-            'shop_logo'        => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
-            'primary_color'    => 'required|string|max:7',
-            'secondary_color'  => 'required|string|max:7',
+            'shop_logo' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'primary_color' => 'required|string|max:7',
+            'secondary_color' => 'required|string|max:7',
         ]);
 
         $data = $request->except('shop_logo');
         $data['user_id'] = Auth::id();
-       
+
 
         // Handle upload logo jika ada
         if ($request->hasFile('shop_logo')) {

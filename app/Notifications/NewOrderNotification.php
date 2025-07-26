@@ -29,7 +29,7 @@ class NewOrderNotification extends Notification
         $url = route('mitra.orders.show', $this->order->id); // Sesuaikan dengan rute detail order di dasbor mitra
 
         return (new MailMessage)
-            ->subject('Pesanan Baru Telah Diterima! #' . $this->order->id)
+            ->subject('Pesanan Baru Telah Diterima! #' . $this->order->order_number)
             ->greeting('Halo, ' . $notifiable->name . '!')
             ->line('Anda baru saja menerima pesanan baru dari pelanggan ' . $this->order->user->name . '.')
             ->line('Total pesanan: ' . format_rupiah($this->order->total_price))

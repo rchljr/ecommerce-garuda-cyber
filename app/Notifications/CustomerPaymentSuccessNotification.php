@@ -33,7 +33,7 @@ class CustomerPaymentSuccessNotification extends Notification
         ]);
 
         $mailMessage = (new MailMessage)
-            ->subject('Pembayaran Berhasil untuk Pesanan #' . $this->order->id)
+            ->subject('Pembayaran Berhasil untuk Pesanan #' . $this->order->order_number)
             ->greeting('Halo, ' . $notifiable->name . '!')
             ->line('Terima kasih! Kami telah menerima pembayaran Anda untuk pesanan dengan nomor #' . $this->order->id . '.');
 

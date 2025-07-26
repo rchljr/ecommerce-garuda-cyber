@@ -140,8 +140,8 @@
                 <a href="{{ route('landing') }}" target="_blank"
                     class="text-indigo-600 hover:underline font-medium">Tim E-Commerce
                     Garuda</a>
-                by <a href="https://garudacyber.co.id" target="_blank"
-                    class="text-indigo-600 hover:underline font-medium">PT. Garuda Cyber Indonesia</a>.
+                by <a href="https://pcr.ac.id/" target="_blank"
+                    class="text-indigo-600 hover:underline font-medium">Politeknik Caltex Riau</a>.
             </p>
         </footer>
 

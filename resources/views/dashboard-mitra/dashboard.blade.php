@@ -23,32 +23,50 @@
 
         /* Kelas warna untuk kartu metrik */
         .card-revenue {
-            border-left: 4px solid #3b82f6; /* Blue-500 */
+            border-left: 4px solid #3b82f6;
+            /* Blue-500 */
         }
+
         .card-orders {
-            border-left: 4px solid #22c55e; /* Green-500 */
+            border-left: 4px solid #22c55e;
+            /* Green-500 */
         }
+
         .card-avg-order {
-            border-left: 4px solid #f59e0b; /* Yellow-500 */
+            border-left: 4px solid #f59e0b;
+            /* Yellow-500 */
         }
+
         .card-profit {
-            border-left: 4px solid #8b5cf6; /* Purple-500 */
+            border-left: 4px solid #8b5cf6;
+            /* Purple-500 */
         }
 
         /* Ikon Font Awesome untuk kartu */
         .card-icon {
-            font-size: 2.5rem; /* Ukuran ikon */
-            color: currentColor; /* Mengikuti warna teks kartu */
+            font-size: 2.5rem;
+            /* Ukuran ikon */
+            color: currentColor;
+            /* Mengikuti warna teks kartu */
         }
 
         /* Gaya untuk mencegah overflow teks di kartu */
-        .kpi-card .text-3xl, /* Angka metrik */
-        .kpi-card .text-lg.font-semibold /* Judul kartu */ {
-            white-space: nowrap; /* Mencegah teks/angka pindah baris */
-            overflow: hidden; /* Sembunyikan jika melampaui batas */
-            text-overflow: ellipsis; /* Tampilkan elipsis jika terpotong */
-            max-width: 100%; /* Pastikan tidak melebihi lebar kontainer */
-            display: block; /* Pastikan overflow/ellipsis bekerja */
+        .kpi-card .text-3xl,
+        /* Angka metrik */
+        .kpi-card .text-lg.font-semibold
+
+        /* Judul kartu */
+            {
+            white-space: nowrap;
+            /* Mencegah teks/angka pindah baris */
+            overflow: hidden;
+            /* Sembunyikan jika melampaui batas */
+            text-overflow: ellipsis;
+            /* Tampilkan elipsis jika terpotong */
+            max-width: 100%;
+            /* Pastikan tidak melebihi lebar kontainer */
+            display: block;
+            /* Pastikan overflow/ellipsis bekerja */
         }
     </style>
 @endpush
@@ -72,7 +90,7 @@
 
                     @if ($subdomain)
                         {{-- Tombol Kunjungi Toko --}}
-                        <a href="{{'https://ecommercegaruda.my.id/tenant/'. $storeUrl . '/home'}}" target="_blank"
+                        <a href="{{'https://ecommercegaruda.my.id/tenant/' . $storeUrl . '/home'}}" target="_blank"
                             class="inline-flex items-center gap-2 bg-red-600 text-white font-semibold px-4 py-2 rounded-lg hover:bg-red-700 transition-colors shadow-sm">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
                                 stroke="currentColor" stroke-width="2">
@@ -85,10 +103,12 @@
                         {{-- ====================================================== --}}
                         {{-- == BAGIAN BARU: Tombol Publish / Unpublish == --}}
                         {{-- ====================================================== --}}
-                        @if (Auth::user()->shop->publication_status == 'publish')
+                        @if ($subdomain && $subdomain->publication_status == 'published')
+                            {{-- Jika statusnya 'published', tampilkan tombol untuk UNPUBLISH --}}
                             <form action="{{ route('mitra.editor.unpublish') }}" method="POST"
-                                onsubmit="return confirm('Apakah Anda yakin ingin menyembunyikan toko Anda dari publik?');">
+                                onsubmit="return confirm('Apakah Anda yakin ingin menyembunyikan toko Anda dari publik? Pelanggan tidak akan bisa mengakses toko Anda.');">
                                 @csrf
+                                @method('PATCH') {{-- Direkomendasikan untuk update --}}
                                 <button type="submit"
                                     class="inline-flex items-center gap-2 bg-yellow-500 text-white font-semibold px-4 py-2 rounded-lg hover:bg-yellow-600 transition-colors shadow-sm">
                                     <i class="fas fa-eye-slash"></i>
@@ -96,9 +116,11 @@
                                 </button>
                             </form>
                         @else
+                            {{-- Jika statusnya 'pending' (atau lainnya), tampilkan tombol untuk PUBLISH --}}
                             <form action="{{ route('mitra.editor.publish') }}" method="POST"
-                                onsubmit="return confirm('Apakah Anda yakin ingin mempublikasikan toko Anda?');">
+                                onsubmit="return confirm('Apakah Anda yakin ingin mempublikasikan toko Anda? Toko akan bisa diakses oleh semua pelanggan.');">
                                 @csrf
+                                @method('PATCH') {{-- Direkomendasikan untuk update --}}
                                 <button type="submit"
                                     class="inline-flex items-center gap-2 bg-blue-500 text-white font-semibold px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors shadow-sm">
                                     <i class="fas fa-globe-asia"></i>
@@ -150,7 +172,8 @@
                     </a>
                 </div>
 
-                <div class="bg-white p-6 rounded-xl shadow-md flex items-center gap-6 clickable-card card-avg-order kpi-card">
+                <div
+                    class="bg-white p-6 rounded-xl shadow-md flex items-center gap-6 clickable-card card-avg-order kpi-card">
                     <div class="bg-yellow-100 p-3 rounded-full">
                         <i class="fas fa-chart-bar text-yellow-500 card-icon"></i>
                     </div>
@@ -180,10 +203,14 @@
                             <select name="chart_range" id="chart-range-select"
                                 class="mt-1 block w-auto rounded-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200"
                                 onchange="this.form.submit()">
-                                <option value="7_days" {{ $chartRange == '7_days' ? 'selected' : '' }}>7 Hari Terakhir</option>
-                                <option value="30_days" {{ $chartRange == '30_days' ? 'selected' : '' }}>30 Hari Terakhir</option>
-                                <option value="this_month" {{ $chartRange == 'this_month' ? 'selected' : '' }}>Bulan Ini</option>
-                                <option value="this_year" {{ $chartRange == 'this_year' ? 'selected' : '' }}>Tahun Ini</option>
+                                <option value="7_days" {{ $chartRange == '7_days' ? 'selected' : '' }}>7 Hari Terakhir
+                                </option>
+                                <option value="30_days" {{ $chartRange == '30_days' ? 'selected' : '' }}>30 Hari Terakhir
+                                </option>
+                                <option value="this_month" {{ $chartRange == 'this_month' ? 'selected' : '' }}>Bulan Ini
+                                </option>
+                                <option value="this_year" {{ $chartRange == 'this_year' ? 'selected' : '' }}>Tahun Ini
+                                </option>
                             </select>
                         </form>
                     </div>
@@ -232,7 +259,7 @@
     {{-- CDN Chart.js --}}
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             // Data dari Controller Laravel
             const salesData = {!! json_encode($salesData) !!};
 
@@ -274,7 +301,7 @@
                             beginAtZero: true,
                             ticks: {
                                 // Format angka di sumbu Y menjadi format Rupiah
-                                callback: function(value, index, values) {
+                                callback: function (value, index, values) {
                                     return 'Rp ' + new Intl.NumberFormat('id-ID').format(value);
                                 }
                             }
@@ -303,7 +330,7 @@
                             cornerRadius: 8,
                             displayColors: false,
                             callbacks: {
-                                label: function(context) {
+                                label: function (context) {
                                     let label = context.dataset.label || '';
                                     if (label) {
                                         label += ': ';

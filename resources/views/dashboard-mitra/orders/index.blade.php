@@ -35,7 +35,7 @@
                     <tbody class="bg-white divide-y divide-gray-200">
                         @forelse ($orders as $order)
                             <tr>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ $order->id }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ $order->order_number }}</td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $order->user->name ?? 'N/A' }}</td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ format_rupiah($order->total_price) }}</td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm">

@@ -19,45 +19,21 @@ class TemplateController extends Controller
      */
     public function preview(Template $template)
     {
-
-        $heroes = Hero::where('is_active', true)->orderBy('order')->get();
-        $banners = Banner::where('is_active', true)->orderBy('order')->get();
-
-        $bestSellers = Product::where('is_best_seller', true)
-            ->where('status', 'active')
-            ->latest()
-            ->limit(8)
-            ->get();
-
-        $newArrivals = Product::where('is_new_arrival', true)
-            ->where('status', 'active')
-            ->latest()
-            ->limit(8)
-            ->get();
-
-        $hotSales = Product::where('is_hot_sale', true)
-            ->where('status', 'active')
-            ->latest()
-            ->limit(8)
-            ->get();
-
-        $currentShop = null; // Inisialisasi dengan null sebagai default
-
-        // Periksa apakah ada pengguna yang login
-        if (Auth::check()) {
-            $currentShop = Auth::user()->shop;
-        }
+        // Untuk mode preview, kita tidak mengambil data asli dari database.
+        // Kita mengirimkan collection kosong agar view dapat menampilkan
+        // state default atau @empty-nya.
+        $emptyCollection = collect();
 
         // Kirim semua data yang diperlukan ke tampilan
         return view($template->path . '.home', [
             'template' => $template,
-            'heroes' => $heroes,
-            'banners' => $banners,
-            'bestSellers' => $bestSellers,
-            'newArrivals' => $newArrivals,
-            'hotSales' => $hotSales,
+            'heroes' => $emptyCollection,
+            'banners' => $emptyCollection,
+            'bestSellers' => $emptyCollection,
+            'newArrivals' => $emptyCollection,
+            'hotSales' => $emptyCollection,
             'currentShop' => null, // Preview tidak memiliki shop context
-            'isPreview' => true, 
+            'isPreview' => true,
         ]);
     }
 }

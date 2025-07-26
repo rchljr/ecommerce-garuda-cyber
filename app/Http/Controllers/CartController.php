@@ -109,4 +109,52 @@ class CartController extends Controller
             return response()->json(['success' => false, 'message' => 'Terjadi kesalahan saat menghapus item.'], 500);
         }
     }
+
+    /**
+     * [METHOD BARU] Menambahkan beberapa item ke keranjang sekaligus.
+     * Digunakan untuk fitur "Beli Lagi".
+     */
+    public function addMultiple(Request $request)
+    {
+        $request->validate([
+            'items' => 'required|array',
+            'items.*.variant_id' => 'required|exists:varians,id',
+            'items.*.quantity' => 'required|integer|min:1',
+        ]);
+
+        $addedCount = 0;
+        $failedItems = [];
+
+        foreach ($request->items as $itemData) {
+            try {
+                // Gunakan findOrFail untuk menangani varian yang mungkin sudah dihapus
+                $variant = Varian::findOrFail($itemData['variant_id']);
+                $this->cartService->add($variant, $itemData['quantity']);
+                $addedCount++;
+            } catch (Exception $e) {
+                $variant = Varian::find($itemData['variant_id']);
+                if ($variant) {
+                    $failedItems[] = $variant->product->name;
+                }
+                Log::warning('Buy Again - Add to cart failed: ' . $e->getMessage(), ['variant_id' => $itemData['variant_id']]);
+            }
+        }
+
+        if ($addedCount > 0) {
+            $message = "{$addedCount} produk berhasil ditambahkan kembali ke keranjang.";
+            if (count($failedItems) > 0) {
+                $message .= " Produk berikut gagal ditambahkan (kemungkinan stok habis): " . implode(', ', $failedItems);
+            }
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+                'cart_count' => $this->cartService->getCartCount(),
+            ]);
+        }
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Semua produk dari pesanan ini tidak dapat ditambahkan karena stok tidak tersedia atau produk telah dihapus.',
+        ], 422);
+    }
 }

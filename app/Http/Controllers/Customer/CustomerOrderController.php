@@ -2,16 +2,26 @@
 
 namespace App\Http\Controllers\Customer;
 
-use App\Http\Controllers\Controller;
 use App\Models\Order;
-use App\Models\RefundRequest;
+use App\Models\Payment;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
+use App\Models\RefundRequest;
+use App\Services\MidtransService;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 
 class CustomerOrderController extends Controller
 {
+    protected $midtransService;
+
+    // Inject MidtransService melalui constructor
+    public function __construct(MidtransService $midtransService)
+    {
+        $this->midtransService = $midtransService;
+    }
     /**
      * Menampilkan daftar pesanan milik pengguna yang sedang login.
      */
@@ -56,19 +66,73 @@ class CustomerOrderController extends Controller
      */
     public function cancel(Request $request, $subdomain, Order $order)
     {
-        // Pastikan order milik user yang login
-        if ($order->user_id !== Auth::guard('customers')->id()) {
-            return response()->json(['message' => 'Akses ditolak.'], 403);
+        $customer = Auth::guard('customers')->user();
+
+        // 1. Validasi & Otorisasi
+        if ($order->user_id !== $customer->id) {
+            return response()->json(['message' => 'Aksi tidak diizinkan.'], 403);
         }
 
-        // Hanya bisa batal jika status 'pending'
         if ($order->status !== 'pending') {
-            return response()->json(['message' => 'Pesanan ini tidak dapat dibatalkan.'], 422);
+            return response()->json(['message' => 'Pesanan ini tidak dapat dibatalkan lagi.'], 422);
         }
 
-        $order->update(['status' => 'cancelled']);
+        try {
+            DB::beginTransaction();
 
-        return response()->json(['message' => 'Pesanan berhasil dibatalkan.']);
+            $payment = Payment::where('order_group_id', $order->order_group_id)->first();
+            $midtransStatusUpdated = false;
+
+            if ($payment) {
+                try {
+                    // Coba batalkan transaksi di Midtrans
+                    $this->midtransService->cancelTransaction($payment->midtrans_order_id);
+                    $payment->update(['midtrans_transaction_status' => 'cancel']);
+                    $midtransStatusUpdated = true;
+                } catch (\Exception $e) {
+                    // [PERBAIKAN] Tangani error 412 dari Midtrans secara khusus
+                    if (str_contains($e->getMessage(), '412')) {
+                        // Anggap ini sukses, karena transaksi sudah dalam status final (expire/cancel)
+                        Log::warning('Midtrans cancellation failed with 412, proceeding to cancel locally.', [
+                            'order_id' => $order->id,
+                            'midtrans_order_id' => $payment->midtrans_order_id
+                        ]);
+                        // Update status lokal kita menjadi 'cancel' agar sinkron
+                        $payment->update(['midtrans_transaction_status' => 'cancel']);
+                        $midtransStatusUpdated = true;
+                    } else {
+                        // Jika error lain, lempar kembali agar transaksi di-rollback
+                        throw $e;
+                    }
+                }
+            }
+
+            // Update status semua order dalam grup yang sama menjadi 'cancelled'
+            Order::where('order_group_id', $order->order_group_id)
+                ->where('status', 'pending')
+                ->update(['status' => 'cancelled']);
+
+            // Kembalikan stok produk
+            foreach ($order->items as $item) {
+                if ($item->variant) {
+                    $item->variant->increment('stock', $item->quantity);
+                }
+            }
+
+            DB::commit();
+
+            return response()->json(['message' => 'Pesanan berhasil dibatalkan.']);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Gagal membatalkan pesanan oleh pelanggan.', [
+                'order_id' => $order->id,
+                'customer_id' => $customer->id,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json(['message' => 'Terjadi kesalahan saat mencoba membatalkan pesanan.'], 500);
+        }
     }
 
     /**
@@ -103,6 +167,7 @@ class CustomerOrderController extends Controller
 
         // Validasi input
         $validated = $request->validate([
+            'refund_method' => 'required|string',
             'bank_account_number' => 'required|string|numeric|min:8',
             'reason' => 'required|string|min:10|max:500',
         ]);
@@ -121,6 +186,7 @@ class CustomerOrderController extends Controller
                 'amount' => $order->total_price,
                 'status' => 'pending',
                 'reason' => $validated['reason'],
+                'refund_method' => $validated['refund_method'],
             ]);
 
             // Ubah status order menjadi 'refund_pending' atau sejenisnya

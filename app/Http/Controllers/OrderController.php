@@ -58,6 +58,7 @@ class OrderController extends Controller
             'voucher',
             'payment',
             'shipping', // PENTING: Eager load relasi shipping di sini
+            'refundRequest',
         ]);
 
         return view('dashboard-mitra.orders.show', compact('order'));
@@ -72,7 +73,7 @@ class OrderController extends Controller
      * @param  \App\Models\Order  $order
      * @return \Illuminate\Http\RedirectResponse|\Illuminate\Http\JsonResponse
      */
-     public function updateStatus(Request $request, Order $order)
+    public function updateStatus(Request $request, Order $order)
     {
         $user = Auth::user();
         $shop = $user->shop;
@@ -82,93 +83,106 @@ class OrderController extends Controller
         }
 
         $validated = $request->validate([
-            'status' => ['required', 'string', Rule::in([
-                Order::STATUS_PENDING,
-                Order::STATUS_PROCESSING,
-                Order::STATUS_SHIPPED,
-                Order::STATUS_READY_FOR_PICKUP,
-                Order::STATUS_COMPLETED,
-                Order::STATUS_CANCELLED,
-                Order::STATUS_FAILED,
-                Order::STATUS_REFUND_REQUESTED,
-                Order::STATUS_REFUNDED,
-            ])],
-            // HAPUS validasi delivery_method dari sini
-            // 'delivery_method' => ['nullable', 'string', Rule::in(['delivery', 'pickup'])],
-            'delivery_service' => ['nullable', 'string', 'max:255'],
-            'receipt_number' => ['nullable', 'string', 'max:255'],
+            'status' => ['required', 'string', Rule::in(['ready_for_pickup', 'shipped', 'completed'])],
+            'delivery_service' => 'required_if:status,shipped|nullable|string|max:255',
+            'receipt_number' => 'required_if:status,shipped|nullable|string|max:255',
         ]);
 
+
         DB::beginTransaction();
-
         try {
+            // 1. Update status pesanan utama
             $order->status = $validated['status'];
-            // HAPUS baris ini: delivery_method tidak diupdate dari request
-            // $order->delivery_method = $validated['delivery_method'];
-            $order->save(); // Simpan perubahan status Order
+            $order->save();
 
-            // Logika untuk detail pengiriman di model Shipping
-            if ($order->delivery_method === 'delivery' && $order->status === Order::STATUS_PROCESSING) {
-                // Jika diantar dan statusnya 'Dikirim', nomor resi dan layanan wajib
-                if (empty($validated['receipt_number'])) {
-                    throw new \Exception('Nomor resi wajib diisi jika metode pengiriman "Diantar" dan status diubah menjadi "Dikirim".');
-                }
-                if (empty($validated['delivery_service'])) {
-                    throw new \Exception('Layanan pengiriman wajib diisi jika metode pengiriman "Diantar" dan status diubah menjadi "Dikirim".');
-                }
-
-                $shipping = $order->shipping()->firstOrCreate(
-                    ['order_id' => $order->id], // Cari berdasarkan order_id
-                    [ // Data untuk create jika belum ada
+            // 2. Update atau buat data pengiriman terkait
+            if ($validated['status'] === 'shipped') {
+                $order->shipping()->updateOrCreate(
+                    ['order_id' => $order->id], // Kondisi pencarian
+                    [ // Data untuk di-update atau di-create
                         'delivery_service' => $validated['delivery_service'],
-                        'status' => 'on_transit',
                         'receipt_number' => $validated['receipt_number'],
-                        'shipping_cost' => $order->shipping_cost,
-                        'estimated_delivery' => null,
+                        'status' => 'shipped',
                     ]
                 );
-                $shipping->update([
-                    'delivery_service' => $validated['delivery_service'],
-                    'status' => 'on_transit',
-                    'receipt_number' => $validated['receipt_number'],
-                ]);
-
-            } elseif ($order->delivery_method === 'pickup' && $order->status === Order::STATUS_READY_FOR_PICKUP) {
-                $shipping = $order->shipping()->firstOrCreate(
-                    ['order_id' => $order->id], // Cari berdasarkan order_id
-                    [
-                        'delivery_service' => 'Pickup',
-                        'status' => 'ready_for_pickup',
-                        'receipt_number' => null,
-                        'shipping_cost' => 0,
-                        'estimated_delivery' => null,
-                    ]
+            } elseif ($validated['status'] === 'ready_for_pickup') {
+                $order->shipping()->updateOrCreate(
+                    ['order_id' => $order->id],
+                    ['status' => 'ready_for_pickup']
                 );
-                $shipping->update([
-                    'status' => 'ready_for_pickup',
-                ]);
-            } else {
-                // Jika status atau metode tidak lagi membutuhkan detail shipping, hapus jika ada
+            } elseif ($validated['status'] === 'completed') {
+                // Jika pesanan selesai, update juga status di tabel shipping jika ada
                 if ($order->shipping) {
-                    $order->shipping->delete();
+                    $newShippingStatus = $order->delivery_method === 'pickup' ? 'picked_up' : 'delivered';
+                    $order->shipping->status = $newShippingStatus;
+                    $order->shipping->save();
                 }
             }
 
+            // 3. Jika semua berhasil, commit transaksi
             DB::commit();
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Status pesanan berhasil diperbarui!', // Pesan lebih umum
-                'new_status' => $order->status,
-                'new_delivery_method' => $order->delivery_method, // Mengambil dari DB, bukan dari request
-                'new_tracking_number' => $order->shipping->receipt_number ?? null,
-                'new_delivery_service' => $order->shipping->delivery_service ?? null,
-            ]);
+            return back()->with('success', 'Status pesanan berhasil diperbarui!');
 
         } catch (\Exception $e) {
+            // 4. Jika ada error, rollback semua perubahan
             DB::rollBack();
-            Log::error("Failed to update order status or shipping for ID: {$order->id}. Error: " . $e->getMessage(), ['exception' => $e]);
-            return response()->json(['success' => false, 'message' => 'Gagal memperbarui status pesanan: ' . $e->getMessage()], 500);
+
+            Log::error("Failed to update order status for ID: {$order->id}. Error: " . $e->getMessage(), ['exception' => $e]);
+
+            return back()->with('error', 'Terjadi kesalahan internal. Gagal memperbarui status pesanan.');
+        }
+    }
+
+    /**
+     * [METHOD BARU] Menerima permintaan pengembalian dana.
+     */
+    public function approveRefund(Order $order)
+    {
+        $user = Auth::user();
+        if ($order->shop_id !== $user->shop->id || $order->status !== 'refund_pending' || !$order->refundRequest) {
+            return back()->with('error', 'Aksi tidak valid atau tidak diizinkan.');
+        }
+
+        try {
+            DB::transaction(function () use ($order) {
+                $order->update(['status' => 'refunded']);
+                $order->refundRequest->update(['status' => 'approved']);
+
+                // TODO (Opsional): Tambahkan logika untuk mengembalikan stok produk.
+                // foreach($order->items as $item) {
+                //     $item->variant->increment('stock', $item->quantity);
+                // }
+            });
+
+            return back()->with('success', 'Permintaan refund berhasil diterima. Status pesanan diubah menjadi "Dana Dikembalikan".');
+
+        } catch (\Exception $e) {
+            return back()->with('error', 'Gagal memproses permintaan refund: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * [METHOD BARU] Menolak permintaan pengembalian dana.
+     */
+    public function rejectRefund(Order $order)
+    {
+        $user = Auth::user();
+        if ($order->shop_id !== $user->shop->id || $order->status !== 'refund_pending' || !$order->refundRequest) {
+            return back()->with('error', 'Aksi tidak valid atau tidak diizinkan.');
+        }
+
+        try {
+            DB::transaction(function () use ($order) {
+                // Kembalikan status pesanan ke 'processing' agar bisa diproses ulang oleh mitra
+                $order->update(['status' => 'processing']);
+                $order->refundRequest->update(['status' => 'rejected']);
+            });
+
+            return back()->with('success', 'Permintaan refund berhasil ditolak. Status pesanan dikembalikan menjadi "Diproses".');
+
+        } catch (\Exception $e) {
+            return back()->with('error', 'Gagal memproses permintaan refund: ' . $e->getMessage());
         }
     }
 }

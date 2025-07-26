@@ -358,18 +358,19 @@
                         <div class="row align-items-center">
                             <div class="col-lg-6 col-md-6 col-sm-6">
                                 <p>Menampilkan {{ $products->firstItem() ?? 0 }}–{{ $products->lastItem() ?? 0 }} dari
-                                    {{ $products->total() }} hasil</p>
+                                    {{ $products->total() }} hasil
+                                </p>
                             </div>
                             <div class="col-lg-6 col-md-6 col-sm-6">
                                 <div class="select__option">
                                     <form id="sort-form" method="GET"
                                         action="{{ !$isPreview ? route('tenant.shop', ['subdomain' => $currentSubdomain]) : '#' }}">
                                         @if(request('category')) <input type="hidden" name="category"
-                                            value="{{ request('category') }}"> @endif
+                                        value="{{ request('category') }}"> @endif
                                         @if(request('min_price')) <input type="hidden" name="min_price"
-                                            value="{{ request('min_price') }}"> @endif
+                                        value="{{ request('min_price') }}"> @endif
                                         @if(request('max_price')) <input type="hidden" name="max_price"
-                                            value="{{ request('max_price') }}"> @endif
+                                        value="{{ request('max_price') }}"> @endif
                                         <select name="sort" id="sort-by" onchange="this.form.submit()" {{ $isPreview ? 'disabled' : '' }}>
                                             <option value="latest" {{ request('sort', 'latest') == 'latest' ? 'selected' : '' }}>Urutkan: Terbaru</option>
                                             <option value="price_asc" {{ request('sort') == 'price_asc' ? 'selected' : '' }}>
@@ -558,15 +559,15 @@
                 });
 
                 let formHTML = `
-                    <div>
-                        <h4 class="font-bold text-lg">${product.name}</h4>
-                        <p class="text-red-600 font-bold text-lg" id="modal-display-price">${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(product.price)}</p>
-                        <p class="text-gray-500 text-sm mt-1" id="modal-display-stock">Stok: -</p>
-                    </div>
-                    <form id="modal-cart-form" class="space-y-4 mt-4" novalidate>
-                        <input type="hidden" name="product_id" value="${product.id}">
-                        <input type="hidden" name="selected_variant_id" id="selected-variant-id" value="">
-                `;
+                        <div>
+                            <h4 class="font-bold text-lg">${product.name}</h4>
+                            <p class="text-red-600 font-bold text-lg" id="modal-display-price">${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(product.price)}</p>
+                            <p class="text-gray-500 text-sm mt-1" id="modal-display-stock">Pilih varian untuk melihat stok</p>
+                        </div>
+                        <form id="modal-cart-form" class="space-y-4 mt-4" novalidate>
+                            <input type="hidden" name="product_id" value="${product.id}">
+                            <input type="hidden" name="selected_variant_id" id="selected-variant-id" value="">
+                    `;
 
                 // Urutan opsi: prioritaskan "Ukuran" lalu "Warna", sisanya sesuai urutan ditemukan
                 const orderedOptionNames = Array.from(allOptionNames).sort((a, b) => {
@@ -588,29 +589,29 @@
                         const isDisabled = index > 0; // Dropdown pertama aktif, sisanya disable dulu
 
                         formHTML += `
-                            <div>
-                                <label for="${selectId}" class="block text-sm font-medium text-gray-700 mb-1">${optionName}</label>
-                                <select id="${selectId}" name="option_${optionName.toLowerCase().replace(/\s/g, '_')}"
-                                        class="modal-variant-select" data-option-name="${optionName}"
-                                        ${isDisabled ? 'disabled' : ''} required>
-                                    <option value="">Pilih ${optionName}</option>
-                                    ${uniqueOptionValues.map(value => `<option value="${value}">${value}</option>`).join('')}
-                                </select>
-                            </div>
-                        `;
+                                <div>
+                                    <label for="${selectId}" class="block text-sm font-medium text-gray-700 mb-1">${optionName}</label>
+                                    <select id="${selectId}" name="option_${optionName.toLowerCase().replace(/\s/g, '_')}"
+                                            class="modal-variant-select" data-option-name="${optionName}"
+                                            ${isDisabled ? 'disabled' : ''} required>
+                                        <option value="">Pilih ${optionName}</option>
+                                        ${uniqueOptionValues.map(value => `<option value="${value}">${value}</option>`).join('')}
+                                    </select>
+                                </div>
+                            `;
                     }
                 });
 
                 formHTML += `
-                        <div class="mt-6">
-                            <label for="quantity-input" class="block text-sm font-medium text-gray-700 mb-1">Jumlah</label>
-                            <input type="number" name="quantity" id="quantity-input" value="1" min="1" class="w-full border-gray-300 rounded-md" required>
-                        </div>
-                        <div class="flex items-center space-x-2 mt-4">
-                            <button type="submit" id="modal-add-btn" class="primary-btn w-full !bg-gray-800 !text-white hover:!bg-black" disabled>Tambah ke Keranjang</button>
-                        </div>
-                    </form>
-                `;
+                            <div class="mt-6">
+                                <label for="quantity-input" class="block text-sm font-medium text-gray-700 mb-1">Jumlah</label>
+                                <input type="number" name="quantity" id="quantity-input" value="1" min="1" class="w-full border-gray-300 rounded-md" required>
+                            </div>
+                            <div class="flex items-center space-x-2 mt-4">
+                                <button type="submit" id="modal-add-btn" class="primary-btn w-full !bg-gray-800 !text-white hover:!bg-black" disabled>Tambah ke Keranjang</button>
+                            </div>
+                        </form>
+                    `;
 
                 modalBody.innerHTML = formHTML;
                 modal.classList.add('show');
@@ -649,7 +650,7 @@
                         // Jika dropdown aktif dan bukan yang pertama, saring opsinya
                         if (!currentSelect.disabled && currentSelect.value === "") {
                             let availableValuesForCurrentSelect = new Set();
-                            
+
                             // Filter varian yang cocok dengan pilihan sebelumnya
                             const filteredVariants = product.processed_varians.filter(varian => {
                                 let matchesPrevious = true;
@@ -676,7 +677,7 @@
                                 // Cek stok untuk opsi ini
                                 const hasStock = product.processed_varians.some(v => {
                                     let isMatch = true;
-                                    for(const optName in currentSelectedOptions) {
+                                    for (const optName in currentSelectedOptions) {
                                         if (currentSelectedOptions[optName] && v.options_map[optName] !== currentSelectedOptions[optName]) {
                                             isMatch = false;
                                             break;
@@ -760,9 +761,9 @@
                         updateOptionDropdowns(); // Perbarui semua dropdown lagi
                     });
                 });
-                
+
                 quantityInput.addEventListener('input', updateButtonState); // Perbarui state tombol saat quantity berubah
-                
+
                 form.addEventListener('submit', e => handleFormSubmit(e));
                 // Modal wishlist button (if exists)
                 // const modalWishlistBtn = document.getElementById('modal-wishlist-btn');

@@ -18,7 +18,7 @@ class Shipping extends Model
     protected $fillable = [
         'order_id',
         'delivery_service', // ekspedisi pengiriman, jne, jnt, sicepat
-        'status', // Status pengiriman (misal: 'pending', 'on_transit', 'delivered')
+        'status', // Status pengiriman (misal: 'delivered')
         'estimated_delivery', // estimasi pengiriman
         'receipt_number', // no resi
         'shipping_cost' // ongkos kirim

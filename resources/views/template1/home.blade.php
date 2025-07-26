@@ -216,8 +216,7 @@
                                     <h6>Selamat Datang!</h6>
                                     <h2>Toko Fashion Terbaik Anda</h2>
                                     <p>Atur tampilan hero section Anda melalui dashboard editor.</p>
-                                    <a href="#" class="primary-btn">Telusuri Sekarang <span
-                                            class="arrow_right"></span></a>
+                                    <a href="#" class="primary-btn">Telusuri Sekarang <span class="arrow_right"></span></a>
                                 </div>
                             </div>
                         </div>
@@ -265,15 +264,9 @@
                 @forelse ($allProducts as $product)
                     @php
                         $classes = '';
-                        if (($bestSellers ?? collect())->contains($product)) {
-                            $classes .= ' best-seller';
-                        }
-                        if (($newArrivals ?? collect())->contains($product)) {
-                            $classes .= ' new-arrival';
-                        }
-                        if (($hotSales ?? collect())->contains($product)) {
-                            $classes .= ' hot-sale';
-                        }
+                        if (($bestSellers ?? collect())->contains($product)) { $classes .= ' best-seller'; }
+                        if (($newArrivals ?? collect())->contains($product)) { $classes .= ' new-arrival'; }
+                        if (($hotSales ?? collect())->contains($product)) { $classes .= ' hot-sale'; }
                     @endphp
                     <div class="col-lg-3 col-md-6 col-sm-6 mix{{ $classes }}">
                         <div class="product__item">
@@ -304,8 +297,7 @@
                                 </button> --}}
                                 <div class="rating">
                                     @for ($i = 1; $i <= 5; $i++)
-                                        <i
-                                            class="fa {{ ($product->rating_product ?? 0) >= $i ? 'fa-star' : 'fa-star-o' }}"></i>
+                                        <i class="fa {{ ($product->rating_product ?? 0) >= $i ? 'fa-star' : 'fa-star-o' }}"></i>
                                     @endfor
                                 </div>
                                 <h5>{{ format_rupiah($product->price) }}</h5>

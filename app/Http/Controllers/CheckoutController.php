@@ -104,7 +104,6 @@ class CheckoutController extends Controller
 
     public function charge(Request $request)
     {
-        // PERBAIKAN: Tambahkan validasi untuk kota dan kode pos
         $validated = $request->validate([
             'items' => 'required|array',
             'items.*' => 'string',
@@ -155,22 +154,38 @@ class CheckoutController extends Controller
                 $totalDiscount += $shopDiscount;
             }
 
-            $grandTotalForMidtrans = round($totalSubtotal - $totalDiscount + $totalShipping);
-            if ($grandTotalForMidtrans <= 0)
-                $grandTotalForMidtrans = 1;
-
+            // 1. Buat array item_details dengan nilai yang sudah dibulatkan
             $itemDetailsForMidtrans = [];
-            if ($totalSubtotal > 0)
+            if ($totalSubtotal > 0) {
                 $itemDetailsForMidtrans[] = ['id' => 'SUBTOTAL', 'price' => round($totalSubtotal), 'quantity' => 1, 'name' => 'Total Belanja Produk'];
-            if ($totalShipping > 0)
+            }
+            if ($totalShipping > 0) {
                 $itemDetailsForMidtrans[] = ['id' => 'SHIPPING', 'price' => round($totalShipping), 'quantity' => 1, 'name' => 'Total Ongkos Kirim'];
-            if ($totalDiscount > 0)
+            }
+            if ($totalDiscount > 0) {
                 $itemDetailsForMidtrans[] = ['id' => 'DISCOUNT', 'price' => -round($totalDiscount), 'quantity' => 1, 'name' => 'Total Diskon'];
+            }
 
+            // 2. Hitung gross_amount dari penjumlahan item_details yang sudah dibulatkan
+            $grandTotalForMidtrans = array_sum(array_column($itemDetailsForMidtrans, 'price'));
+
+            // Pastikan gross_amount tidak nol atau negatif
+            if ($grandTotalForMidtrans <= 0) {
+                $grandTotalForMidtrans = 1; // Midtrans mungkin memerlukan nilai minimal
+            }
+
+            // 3. Siapkan parameter untuk Midtrans
             $paymentTransactionId = 'PAY-' . $orderGroupId;
             $params = [
-                'transaction_details' => ['order_id' => $paymentTransactionId, 'gross_amount' => $grandTotalForMidtrans],
-                'customer_details' => ['first_name' => $customer->name, 'email' => $customer->email, 'phone' => $customer->phone],
+                'transaction_details' => [
+                    'order_id' => $paymentTransactionId,
+                    'gross_amount' => $grandTotalForMidtrans, // Sekarang nilai ini PASTI cocok
+                ],
+                'customer_details' => [
+                    'first_name' => $customer->name,
+                    'email' => $customer->email,
+                    'phone' => $customer->phone,
+                ],
                 'item_details' => $itemDetailsForMidtrans
             ];
 
@@ -200,10 +215,20 @@ class CheckoutController extends Controller
                     }
                 }
 
+                $shopName = $firstItem->product->shopOwner->shop->shop_name;
+                $shopCode = strtoupper(substr(preg_replace('/[^a-zA-Z0-9]/', '', $shopName), 0, 3));
+
+                do {
+                    $datePart = now()->format('ym'); // Format: 2507 (TahunBulan)
+                    $uniquePart = rand(10000, 99999);
+                    $orderNumber = "{$shopCode}-{$datePart}-{$uniquePart}";
+                } while (Order::where('order_number', $orderNumber)->exists());
+
                 $order = Order::create([
-                    'order_group_id' => $orderGroupId,
+                    'order_number' => $orderNumber,
                     'user_id' => $customer->id,
                     'shop_id' => $shopId,
+                    'order_group_id' => $orderGroupId,
                     'subdomain_id' => $firstItem->product->shopOwner->subdomain->id,
                     'voucher_id' => $voucherId,
                     'total_price' => ($shopSubtotal - $shopDiscount) + $shopShippingCost,
@@ -267,7 +292,7 @@ class CheckoutController extends Controller
     public function searchDestination(Request $request)
     {
         $keyword = $request->input('keyword');
-        if (!$keyword)  
+        if (!$keyword)
             return response()->json(['areas' => []]);
         try {
             $apiKey = Config::get('biteship.api_key');

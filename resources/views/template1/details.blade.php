@@ -163,23 +163,26 @@
                                     @endif
                                 </div>
 
-                                <div class="product__details__cart__option">
-                                    <div class="quantity">
-                                        <div class="pro-qty">
-                                            <input type="text" name="quantity" value="1">
+                                    <div class="product__details__cart__option">
+                                        <div class="quantity">
+                                            <div class="pro-qty">
+                                                <input type="text" name="quantity" value="1">
+                                            </div>
                                         </div>
+                                        <button type="submit" class="primary-btn" id="add-to-cart-btn" disabled>add to
+                                            cart</button>
                                     </div>
                                     {{-- PERBAIKAN: Tombol add-to-cart di-disable jika produk tidak punya varian sama sekali --}}
                                     <button type="submit" class="primary-btn" id="add-to-cart-btn"
                                         {{ $product->varians->isEmpty() ? 'disabled' : '' }}>Tambah Keranjang</button>
                                 </div>
-                            </form>
+                            @endif
                             <div class="product__details__btns__option">
                                 <a href="#" class="toggle-wishlist" data-product-id="{{ $product->id }}"><i
                                         class="fa fa-heart"></i> add to wishlist</a>
                             </div>
 
-                            <div class="product__details__last__option">
+                            {{-- <div class="product__details__last__option">
                                 <h5><span>Guaranteed Safe Checkout</span></h5>
                                 <img src="{{ asset('template1/img/shop-details/details-payment.png') }}" alt="">
                                 <ul>
@@ -193,7 +196,7 @@
                                         @endforelse
                                     </li>
                                 </ul>
-                            </div>
+                            </div> --}}
                         </div>
                     </div>
                 </div>
