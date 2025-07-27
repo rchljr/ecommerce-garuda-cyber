@@ -135,6 +135,11 @@
     @php
         $isPreview = $isPreview ?? false;
         $currentSubdomain = !$isPreview ? request()->route('subdomain') : null;
+
+        // Hitung harga termurah dari varian untuk tampilan awal.
+        // Jika tidak ada varian, gunakan harga dasar produk.
+        $lowestPrice = $product->varians->min('price') ?? $product->price ?? 0;
+        $hasDifferentPrices = $product->varians->isNotEmpty() && ($product->varians->min('price') != $product->varians->max('price'));
     @endphp
 
     <section class="shop-details">
@@ -175,7 +180,12 @@
                                 @endfor
                                 <span> - {{ $reviewCount ?? 0 }} Ulasan</span>
                             </div>
-                            <h3 id="product-display-price">{{ format_rupiah($product->price) }}</h3>
+                            <h3 id="product-display-price">
+                                @if($hasDifferentPrices)
+                                    <span style="font-size: 16px; color: #666; font-weight: normal;">Mulai dari </span>
+                                @endif
+                                {{ format_rupiah($lowestPrice) }}
+                            </h3>
                             <p>{{ $product->short_description ?? 'Deskripsi singkat produk akan muncul di sini.' }}</p>
 
                             <form id="add-to-cart-form"
@@ -208,10 +218,16 @@
                             </div>
 
                             <div class="product__details__last__option">
-                                <h5><span>Garansi Pembelian</span></h5>
-                                <img src="{{ asset('images/Frame 8.png') }}" alt="Payment Methods" height="40">
+                                <h5><span>Garansi & Metode Pembayaran</span></h5>
+                                <div class="flex items-center gap-3 my-3">
+                                    <img src="{{ asset('images/bca.png') }}" alt="BCA" title="BCA" style="height: 25px; margin: auto;">
+                                    <img src="{{ asset('images/bri.png') }}" alt="BRI" title="BRI" style="height: 35px; margin: auto;">
+                                    <img src="{{ asset('images/gopay.png') }}" alt="Gopay" title="Gopay" style="height: 25px;">
+                                    <img src="{{ asset('images/qris.png') }}" alt="QRIS" title="QRIS" style="height: 25px;">
+                                </div>
+
                                 <ul>
-                                    <li><span>SKU:</span> <span id="variant-sku">{{ $product->sku ?? 'N/A' }}</span></li>
+                                    <li><span>SKU:</span> <span id="variant-sku">{{ $product->sku ?? '-' }}</span></li>
                                     <li><span>Kategori:</span> {{ $product->subCategory->name ?? 'Uncategorized' }}</li>
                                     <li><span>Tag:</span>
                                         @forelse($product->tags as $tag)

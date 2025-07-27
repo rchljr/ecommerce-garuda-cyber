@@ -7,7 +7,7 @@
     // PERBAIKAN: Logika untuk logo dan deskripsi dipindahkan ke sini agar lebih bersih
     // Asumsikan variabel $customTema tersedia dari View Composer atau Controller
     $logoPath = optional($customTema)->shop_logo;
-    $logoUrl = $logoPath ? asset('storage/' . $logoPath) : asset('images/gci.png');
+    $logoUrl = $logoPath ? asset('storage/' . $logoPath) : asset('images/LogoGCI.png');
     $shopName = optional($customTema)->shop_name ?? 'Nama Toko';
     $shopDescription = optional($customTema)->shop_description ?? 'Pelanggan adalah inti dari model bisnis unik kami, yang mencakup proses desain.';
 @endphp
@@ -19,13 +19,10 @@
                 <div class="footer__about">
                     <div class="footer__logo">
                         <a href="{{ !$isPreview ? route('tenant.home', ['subdomain' => $currentSubdomain]) : '#' }}">
-                            {{-- PERBAIKAN: Menggunakan variabel logo dan nama toko yang sudah disiapkan --}}
-                            <img src="{{ $logoUrl }}"
-                                 alt="{{ $shopName }}"
-                                 style="max-height: 65px; background: white; padding: 10px; border-radius: 100px;">
+                            <img src="{{ $logoUrl }}" alt="{{ $shopName }}"
+                                style="max-height: 65px; background: white; padding: 10px; border-radius: 50px;">
                         </a>
                     </div>
-                    {{-- PERBAIKAN: Menggunakan deskripsi toko yang dinamis --}}
                     <p>{{ $shopDescription }}</p>
 
                     <div class="footer__payment" style="margin-top: 20px;">
