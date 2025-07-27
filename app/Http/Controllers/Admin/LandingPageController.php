@@ -17,6 +17,7 @@ class LandingPageController extends BaseController
 {
     protected $landingPageService;
     protected $subscriptionPackageService;
+    protected $testimonialService;
 
     public function __construct(LandingPageService $landingPageService, SubscriptionPackageService $subscriptionPackageService, TestimonialService $testimonialService)
     {

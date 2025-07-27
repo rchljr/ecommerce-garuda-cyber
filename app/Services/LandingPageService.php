@@ -109,11 +109,17 @@ class LandingPageService
         $column = 'is_' . $type;
 
         // Ambil produk dengan relasi yang dibutuhkan untuk membuat link
-        return Product::whereIn('user_id', $partnerIds)
+        $query = Product::whereIn('user_id', $partnerIds)
             ->where($column, true)
             ->where('status', 'active')
-            ->with(['shopOwner.shop', 'shopOwner.subdomain']) // Eager load untuk URL
-            ->latest()
+            ->with(['shopOwner.shop', 'shopOwner.subdomain']); // Eager load untuk URL
+
+        // Ini akan menambahkan atribut 'min_variant_price' ke setiap objek produk.
+        $query->withMin('varians as min_variant_price', 'price');
+
+
+        // Ambil produk dengan relasi yang dibutuhkan untuk membuat link
+        return $query->latest()
             ->take($limit)
             ->get();
     }
