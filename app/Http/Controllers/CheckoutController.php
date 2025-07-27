@@ -19,7 +19,6 @@ use Illuminate\Support\Facades\Config;
 
 class CheckoutController extends Controller
 {
-    // ... (constructor dan metode lain seperti index, getDetails tetap sama)
     protected $cartService;
 
     public function __construct(CartService $cartService)
@@ -34,11 +33,15 @@ class CheckoutController extends Controller
     public function index(Request $request)
     {
         $validated = $request->validate(['items' => 'required|array|min:1', 'items.*' => 'string']);
+
         $itemIds = $validated['items'];
+
         $checkoutItems = $this->cartService->getItemsByIds($itemIds);
+
         if ($checkoutItems->isEmpty()) {
             return redirect()->route('tenant.cart.index', ['subdomain' => request()->route('subdomain')])->with('error', 'Produk yang dipilih tidak ditemukan.');
         }
+
         return view('customer.checkout', ['checkoutItemIds' => $itemIds]);
     }
 
@@ -51,6 +54,7 @@ class CheckoutController extends Controller
             return response()->json(['error' => 'Item tidak ditemukan.'], 404);
         }
 
+        $customer = Auth::guard('customers')->user();
         $groupedItems = $checkoutItems->groupBy('product.shopOwner.shop.id');
         $shopsData = [];
         $grandSubtotal = 0;
@@ -65,13 +69,50 @@ class CheckoutController extends Controller
             $shopSubtotal = $items->sum(fn($item) => $item->variant->price * $item->quantity);
             $grandSubtotal += $shopSubtotal;
 
-            $vouchers = Voucher::where('user_id', $shopOwner->id)
-                ->where('expired_date', '>=', now())
-                ->latest('created_at')->get()
-                ->map(function ($voucher) use ($shopSubtotal) {
-                    $voucher->is_eligible = $shopSubtotal >= $voucher->min_spending;
-                    return $voucher;
-                });
+            $now = now();
+            $vouchersQuery = Voucher::where('user_id', $shopOwner->id)
+                ->where('start_date', '<=', $now)
+                ->where('expired_date', '>=', $now);
+
+            $availableVouchers = $vouchersQuery->get();
+
+            // Ambil data pesanan customer di toko ini untuk validasi
+            $customerOrdersAtShop = Order::where('user_id', $customer->id)
+                ->where('shop_id', $shopId)
+                ->whereNotIn('status', ['cancelled', 'failed', 'refunded', 'refund_requested'])
+                ->get();
+
+            $isNewCustomerForShop = $customerOrdersAtShop->isEmpty();
+
+            $vouchers = $availableVouchers->map(function ($voucher) use ($shopSubtotal, $isNewCustomerForShop, $customerOrdersAtShop) {
+                $isEligible = true;
+                $ineligibilityReason = '';
+
+                // 1. Cek minimum belanja
+                if ($shopSubtotal < $voucher->min_spending) {
+                    $isEligible = false;
+                    $ineligibilityReason = 'Minimum belanja belum tercapai.';
+                }
+
+                // 2. Cek jika hanya untuk pelanggan baru
+                if ($isEligible && $voucher->is_for_new_customer && !$isNewCustomerForShop) {
+                    $isEligible = false;
+                    $ineligibilityReason = 'Hanya untuk pelanggan baru.';
+                }
+
+                // 3. Cek jika voucher sudah pernah dipakai (untuk voucher sekali pakai)
+                if ($isEligible && $voucher->max_uses_per_customer == 1) {
+                    $hasUsedVoucher = $customerOrdersAtShop->contains('voucher_id', $voucher->id);
+                    if ($hasUsedVoucher) {
+                        $isEligible = false;
+                        $ineligibilityReason = 'Voucher sudah pernah Anda gunakan.';
+                    }
+                }
+
+                $voucher->is_eligible = $isEligible;
+                $voucher->ineligibility_reason = $ineligibilityReason;
+                return $voucher;
+            });
 
             $shopsData[] = [
                 'shop' => ['id' => $shop->id, 'shop_name' => $shop->shop_name, 'postal_code' => $shop->postal_code],
@@ -145,7 +186,38 @@ class CheckoutController extends Controller
 
                 if ($shopDataFromRequest && !empty($shopDataFromRequest['voucherId'])) {
                     $voucher = Voucher::find($shopDataFromRequest['voucherId']);
-                    if ($voucher && $voucher->user_id == $items->first()->product->user_id && $shopSubtotal >= $voucher->min_spending) {
+
+                    // Validasi komprehensif di backend
+                    $isValid = true;
+                    if (!$voucher) {
+                        $isValid = false;
+                    } else {
+                        $now = now();
+                        $customerOrdersAtShop = Order::where('user_id', $customer->id)
+                            ->where('shop_id', $shopId)
+                            ->whereNotIn('status', ['cancelled', 'failed'])
+                            ->get();
+
+                        // Cek 1: Kepemilikan, Periode Aktif, Min. Belanja
+                        if (
+                            $voucher->user_id != $items->first()->product->user_id ||
+                            !($now->between($voucher->start_date, $voucher->expired_date)) ||
+                            $shopSubtotal < $voucher->min_spending
+                        ) {
+                            $isValid = false;
+                        }
+
+                        // Cek 2: Pelanggan Baru
+                        if ($isValid && $voucher->is_for_new_customer && !$customerOrdersAtShop->isEmpty()) {
+                            $isValid = false;
+                        }
+
+                        // Cek 3: Penggunaan Sekali
+                        if ($isValid && $voucher->max_uses_per_customer == 1 && $customerOrdersAtShop->contains('voucher_id', $voucher->id)) {
+                            $isValid = false;
+                        }
+                    }
+                    if ($isValid) {
                         $shopDiscount = ($shopSubtotal * $voucher->discount) / 100;
                     }
                 }
@@ -327,15 +399,19 @@ class CheckoutController extends Controller
                 'weight' => $item->product->weight ?? 500,
                 'quantity' => $item->quantity,
             ])->toArray();
+
             $response = Http::withToken($apiKey)->post($baseUrl . '/v1/rates/couriers', [
                 'origin_postal_code' => $validated['origin_postal_code'],
                 'destination_postal_code' => $validated['destination_postal_code'],
                 'couriers' => 'jne,jnt,sicepat,anteraja,gojek,grab',
                 'items' => $itemsPayload,
             ]);
+
             $responseData = $response->json();
+
             if ($response->successful() && !empty($responseData['pricing']))
                 return response()->json($responseData['pricing']);
+
             return response()->json(['error' => $responseData['error'] ?? 'Gagal menghitung ongkir.'], $response->status());
         } catch (Exception $e) {
             Log::error('Biteship Rates Exception: ' . $e->getMessage());

@@ -4,13 +4,47 @@
 @push('styles')
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
-        .disabled-item { opacity: 0.6; cursor: not-allowed; filter: grayscale(80%); }
-        .disabled-item:hover { transform: none !important; }
-        .selected-option { border-color: #ef4444; background-color: #fef2f2; }
-        .summary-row { display: flex; justify-content: space-between; font-size: 0.875rem; color: #4b5563; }
-        .voucher-item-modal { display: flex; background-color: white; border-radius: 0.5rem; box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1); overflow: hidden; cursor: pointer; transition: transform 0.2s ease-in-out; }
-        .voucher-item-modal:not(.disabled-item):hover { transform: scale(1.03); }
-        .payment-option-label img { height: 20px; margin-bottom: 4px; object-fit: contain; }
+        .disabled-item {
+            opacity: 0.6;
+            cursor: not-allowed;
+            filter: grayscale(80%);
+        }
+
+        .disabled-item:hover {
+            transform: none !important;
+        }
+
+        .selected-option {
+            border-color: #ef4444;
+            background-color: #fef2f2;
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.875rem;
+            color: #4b5563;
+        }
+
+        .voucher-item-modal {
+            display: flex;
+            background-color: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.2s ease-in-out;
+        }
+
+        .voucher-item-modal:not(.disabled-item):hover {
+            transform: scale(1.03);
+        }
+
+        .payment-option-label img {
+            height: 20px;
+            margin-bottom: 4px;
+            object-fit: contain;
+        }
     </style>
 @endpush
 
@@ -88,21 +122,46 @@
                 if (shopData && shopData.vouchers.length > 0) {
                     shopData.vouchers.forEach(voucher => {
                         const remainingAmount = voucher.min_spending - shopData.subtotal;
-                        modalBody.innerHTML += `<div class="voucher-item-modal ${!voucher.is_eligible ? 'disabled-item' : ''}" data-id="${voucher.id}" data-code="${voucher.voucher_code}" data-shop-id="${shopId}" data-discount-percent="${voucher.discount}"><div class="flex-none w-24 bg-red-500 text-white flex flex-col items-center justify-center p-2 ${!voucher.is_eligible ? 'bg-gray-400' : ''}"><p class="font-bold text-2xl">${Math.floor(voucher.discount)}<span class="text-lg">%</span></p><p class="text-xs uppercase">Diskon</p></div><div class="flex-grow p-3 pl-4"><p class="font-bold text-gray-800">${voucher.voucher_code || 'Voucher Spesial'}</p><div class="mt-2 pt-2 border-t border-dashed text-xs text-gray-600 space-y-1"><p>• Min. belanja: ${formatRupiah(voucher.min_spending)}</p><p>• Berlaku hingga: ${new Date(voucher.expired_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</p>${!voucher.is_eligible && remainingAmount > 0 ? `<p class="text-red-500 font-semibold">• Belanja lagi ${formatRupiah(remainingAmount)} untuk bisa pakai</p>` : ''}</div></div></div>`;
+                        let reasonHTML = '';
+                        if (!voucher.is_eligible && voucher.ineligibility_reason) {
+                            reasonHTML = `<p class="text-red-500 font-semibold">• ${voucher.ineligibility_reason}</p>`;
+                        } else if (!voucher.is_eligible && remainingAmount > 0) {
+                            // Fallback jika reason tidak ada tapi min_spending belum cukup
+                            reasonHTML = `<p class="text-red-500 font-semibold">• Belanja lagi ${formatRupiah(remainingAmount)} untuk bisa pakai</p>`;
+                        }
+                        modalBody.innerHTML += `
+                                <div class="voucher-item-modal ${!voucher.is_eligible ? 'disabled-item' : ''}" 
+                                    data-id="${voucher.id}" 
+                                    data-code="${voucher.voucher_code}" 
+                                    data-shop-id="${shopId}" 
+                                    data-discount-percent="${voucher.discount}">
+                                    <div class="flex-none w-24 bg-red-500 text-white flex flex-col items-center justify-center p-2 ${!voucher.is_eligible ? 'bg-gray-400' : ''}">
+                                        <p class="font-bold text-2xl">${Math.floor(voucher.discount)}<span class="text-lg">%</span></p>
+                                        <p class="text-xs uppercase">Diskon</p>
+                                    </div>
+                                    <div class="flex-grow p-3 pl-4">
+                                        <p class="font-bold text-gray-800">${voucher.voucher_code || 'Voucher Spesial'}</p>
+                                        <div class="mt-2 pt-2 border-t border-dashed text-xs text-gray-600 space-y-1">
+                                            <p>• Min. belanja: ${formatRupiah(voucher.min_spending)}</p>
+                                            <p>• Berlaku hingga: ${new Date(voucher.expired_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                                            ${reasonHTML}
+                                        </div>
+                                    </div>
+                                </div>`;
                     });
                 } else {
                     modalBody.innerHTML = '<p class="text-center text-gray-500 py-8">Tidak ada voucher untuk toko ini.</p>';
                 }
                 voucherModal.classList.remove('hidden');
             }
-            
+
             // PERBAIKAN: Fungsi ini sekarang menerima parameter ketiga, yaitu teks yang akan ditampilkan di input
             function selectDestination(postalCode, name, city, displayText) {
                 document.getElementById('destination_search').value = displayText; // Menggunakan displayText
                 document.getElementById('destination-results').classList.add('hidden');
                 checkoutState.destinationPostalCode = postalCode;
-                checkoutState.shippingCity = city; 
-                checkoutState.shippingZipCode = postalCode; 
+                checkoutState.shippingCity = city;
+                checkoutState.shippingZipCode = postalCode;
                 document.querySelectorAll('[data-shop-id]').forEach(shopEl => calculateShippingForShop(shopEl.dataset.shopId));
             }
 
@@ -183,7 +242,7 @@
                                         const displayName = `${area.administrative_division_level_3_name}, ${city}`;
                                         const item = document.createElement('div');
                                         item.className = 'p-3 text-sm cursor-pointer hover:bg-gray-100 border-b';
-                                        
+
                                         let displayText = displayName;
                                         if (postalCode) {
                                             displayText += ` (${postalCode})`;
@@ -262,9 +321,9 @@
                     const dataToSend = {
                         _token: document.querySelector('input[name="_token"]').value, items: checkoutItemIds,
                         delivery_method: checkoutState.deliveryMethod, payment_method: document.querySelector('input[name="payment_method"]:checked').value,
-                        alamat: document.getElementById('alamat').value, 
-                        shipping_city: checkoutState.shippingCity, 
-                        shipping_zip_code: checkoutState.shippingZipCode, 
+                        alamat: document.getElementById('alamat').value,
+                        shipping_city: checkoutState.shippingCity,
+                        shipping_zip_code: checkoutState.shippingZipCode,
                         shops: checkoutState.shops
                     };
                     axios.post("{{ route('tenant.checkout.charge', ['subdomain' => request()->route('subdomain')]) }}", dataToSend)
