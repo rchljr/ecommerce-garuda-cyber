@@ -23,7 +23,7 @@ class MidtransService
      * Mengirim permintaan pembatalan transaksi ke Midtrans.
      *
      * @param string $midtransOrderId ID transaksi Midtrans (misal: PAY-xxxx)
-     * @return object|null Respons dari Midtrans atau null jika gagal.
+     * @return object|null Respons dari Midtrans dalam bentuk object atau null jika gagal.
      * @throws \Exception Jika terjadi error API.
      */
     public function cancelTransaction(string $midtransOrderId): ?object
@@ -32,11 +32,23 @@ class MidtransService
             Log::info("MidtransService: Mencoba membatalkan transaksi.", ['midtrans_order_id' => $midtransOrderId]);
 
             // Panggil static method cancel dari library Midtrans
-            $response = Transaction::cancel($midtransOrderId);
+            // Library ini mengembalikan JSON string, bukan object.
+            $responseString = Transaction::cancel($midtransOrderId);
 
-            Log::info("MidtransService: Berhasil membatalkan transaksi.", ['midtrans_order_id' => $midtransOrderId]);
+            // ====================================================================
+            // Decode string JSON menjadi object sebelum me-return
+            // Ini akan memastikan tipe data yang dikembalikan sesuai dengan
+            // deklarasi method `cancelTransaction(): ?object`
+            // ====================================================================
+            $responseObject = json_decode($responseString);
 
-            return $response;
+            Log::info("MidtransService: Berhasil membatalkan transaksi.", [
+                'midtrans_order_id' => $midtransOrderId,
+                'response' => $responseObject // Log object yang sudah di-decode
+            ]);
+
+            // Kembalikan object yang sudah di-decode
+            return $responseObject;
 
         } catch (\Exception $e) {
             // Tangani error jika transaksi tidak ditemukan, sudah diselesaikan, atau error lainnya

@@ -176,7 +176,7 @@ class OrderController extends Controller
     }
 
     /**
-     * [METHOD BARU] Menolak permintaan pengembalian dana.
+     * Menolak permintaan pengembalian dana.
      */
     public function rejectRefund(Order $order)
     {
