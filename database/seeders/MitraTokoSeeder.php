@@ -118,7 +118,7 @@ class MitraTokoSeeder extends Seeder
         $catSambal = SubCategory::firstOrCreate(['slug' => 'bumbu-masak'], ['name' => 'Bumbu Masak', 'category_id' => $kulinerCategory->id]);
 
         // 2. Buat satu Pelanggan (Customer) spesifik yang akan digunakan oleh OrderSeeder
-        User::firstOrCreate(
+        $customer = User::firstOrCreate(
             ['email' => 'customer@gmail.com'],
             [
                 'name' => 'Pelanggan Setia',
@@ -128,6 +128,7 @@ class MitraTokoSeeder extends Seeder
                 'status' => 'active',
             ]
         );
+        $customer->assignRole('customer');
         $this->command->info('Pelanggan spesifik customer@gmail.com dibuat/diperbarui.');
 
 
