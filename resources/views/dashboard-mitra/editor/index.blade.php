@@ -24,7 +24,7 @@ File 1: resources/views/mitra/editor/index.blade.php (Versi Diperbarui & Lengkap
                             class="w-full block bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded">
                             Kelola Logo Toko
                         </a>
-                        <p class="text-xs text-gray-500 mt-1">Anda akan diarahkan ke halaman Kelola Banner.</p>
+                        <p class="text-xs text-gray-500 mt-1">Anda akan diarahkan ke halaman Kelola Logo Toko.</p>
                     </div>
                 </details>
                 <!-- Hero Section Controls -->
