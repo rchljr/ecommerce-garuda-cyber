@@ -9,19 +9,22 @@
     $currentSubdomain = !$isPreview ? request()->route('subdomain') : null;
 @endphp
 
-<div class="hero-wrap hero-bread" style="background-image: url('{{ asset('template2/images/bg_1.jpg') }}');">
-    <div class="container">
-        <div class="row no-gutters slider-text align-items-center justify-content-center">
-            <div class="col-md-9 ftco-animate text-center">
-                <p class="breadcrumbs">
-                    <span class="mr-2"><a href="{{ !$isPreview ? route('tenant.home', ['subdomain' => $currentSubdomain]) : '#' }}">Home</a></span>
-                    <span>Hubungi Kami</span>
-                </p>
-                <h1 class="mb-0 bread">Hubungi Kami</h1>
+  <section class="breadcrumb-option">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="breadcrumb__text">
+                        <h4>Hubungi Kami</h4>
+                        <div class="breadcrumb__links">
+                            <a
+                                href="{{ !$isPreview ? route('tenant.home', ['subdomain' => $currentSubdomain]) : '#' }}">Beranda</a>
+                            <span>Kontak</span>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
-    </div>
-</div>
+    </section>
 
 <section class="ftco-section contact-section bg-light">
     <div class="container">
