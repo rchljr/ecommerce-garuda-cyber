@@ -181,13 +181,8 @@
                             </a>
                             {{-- PERBAIKAN: Link dibuat tenant-aware & preview-aware --}}
                             <a class="dropdown-item"
-                                href="{{ !$isPreview ? route('tenant.wishlist', ['subdomain' => $currentSubdomain]) : '#' }}">Wishlist</a>
-                            {{-- PERBAIKAN: Link dibuat tenant-aware & preview-aware --}}
-                            <a class="dropdown-item"
                                 href="{{ !$isPreview ? route('tenant.cart.index', ['subdomain' => $currentSubdomain]) : '#' }}">Keranjang</a>
                             {{-- PERBAIKAN: Link dibuat tenant-aware & preview-aware --}}
-                            <a class="dropdown-item"
-                                href="{{ !$isPreview ? route('tenant.checkout.index', ['subdomain' => $currentSubdomain]) : '#' }}">Checkout</a>
                         </div>
                     </li>
 
