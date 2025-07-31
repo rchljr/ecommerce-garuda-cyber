@@ -246,8 +246,8 @@
                             </form>
 
                             <div class="product__details__last__option">
-                                <h5><span>Garansi Pembelian</span></h5>
-                                <img src="{{ asset('images/Frame 8.png') }}" alt="Payment Methods" height="40">
+                                {{-- <h5><span>Garansi Pembelian</span></h5> --}}
+                                {{-- <img src="{{ asset('images/Frame 8.png') }}" alt="Payment Methods" height="40"> --}}
                                 <ul>
                                     <li><span>SKU:</span> <span id="variant-sku">{{ $product->sku ?? 'N/A' }}</span></li>
                                     <li><span>Kategori:</span> {{ $product->subCategory->name ?? 'Uncategorized' }}</li>

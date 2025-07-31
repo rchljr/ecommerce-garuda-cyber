@@ -81,7 +81,7 @@
     <!-- =================================== -->
     <!--          BANNER SECTION BARU        -->
     <!-- =================================== -->
-    <section class="ftco-section ftco-category ftco-no-pt">
+    {{-- <section class="ftco-section ftco-category ftco-no-pt">
         <div class="container">
             <div class="row">
                 <div class="col-md-8">
@@ -97,13 +97,13 @@
                         </div>
                         <div class="col-md-6">
                             {{-- Banner 1 --}}
-                            <div class="category-wrap ftco-animate img mb-4 d-flex align-items-end" style="background-image: url(images/category-1.jpg);">
+                            {{-- <div class="category-wrap ftco-animate img mb-4 d-flex align-items-end" style="background-image: url(images/category-1.jpg);">
                                 <div class="text px-3 py-1">
                                     <h2 class="mb-0"><a href="#">Buah-buahan</a></h2>
                                 </div>
-                            </div>
+                            </div> --}}
                             {{-- Banner 2 --}}
-                            <div class="category-wrap ftco-animate img d-flex align-items-end" style="background-image: url(images/category-2.jpg);">
+                            {{-- <div class="category-wrap ftco-animate img d-flex align-items-end" style="background-image: url(images/category-2.jpg);">
                                 <div class="text px-3 py-1">
                                     <h2 class="mb-0"><a href="#">Sayuran Kering</a></h2>
                                 </div>
@@ -112,15 +112,15 @@
                     </div>
                 </div>
 
-                <div class="col-md-4">
+                <div class="col-md-4"> --}}
                     {{-- Banner 3 --}}
-                    <div class="category-wrap ftco-animate img mb-4 d-flex align-items-end" style="background-image: url(images/category-3.jpg);">
+                    {{-- <div class="category-wrap ftco-animate img mb-4 d-flex align-items-end" style="background-image: url(images/category-3.jpg);">
                         <div class="text px-3 py-1">
                             <h2 class="mb-0"><a href="#">Jus</a></h2>
                         </div>
-                    </div>
+                    </div> --}}
                     {{-- Banner 4 --}}
-                    <div class="category-wrap ftco-animate img d-flex align-items-end" style="background-image: url(images/category-4.jpg);">
+                    {{-- <div class="category-wrap ftco-animate img d-flex align-items-end" style="background-image: url(images/category-4.jpg);">
                         <div class="text px-3 py-1">
                             <h2 class="mb-0"><a href="#">Rempah</a></h2>
                         </div>
@@ -128,7 +128,7 @@
                 </div>
             </div>
         </div>
-    </section>
+    </section>  --}}
     <!--       AKHIR BANNER SECTION BARU       -->
 
 
