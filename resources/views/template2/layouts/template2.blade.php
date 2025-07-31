@@ -8,5 +8,8 @@
 
 @include('template2.includes.scripts')
 
+@stack('scripts')
+@stack('page-scripts')
+
 </body>
 </html>
