@@ -9,7 +9,9 @@
     $logoPath = optional($customTema)->shop_logo;
     $logoUrl = $logoPath ? asset('storage/' . $logoPath) : asset('images/LogoGCI.png');
     $shopName = optional($customTema)->shop_name ?? 'Nama Toko';
-    $shopDescription = optional($customTema)->shop_description ?? 'Pelanggan adalah inti dari model bisnis unik kami, yang mencakup proses desain.';
+    $shopDescription =
+        optional($customTema)->shop_description ??
+        'Pelanggan adalah inti dari model bisnis unik kami, yang mencakup proses desain.';
 @endphp
 
 <footer class="footer">
@@ -25,24 +27,47 @@
                     </div>
                     <p>{{ $shopDescription }}</p>
 
+                    @if ($contact)
+                        <div class="footer__social mt-3">
+                            @if ($contact->facebook_url)
+                                <a href="{{ $contact->facebook_url }}" target="_blank"><i
+                                        class="fa fa-facebook"></i></a>
+                            @endif
+                            @if ($contact->twitter_url)
+                                <a href="{{ $contact->twitter_url }}" target="_blank"><i class="fa fa-twitter"></i></a>
+                            @endif
+                            @if ($contact->pinterest_url)
+                                <a href="{{ $contact->pinterest_url }}" target="_blank"><i
+                                        class="fa fa-pinterest"></i></a>
+                            @endif
+                            @if ($contact->instagram_url)
+                                <a href="{{ $contact->instagram_url }}" target="_blank"><i
+                                        class="fa fa-instagram"></i></a>
+                            @endif
+                        </div>
+                    @endif
+
+
                     <div class="footer__payment" style="margin-top: 20px;">
                         <h6 style="margin-bottom: 15px; color: #b7b7b7; font-size: 15px;">Metode Pembayaran</h6>
                         <div class="d-flex align-items-center flex-wrap">
-                            <div class="payment-logo-bg"><img src="{{ asset('images/bca.png')}}" alt="BCA"></div>
+                            <div class="payment-logo-bg"><img src="{{ asset('images/bca.png') }}" alt="BCA"></div>
                             <div class="payment-logo-bg"><img
                                     src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2e/BRI_2020.svg/2560px-BRI_2020.svg.png"
                                     alt="BRI"></div>
-                            <div class="payment-logo-bg"><img src="{{ asset('images/gopay.png')}}" alt="Gopay"></div>
-                            <div class="payment-logo-bg"><img src="{{ asset('images/qris.png')}}" alt="QRIS"></div>
+                            <div class="payment-logo-bg"><img src="{{ asset('images/gopay.png') }}" alt="Gopay">
+                            </div>
+                            <div class="payment-logo-bg"><img src="{{ asset('images/qris.png') }}" alt="QRIS">
+                            </div>
                         </div>
                     </div>
 
                     <div class="footer__shipping" style="margin-top: 20px;">
                         <h6 style="margin-bottom: 15px; color: #b7b7b7; font-size: 15px;">Pilihan Pengiriman</h6>
                         <div class="d-flex align-items-center flex-wrap">
-                            <div class="payment-logo-bg"><img src="{{ asset('images/jne.png')}}" alt="JNE"></div>
-                            <div class="payment-logo-bg"><img src="{{ asset('images/jnt.png')}}" alt="J&T"></div>
-                            <div class="payment-logo-bg"><img src="{{ asset('images/sicepat.png')}}" alt="SiCepat">
+                            <div class="payment-logo-bg"><img src="{{ asset('images/jne.png') }}" alt="JNE"></div>
+                            <div class="payment-logo-bg"><img src="{{ asset('images/jnt.png') }}" alt="J&T"></div>
+                            <div class="payment-logo-bg"><img src="{{ asset('images/sicepat.png') }}" alt="SiCepat">
                             </div>
                         </div>
                     </div>
@@ -93,7 +118,9 @@
             <div class="col-lg-12 text-center">
                 <div class="footer__copyright__text">
                     <p>Copyright ©
-                        <script>document.write(new Date().getFullYear());</script>
+                        <script>
+                            document.write(new Date().getFullYear());
+                        </script>
                         All rights reserved | Ditenagai oleh
                         <a href="{{ route('tim.developer') }}" target="_blank">Tim E-Commerce Garuda</a>
                         by <a href="https://pcr.ac.id/" target="_blank">Politeknik Caltex Riau</a>.
