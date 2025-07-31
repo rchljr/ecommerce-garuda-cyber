@@ -79,8 +79,23 @@ class Order extends Model
     {
         return $this->hasOne(RefundRequest::class);
     }
-     public function shop(): BelongsTo
+    public function shop(): BelongsTo
     {
         return $this->belongsTo(Shop::class, 'shop_id', 'id');
+    }
+
+    /**
+     * Mendefinisikan relasi hasOneThrough ke UserPackage melalui User.
+     */
+    public function userPackage()
+    {
+        return $this->hasOneThrough(
+            UserPackage::class,
+            User::class,
+            'id', // Foreign key di tabel users
+            'user_id', // Foreign key di tabel user_packages
+            'user_id', // Local key di tabel orders
+            'id' // Local key di tabel users
+        );
     }
 }
