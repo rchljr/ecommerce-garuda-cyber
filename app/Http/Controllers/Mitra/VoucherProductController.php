@@ -53,11 +53,16 @@ class VoucherProductController extends Controller
         $validated['max_uses_per_customer'] = $request->has('max_uses_per_customer'); // Checkbox
 
         // Mapping nama input form ke nama kolom database jika berbeda
-        $validated['user_id'] = Auth::id();
-        $validated['subdomain_id'] = Auth::user()->shop->subdomain->id;
-        // Tidak perlu generate kode otomatis lagi karena sudah diinput di form
-        // $validated['code'] = Str::upper($validated['name']); // Ini dihapus jika 'name' jadi 'voucher_code'
-        
+        $user = Auth::user();
+        $shop = $user->shop()->with('subdomain')->first(); // Eager load subdomain
+
+        if (!$shop || !$shop->subdomain) {
+            return redirect()->route('mitra.vouchers.index')->with('error', 'Gagal membuat voucher. Profil toko atau subdomain tidak lengkap.');
+        }
+
+        $validated['user_id'] = $user->id;
+        $validated['subdomain_id'] = $shop->subdomain->id;
+
         $voucher = Voucher::create($validated);
 
         if (!empty($validated['products'])) {
@@ -120,10 +125,10 @@ class VoucherProductController extends Controller
 
         $validated['is_for_new_customer'] = $request->has('is_for_new_customer');
         $validated['max_uses_per_customer'] = $request->has('max_uses_per_customer');
-        
+
         // --- BARU: Gunakan nilai 'name' dari request untuk kolom 'voucher_code' ---
         // $validated['voucher_code'] = Str::upper($validated['name']); // Tidak diperlukan jika form sudah mengirim 'voucher_code'
-        
+
         // Hapus 'name' dari $validated jika kolom 'name' tidak ada di DB
         // unset($validated['name']); // Tidak perlu unset jika sudah validasi sebagai 'voucher_code'
 
