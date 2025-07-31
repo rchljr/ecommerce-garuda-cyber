@@ -29,13 +29,18 @@ class VoucherController extends Controller
         $validated = $request->validate([
             'voucher_code' => 'required|string|max:100|unique:vouchers,voucher_code',
             'description' => 'nullable|string',
-            'discount' => 'required|numeric|min:0',
+            'discount' => 'required|numeric|min:0', //selalu dalam bentuk persen
             'min_spending' => 'required|numeric|min:0',
             'start_date' => 'required|date',
             'expired_date' => 'required|date|after_or_equal:start_date',
         ], [
             // Tambahkan pesan custom agar lebih ramah
             'voucher_code.unique' => 'Kode voucher ini sudah digunakan. Harap gunakan kode lain.',
+            'min_spending.numeric' => 'Minimum pembelanjaan harus berupa angka.',
+            'start_date.required' => 'Tanggal mulai harus diisi.',
+            'expired_date.required' => 'Tanggal kedaluwarsa harus diisi.',
+            'expired_date.after_or_equal' => 'Tanggal kedaluwarsa harus setelah atau sama dengan tanggal mulai.',
+            'discount.required' => 'Diskon harus dalam bentuk persen.'
         ]);
 
         $validated['min_spending'] = $validated['min_spending'] ?? 0;

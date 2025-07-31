@@ -172,8 +172,7 @@
                 <h2 class="text-xl font-semibold text-gray-700 mb-4">Aksi Pesanan</h2>
                 
                 @if($order->status == 'processing')
-                    {{-- PERBAIKAN: Mengganti 'ship' menjadi 'delivery' --}}
-                    @if($order->delivery_method == 'delivery')
+                    @if($order->delivery_method == 'ship')
                         {{-- Alur untuk metode DELIVERY --}}
                         <p class="text-sm text-gray-600 mb-3">Masukkan detail pengiriman untuk melanjutkan. Nomor resi wajib diisi.</p>
                         <form action="{{ route('mitra.orders.updateStatus', $order->id) }}" method="POST">
