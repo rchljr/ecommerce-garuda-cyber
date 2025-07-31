@@ -5,7 +5,7 @@
     <div class="bg-gray-100 min-h-screen p-4 sm:p-6 lg:p-8">
         <div class="container mx-auto max-w-4xl">
             <div class="mb-8">
-                <h1 class="text-3xl font-bold text-gray-800">Pengaturan Tema Toko</h1>
+                <h1 class="text-3xl font-bold text-gray-800">Pengaturan Logo dan Tema Toko</h1>
                 <p class="text-gray-500 mt-1">Sesuaikan tampilan toko online Anda di sini.</p>
             </div>
 

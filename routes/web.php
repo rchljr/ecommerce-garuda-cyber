@@ -340,7 +340,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/editor/{template}', [TemaController::class, 'editor'])->name('editor');
         Route::get('/tema/store', [TemaController::class, 'store'])->name('tema.store');
         Route::post('/tema/store', [TemaController::class, 'store'])->name('tema.store');
-        Route::post('/editor/template/update', [TemaController::class, 'updateTheme'])->name('editor.updateTheme');
+        Route::post('/editor/template/update', [TemaController::class, 'updateTheme'])->name('editor.updatetheme');
 
 
         Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');

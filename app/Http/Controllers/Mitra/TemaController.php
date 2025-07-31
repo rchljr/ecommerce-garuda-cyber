@@ -78,10 +78,14 @@ class TemaController extends Controller
             abort(404, 'Konfigurasi akun mitra tidak lengkap (shop/subdomain tidak ditemukan).');
         }
 
-        $tema = CustomTema::firstOrNew(['user_id' => $user->id]);
+        // [MODIFIKASI] Mengambil data tema berdasarkan user_id DAN subdomain_id
+        $tema = CustomTema::firstOrNew([
+            'user_id' => $user->id,
+            'subdomain_id' => $tenant->subdomain_id
+        ]);
 
         // 3. Tampilkan view editor dua panel
-        return view('dashboard-mitra.editor.index', compact('tema', 'shop'));
+        return view('dashboard-mitra.editor.index', compact('tema', 'shop', 'tenant'));
     }
 
     public function create()
@@ -107,7 +111,6 @@ class TemaController extends Controller
         return view('dashboard-mitra.tema.create', compact('tema', 'templates', 'tenant', 'shop'));
     }
 
-
     /**
      * Menyimpan data tema ke database.
      */
@@ -122,20 +125,29 @@ class TemaController extends Controller
             'secondary_color' => 'required|string|max:7',
         ]);
 
-        $data = $request->except('shop_logo');
-        $data['user_id'] = Auth::id();
+        $user = Auth::user()->load('tenant'); // Eager load relasi tenant
 
+        // [FIX] Pastikan tenant ada sebelum melanjutkan
+        if (!$user->tenant || !$user->tenant->subdomain_id) {
+            return redirect()->back()->with('error', 'Gagal menyimpan tema. Konfigurasi subdomain tidak ditemukan.');
+        }
+
+        $data = $request->except('shop_logo');
+        $data['user_id'] = $user->id;
+        $data['subdomain_id'] = $user->tenant->subdomain_id; // [FIX] Tambahkan subdomain_id
 
         // Handle upload logo jika ada
         if ($request->hasFile('shop_logo')) {
             $data['shop_logo'] = $request->file('shop_logo')->store('shop-logos', 'public');
         }
-        // dd($data);
 
         // Gunakan updateOrCreate untuk membuat baru atau update yang sudah ada
         CustomTema::updateOrCreate(
-            ['user_id' => Auth::id()], // Kondisi pencarian
-            $data                      // Data untuk disimpan/diupdate
+            [
+                'user_id' => $user->id,
+                'subdomain_id' => $user->tenant->subdomain_id // Kondisi pencarian
+            ],
+            $data // Data untuk disimpan/diupdate
         );
 
         return redirect()->back()->with('success', 'Tema berhasil disimpan!');
@@ -161,6 +173,9 @@ class TemaController extends Controller
         return response()->json(['success' => false, 'message' => 'Gagal mengubah template.'], 400);
     }
 
+    /**
+     * Menyimpan template yang dipilih oleh mitra.
+     */
     public function updateTheme(Request $request)
     {
         $request->validate([
@@ -169,6 +184,16 @@ class TemaController extends Controller
 
         $user = Auth::user();
         $tenant = $user->tenant;
+        $chosenTemplate = Template::find($request->template_id);
+
+        // [MODIFIKASI] Validasi di sisi server
+        $activePackage = UserPackage::where('user_id', $user->id)->with('subscriptionPackage')->first();
+        $isStarterPlan = $activePackage && $activePackage->subscriptionPackage && $activePackage->subscriptionPackage->package_name === 'Starter Plan';
+
+        // Jika pengguna adalah Starter Plan dan mencoba memilih template selain template1
+        if ($isStarterPlan && $chosenTemplate->path !== 'template1') {
+            return redirect()->back()->with('error', 'Paket Anda tidak mengizinkan penggunaan tema ini. Silakan upgrade paket Anda.');
+        }
 
         if ($tenant) {
             $tenant->template_id = $request->template_id;
@@ -177,6 +202,6 @@ class TemaController extends Controller
             return redirect()->back()->with('success', 'Template berhasil diperbarui.');
         }
 
-        return redirect()->back()->with('error', 'Gagal mengubah template.');
+        return redirect()->back()->with('error', 'Gagal mengubah template. Data tenant tidak ditemukan.');
     }
 }
