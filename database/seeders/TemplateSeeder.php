@@ -20,7 +20,7 @@ class TemplateSeeder extends Seeder
 
         // Tambah beberapa template awal
         Template::create([
-            'name' => 'Sleek',
+            'name' => 'Pakaian & Aksesoris',
             'slug' => 'pakaian-aksesoris',
             'path' => 'template1',
             'description' => 'Desain yang bersih dan modern, memberikan pengalaman pengguna yang intuitif dan elegan.',
@@ -29,7 +29,7 @@ class TemplateSeeder extends Seeder
         ]);
 
         Template::create([
-            'name' => 'Vibrant',
+            'name' => 'Kuliner',
             'slug' => 'kuliner',
             'path' => 'template2',
             'description' => 'Tampilan penuh warna dan dinamis yang mampu menarik perhatian dan meningkatkan interaksi pengguna.',
@@ -38,7 +38,7 @@ class TemplateSeeder extends Seeder
         ]);
 
         Template::create([
-            'name' => 'Refined',
+            'name' => 'Elektronik',
             'slug' => 'elektronik',
             'path' => 'template3',
             'description' => 'Desain profesional dengan sentuhan elegan yang menonjolkan kualitas dan kepercayaan.',

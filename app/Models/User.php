@@ -84,6 +84,13 @@ class User extends Authenticatable
     {
         return $this->hasOne(Cart::class);
     }
+    /**
+     * Mendefinisikan relasi one-to-many ke Wishlist.
+     */
+    public function wishlist()
+    {
+        return $this->hasMany(Wishlist::class, 'user_id', 'id');
+    }
     public function contact()
     {
         return $this->hasOne(Contact::class);
@@ -96,7 +103,7 @@ class User extends Authenticatable
     {
         return $this->hasMany(Voucher::class, 'user_id');
     }
-     public function customTema()
+    public function customTema()
     {
         return $this->hasOne(CustomTema::class);
     }
@@ -107,8 +114,8 @@ class User extends Authenticatable
     public function activeVouchers()
     {
         return $this->hasMany(Voucher::class, 'user_id')
-                    ->where('start_date', '<=', now())
-                    ->where('expired_date', '>=', now())
-                    ->orderBy('discount', 'desc'); // Urutkan dari diskon terbesar
+            ->where('start_date', '<=', now())
+            ->where('expired_date', '>=', now())
+            ->orderBy('discount', 'desc'); // Urutkan dari diskon terbesar
     }
 }

@@ -1,4 +1,4 @@
-@extends('template2.layouts.template2')
+@extends('template2.layouts.template')
 
 @section('title', $product->name ?? 'Detail Produk')
 
