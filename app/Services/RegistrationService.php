@@ -61,6 +61,7 @@ class RegistrationService
                 'shop_id' => $shop->id,
                 'subdomain_name' => $allData['subdomain']['subdomain'],
                 'status' => 'pending',
+                'publication_status' => 'pending',
             ]);
 
             // 5. BUAT TENANT BARU

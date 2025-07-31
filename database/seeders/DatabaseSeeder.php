@@ -19,7 +19,6 @@ class DatabaseSeeder extends Seeder
             InitialDataSeeder::class,
             TestimonialSeeder::class,
             VoucherSeeder::class,
-            PointRewardSeeder::class,
             TemplateSeeder::class,
         ]);
 

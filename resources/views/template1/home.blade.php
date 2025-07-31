@@ -134,8 +134,10 @@
         /* Hapus atau modifikasi style ini jika Anda tidak lagi ingin hover icons */
         /* Anda bisa menghapus semua .product__hover terkait jika tidak dibutuhkan */
         .product__hover {
-            display: none; /* Menyembunyikan ikon hover jika ingin benar-benar hilang */
+            display: none;
+            /* Menyembunyikan ikon hover jika ingin benar-benar hilang */
         }
+
         /* Atau biarkan jika Anda punya fungsi lain dengan itu */
 
         .product__hover li i {
@@ -164,22 +166,24 @@
         }
 
         /* Jika Anda ingin area gambar bisa diklik tapi tidak ada icon,
-           pastikan link overlaynya mengisi seluruh area gambar */
+               pastikan link overlaynya mengisi seluruh area gambar */
         .product__item__pic a.product-image-link {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            z-index: 5; /* Pastikan di atas gambar tapi di bawah label seperti "Baru" */
-            display: block; /* Agar link memenuhi seluruh area */
+            z-index: 5;
+            /* Pastikan di atas gambar tapi di bawah label seperti "Baru" */
+            display: block;
+            /* Agar link memenuhi seluruh area */
         }
 
         /* Agar tombol "Add to Cart" tidak ditampilkan */
         .product__item__text .add-cart {
-            display: none; /* Menyembunyikan tombol keranjang di halaman utama */
+            display: none;
+            /* Menyembunyikan tombol keranjang di halaman utama */
         }
-
     </style>
 @endpush
 
@@ -225,7 +229,7 @@
             @endforelse
         </div>
     </section>
-     <!-- Banner Section Begin -->
+    <!-- Banner Section Begin -->
     <section class="banner spad">
         <div class="container">
             <div class="row">
@@ -304,9 +308,15 @@
                 @forelse ($allProducts as $product)
                     @php
                         $classes = '';
-                        if (($bestSellers ?? collect())->contains($product)) { $classes .= ' best-seller'; }
-                        if (($newArrivals ?? collect())->contains($product)) { $classes .= ' new-arrival'; }
-                        if (($hotSales ?? collect())->contains($product)) { $classes .= ' hot-sale'; }
+                        if (($bestSellers ?? collect())->contains($product)) {
+                            $classes .= ' best-seller';
+                        }
+                        if (($newArrivals ?? collect())->contains($product)) {
+                            $classes .= ' new-arrival';
+                        }
+                        if (($hotSales ?? collect())->contains($product)) {
+                            $classes .= ' hot-sale';
+                        }
                     @endphp
                     <div class="col-lg-3 col-md-6 col-sm-6 mix{{ $classes }}">
                         <div class="product__item">
@@ -322,12 +332,13 @@
                                 </ul>
 
                                 {{-- PERBAIKAN: Bungkus div set-bg dengan tag <a> untuk link ke detail produk --}}
-                                {{-- Menggunakan absolute positioning untuk link agar menutupi seluruh gambar --}}
-                                <a href="{{ !$isPreview ? route('tenant.product.details', ['subdomain' => $subdomainName, 'product' => $product->slug]) : '#' }}"
-                                   class="product-image-link" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 5;">
-                                   {{-- Konten di dalam link ini bisa kosong atau alt-text untuk SEO --}}
-                                   <span class="sr-only">{{ $product->name }} details</span>
-                                </a>
+                                    {{-- Menggunakan absolute positioning untuk link agar menutupi seluruh gambar --}}
+                                    <a href="{{ !$isPreview ? route('tenant.product.details', ['subdomain' => $subdomainName, 'product' => $product->slug]) : '#' }}"
+                                        class="product-image-link"
+                                        style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 5;">
+                                        {{-- Konten di dalam link ini bisa kosong atau alt-text untuk SEO --}}
+                                        <span class="sr-only">{{ $product->name }} details</span>
+                                    </a>
                             </div>
                             <div class="product__item__text">
                                 <h6>{{ $product->name }}</h6>
@@ -353,7 +364,8 @@
         </div>
     </section>
     {{-- Modal Varian TIDAK PERLU DIHAPUS, karena mungkin digunakan di halaman lain (misal: detail produk) --}}
-    {{-- atau jika Anda ingin mengaktifkannya lagi di masa depan. Cukup pastikan tidak ada yang memicu membukanya di halaman ini. --}}
+    {{-- atau jika Anda ingin mengaktifkannya lagi di masa depan. Cukup pastikan tidak ada yang memicu membukanya di halaman
+    ini. --}}
     <div id="variant-modal" class="modal-overlay">
         <div class="modal-content relative">
             <span class="modal-close">&times;</span>
@@ -373,7 +385,7 @@
             return [$product->id => $product];
         }));
 
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             const modal = document.getElementById('variant-modal');
             const modalBody = document.getElementById('modal-body');
             const toastElement = document.getElementById('toast-notification');
@@ -471,13 +483,13 @@
                 let optionsHtml = '';
                 optionNamesOrder.forEach(optionName => {
                     optionsHtml += `
-                        <div class="modal-variant-option-group">
-                            <label for="select-${optionName.toLowerCase()}" class="block text-sm font-medium text-gray-700 mb-1">${optionName}</label>
-                            <select id="select-${optionName.toLowerCase()}" name="option_${optionName.toLowerCase()}" class="modal-variant-select" required data-option-name="${optionName}" disabled>
-                                <option value="">Pilih ${optionName}</option>
-                            </select>
-                        </div>
-                    `;
+                            <div class="modal-variant-option-group">
+                                <label for="select-${optionName.toLowerCase()}" class="block text-sm font-medium text-gray-700 mb-1">${optionName}</label>
+                                <select id="select-${optionName.toLowerCase()}" name="option_${optionName.toLowerCase()}" class="modal-variant-select" required data-option-name="${optionName}" disabled>
+                                    <option value="">Pilih ${optionName}</option>
+                                </select>
+                            </div>
+                        `;
                 });
 
                 // PERBAIKAN: Pastikan product.price diconvert ke number sebelum diformat
@@ -488,22 +500,22 @@
                 }).format(parseFloat(product.price) || 0); // Menggunakan parseFloat() dan fallback ke 0
 
                 modalBody.innerHTML = `
-                    <div>
-                        <h4 class="font-bold text-lg">${product.name}</h4>
-                        <p id="modal-display-price" class="text-red-600 font-bold text-lg">${initialDisplayPrice}</p>
-                    </div>
-                    <form id="modal-cart-form" class="space-y-4 mt-4" novalidate>
-                        <input type="hidden" name="product_id" value="${product.id}">
-                        ${optionsHtml}
-                        <div class="mt-6">
-                            <label for="quantity-input" class="block text-sm font-medium text-gray-700 mb-1">Jumlah</label>
-                            <input type="number" name="quantity" id="quantity-input" value="1" min="1" class="w-full border-gray-300 rounded-md" required>
+                        <div>
+                            <h4 class="font-bold text-lg">${product.name}</h4>
+                            <p id="modal-display-price" class="text-red-600 font-bold text-lg">${initialDisplayPrice}</p>
                         </div>
-                        <div class="flex items-center space-x-2 mt-4">
-                            <button type="submit" id="modal-add-btn" class="primary-btn w-full !bg-gray-800 !text-white hover:!bg-black" disabled>Tambah ke Keranjang</button>
-                        </div>
-                    </form>
-                `;
+                        <form id="modal-cart-form" class="space-y-4 mt-4" novalidate>
+                            <input type="hidden" name="product_id" value="${product.id}">
+                            ${optionsHtml}
+                            <div class="mt-6">
+                                <label for="quantity-input" class="block text-sm font-medium text-gray-700 mb-1">Jumlah</label>
+                                <input type="number" name="quantity" id="quantity-input" value="1" min="1" class="w-full border-gray-300 rounded-md" required>
+                            </div>
+                            <div class="flex items-center space-x-2 mt-4">
+                                <button type="submit" id="modal-add-btn" class="primary-btn w-full !bg-gray-800 !text-white hover:!bg-black" disabled>Tambah ke Keranjang</button>
+                            </div>
+                        </form>
+                    `;
                 modal.classList.add('show');
                 attachDynamicOptionEventListeners(product);
                 updateAllOptionDropdowns(product); // Panggil ini untuk mengisi dropdown pertama
@@ -534,8 +546,8 @@
 
             function updateAllOptionDropdowns(product, startIndex = 0) {
                 if (!product.varians || !Array.isArray(product.varians)) {
-                     console.warn('product.varians is not an array or is null/undefined.', product.varians);
-                     return;
+                    console.warn('product.varians is not an array or is null/undefined.', product.varians);
+                    return;
                 }
 
                 for (let i = startIndex; i < optionNamesOrder.length; i++) {
@@ -578,7 +590,8 @@
                     let optionsHTML = `<option value="">Pilih ${currentOptionName}</option>`;
                     availableValues.forEach(value => {
                         // Cek stok untuk setiap kombinasi yang akan terbentuk jika nilai ini dipilih
-                        const tempSelectedOptions = { ...selectedOptions,
+                        const tempSelectedOptions = {
+                            ...selectedOptions,
                             [currentOptionName]: value
                         };
                         const hasStock = product.varians.some(varian => {
@@ -617,7 +630,7 @@
                         selectedOptions[currentOptionName] = '';
                     }
                 }
-                 updateButtonAndPriceState(product); // Panggil setelah semua dropdown diperbarui
+                updateButtonAndPriceState(product); // Panggil setelah semua dropdown diperbarui
             }
 
 
@@ -770,8 +783,8 @@
                 }
                 const productId = button.dataset.productId;
                 axios.post(`/tenant/${subdomain}/wishlist/toggle`, {
-                        product_id: productId
-                    })
+                    product_id: productId
+                })
                     .then(response => {
                         if (response.data.success) {
                             const allWishlistButtons = document.querySelectorAll(
@@ -810,7 +823,7 @@
             // ===================================================================
 
             document.querySelectorAll('.open-variant-modal').forEach(button => {
-                button.addEventListener('click', function() {
+                button.addEventListener('click', function () {
                     const productId = this.dataset.productId;
                     const productData = allProductData[productId];
 
@@ -823,15 +836,15 @@
                 });
             });
 
-            modal.addEventListener('click', function(e) {
+            modal.addEventListener('click', function (e) {
                 if (e.target.classList.contains('modal-overlay') || e.target.classList.contains(
-                        'modal-close')) {
+                    'modal-close')) {
                     closeModal();
                 }
             });
 
             document.querySelectorAll('.toggle-wishlist').forEach(button => {
-                button.addEventListener('click', function(e) {
+                button.addEventListener('click', function (e) {
                     e.preventDefault();
                     handleToggleWishlist(this);
                 });

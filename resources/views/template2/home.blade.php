@@ -1,5 +1,5 @@
 {{-- resources/views/template2/home.blade.php --}}
-@extends('template2.layouts.template2')
+@extends('template2.layouts.template')
 
 @section('content')
     <section id="home-section" class="hero">

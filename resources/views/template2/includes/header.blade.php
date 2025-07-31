@@ -1,46 +1,35 @@
 <!DOCTYPE html>
 <html lang="en">
 @php
+    // Variabel dan logika yang sama dari file asli Anda
     $isPreview = $isPreview ?? false;
     $currentSubdomain = request()->route('subdomain');
-
-    // Ambil user yang sedang login
     $loggedInUser = Auth::user();
-
-    // Inisialisasi currentShop dan customTema
     $currentShop = null;
     $customTema = null;
 
-    // Jika user login (mitra), coba ambil shop dan customTema
     if ($loggedInUser) {
-        // Ambil objek shop dari user (tanpa eager loading customTema di sini)
         $currentShop = $loggedInUser->shop;
-
-        // Ambil customTema langsung dari user
-        // Pastikan relasi 'customTema' ada di model App\Models\User
         $customTema = $loggedInUser->customTema;
     }
 
-    // Ambil logo dan warna dari customTema, dengan fallback ke default
     $logoPath = optional($customTema)->shop_logo;
-    $logoUrl = $logoPath ? asset('storage/' . $logoPath) : asset('template1/img/logo.png');
+    $logoUrl = $logoPath ? asset('storage/' . $logoPath) : asset('template2/img/logo.png'); // Fallback ke logo template 2
+    $primaryColor = optional($customTema)->primary_color ?? '#82ae46'; // Default warna template 2
+    $secondaryColor = optional($customTema)->secondary_color ?? '#000000'; // Default warna template 2
 
-    $primaryColor = optional($customTema)->primary_color ?? '#4F46E5'; // Default dari form Anda
-    $secondaryColor = optional($customTema)->secondary_color ?? '#D946EF'; // Default dari form Anda
-
-    // Logika Keranjang Belanja dan Notifikasi
+    // Logika Hitungan Ikon Header
     $cartCount = 0;
     $notificationCount = 0;
+    $wishlistCount = 0;
 
-    // Logika ini untuk customer, bukan mitra
     if (Auth::guard('customers')->check()) {
         $customerUser = Auth::guard('customers')->user();
-
-        // 1. Logika Hitung Keranjang (menggunakan service yang sudah ada)
         $cartService = app(\App\Services\CartService::class);
         $cartCount = $cartService->getCartCount();
+        $wishlistCount = $customerUser->wishlist()->count();
 
-        // 2. Logika Hitung Notifikasi (disesuaikan dengan controller Anda)
+        // Logika Notifikasi
         $successfulPaymentsCount = \App\Models\Payment::where('user_id', $customerUser->id)
             ->whereIn('midtrans_transaction_status', ['settlement', 'capture'])
             ->count();
@@ -48,17 +37,32 @@
             ->whereIn('status', ['failed', 'cancelled', 'expired', 'pending'])
             ->count();
         $notificationCount = $successfulPaymentsCount + $ordersCount;
+
     } elseif (session()->has('cart')) {
         $cartCount = collect(session('cart'))->sum('quantity');
     }
 @endphp
 
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta charset="UTF-8">
+    <meta name="description" content="Male_Fashion Template">
+    <meta name="keywords" content="Male_Fashion, unica, creative, html">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    @php
+        $shopName = optional($currentShop)->shop_name ?? 'Toko Online';
+        $shopLogo = optional($currentShop)->shop_logo ?? null;
+    @endphp
+    <title>@yield('title', 'Selamat Datang') - {{ $shopName }}</title>
 
+    @if($shopLogo)
+        <link rel="icon" href="{{ asset('storage/' . $shopLogo) }}" type="image/png">
+    @else
+        <link rel="icon" href="{{ asset('images/gci.png') }}" type="image/png">
+    @endif
 
+    {{-- Stylesheet dari Template 2 --}}
     <link href="https://fonts.googleapis.com/css?family=Poppins:200,300,400,500,600,700,800&display=swap"
         rel="stylesheet">
     <link href="https://fonts.googleapis.com/css?family=Lora:400,400i,700,700i&display=swap" rel="stylesheet">
@@ -76,44 +80,114 @@
     <link rel="stylesheet" href="{{ asset('template2/css/flaticon.css') }}">
     <link rel="stylesheet" href="{{ asset('template2/css/icomoon.css') }}">
     <link rel="stylesheet" href="{{ asset('template2/css/style.css') }}">
+    {{-- Font Awesome untuk ikon tambahan --}}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
 
     {{-- CSS DINAMIS UNTUK WARNA TEMA --}}
     <style>
         :root {
-            --primary-color: {{ $primaryColor }};
-            --secondary-color: {{ $secondaryColor }};
+            --primary-color:
+                {{ $primaryColor }}
+            ;
+            --secondary-color:
+                {{ $secondaryColor }}
+            ;
         }
 
-        /* Menerapkan warna tema ke elemen-elemen kunci */
-        .bg-primary,
-        .ftco-navbar-light .navbar-nav>.nav-item.cta>a {
-            background: var(--primary-color) !important;
+        /* Style untuk menyamakan elemen dari template 1 */
+        .top-bar-link a {
+            color: rgba(255, 255, 255, 0.9);
         }
 
-        .text-primary,
-        .ftco-navbar-light .navbar-nav>.nav-item.active>a {
-            color: var(--primary-color) !important;
+        .top-bar-link a:hover {
+            color: #fff;
         }
 
-        a,
-        .product-category a.active {
-            color: var(--primary-color);
+        .top-bar-link .dropdown-menu {
+            font-size: 14px;
         }
 
-        .btn-primary {
-            background: var(--primary-color);
-            border-color: var(--primary-color);
+        .top-bar-link .dropdown-item {
+            padding: .5rem 1rem;
         }
 
-        .btn-primary:hover {
-            background: var(--primary-color);
-            border-color: var(--primary-color);
-            opacity: 0.9;
+        .icon-with-badge {
+            position: relative;
+            display: inline-block;
+            margin-left: 15px;
         }
 
-        .price,
-        .price-sale {
-            color: var(--secondary-color) !important;
+        .icon-with-badge .badge {
+            position: absolute;
+            top: -8px;
+            right: -12px;
+            padding: 3px 6px;
+            border-radius: 50%;
+            background: #ca1515;
+            color: white;
+            font-size: 10px;
+            border: 1px solid white;
+        }
+
+        .disabled-link {
+            color: #ccc !important;
+            cursor: not-allowed;
+        }
+
+        .navbar-brand img {
+            max-height: 40px;
+            width: auto;
+            object-fit: contain;
+        }
+
+        /* [FIX] CSS untuk Tampilan Mobile */
+        @media (max-width: 991.98px) {
+            .ftco-navbar-light.scrolled {
+                background: #fff !important;
+            }
+
+            .ftco-navbar-light .navbar-collapse {
+                background: #ffffff;
+                border-radius: 0 0 8px 8px;
+                padding: 1rem;
+                box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+                border-top: 1px solid #f0f0f0;
+            }
+
+            .ftco-navbar-light .navbar-nav>.nav-item>.nav-link {
+                color: #333333 !important;
+                /* Warna teks menu menjadi gelap */
+                padding: 0.75rem 0.5rem;
+            }
+
+            .ftco-navbar-light .navbar-nav>.nav-item.active>a {
+                color: var(--primary-color) !important;
+                /* Warna link aktif */
+            }
+
+            /* Mengatur ikon fungsional di mobile */
+            .ftco-navbar-light .navbar-nav:last-child {
+                border-top: 1px solid #eeeeee;
+                margin-top: 0.5rem;
+                padding-top: 0.5rem;
+            }
+
+            .ftco-navbar-light .navbar-nav .nav-item .d-flex {
+                justify-content: flex-start;
+                /* Rata kiri */
+                padding: 0.5rem;
+            }
+
+            .icon-with-badge i {
+                color: #333333 !important;
+                /* Warna ikon menjadi gelap */
+            }
+
+            .navbar-brand {
+                color: #000 !important;
+                /* Pastikan warna brand/logo terbaca */
+            }
         }
     </style>
     @stack('styles')
@@ -122,39 +196,67 @@
 <body class="goto-here">
     <div class="py-1 bg-primary">
         <div class="container">
-            <div class="row no-gutters d-flex align-items-start align-items-center px-md-0">
-                <div class="col-lg-12 d-block">
-                    <div class="row d-flex">
-                        <div class="col-md pr-4 d-flex topper align-items-center">
-                            <div class="icon mr-2 d-flex justify-content-center align-items-center"><span
-                                    class="icon-phone2"></span></div>
-                            {{-- Menampilkan nomor telepon dari data kontak tenant --}}
-                            <span class="text">{{ $contact->phone ?? '+62 123 456 789' }}</span>
-                        </div>
-                        <div class="col-md pr-4 d-flex topper align-items-center">
-                            <div class="icon mr-2 d-flex justify-content-center align-items-center"><span
-                                    class="icon-paper-plane"></span></div>
-                            {{-- Menampilkan email dari data kontak tenant --}}
-                            <span class="text">{{ $contact->email ?? 'kontak@tokoanda.com' }}</span>
-                        </div>
-                        <div class="col-md-5 pr-4 d-flex topper align-items-center text-lg-right">
-                            <span class="text">Pengiriman Cepat &amp; Terpercaya</span>
-                        </div>
+            <div class="row no-gutters d-flex align-items-center px-md-0">
+                <div class="col-lg-6 d-block">
+                    <div class="text-left text-white py-1 top-bar-link">
+                        <a href="{{ !$isPreview ? route('tenants.index') : '#' }}" class="px-2 py-1"
+                            style="font-size: 13px;">
+                            <i class="fas fa-store mr-1"></i> Jelajahi Toko Lain
+                        </a>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="d-flex justify-content-end align-items-center top-bar-link">
+                        <a href="#" class="px-2">Bantuan</a>
+                        @guest('customers')
+                            @if(!$isPreview)
+                                <a href="{{ route('tenant.customer.login.form', ['subdomain' => $currentSubdomain]) }}"
+                                    class="px-2">Login</a>
+                                <a href="{{ route('tenant.customer.register.form', ['subdomain' => $currentSubdomain]) }}"
+                                    class="px-2">Daftar</a>
+                            @else
+                                <a href="#" class="px-2 disabled-link">Login</a>
+                                <a href="#" class="px-2 disabled-link">Daftar</a>
+                            @endif
+                        @endguest
+
+                        @auth('customers')
+                            <div class="dropdown">
+                                <a class="dropdown-toggle px-2" href="#" role="button" id="userDropdown"
+                                    data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                    <i class="fas fa-user"></i> Hi,
+                                    {{ strtok(Auth::guard('customers')->user()->name, ' ') }}
+                                </a>
+                                <div class="dropdown-menu dropdown-menu-right" aria-labelledby="userDropdown">
+                                    @if(!$isPreview)
+                                        <a class="dropdown-item"
+                                            href="{{ route('tenant.account.profile', ['subdomain' => $currentSubdomain]) }}">Akun
+                                            Saya</a>
+                                        <a class="dropdown-item"
+                                            href="{{ route('tenant.account.orders', ['subdomain' => $currentSubdomain]) }}">Pesanan
+                                            Saya</a>
+                                        <div class="dropdown-divider"></div>
+                                        <a class="dropdown-item" href="#"
+                                            onclick="event.preventDefault(); document.getElementById('logout-form-header').submit();">Keluar</a>
+                                        <form id="logout-form-header"
+                                            action="{{ route('tenant.customer.logout', ['subdomain' => $currentSubdomain]) }}"
+                                            method="POST" style="display: none;">@csrf</form>
+                                    @endif
+                                </div>
+                            </div>
+                        @endauth
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-
-    {{-- BAGIAN NAVIGASI YANG SUDAH DIPERBAIKI TOTAL --}}
+    {{-- Bagian Navigasi Utama --}}
     <nav class="navbar navbar-expand-lg navbar-dark ftco_navbar bg-dark ftco-navbar-light" id="ftco-navbar">
         <div class="container">
-            {{-- Menampilkan nama toko sebagai brand --}}
             <a class="navbar-brand"
                 href="{{ !$isPreview ? route('tenant.home', ['subdomain' => $currentSubdomain]) : '#' }}">
-                {{-- LOGO & NAMA TOKO DINAMIS --}}
-                <img src="{{ $logoUrl }}" alt="Logo" style="max-height: 40px; margin-right: 10px;">
+                <img src="{{ $logoUrl }}" alt="Logo {{ $shopName }}">
             </a>
 
             <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#ftco-nav"
@@ -164,48 +266,65 @@
 
             <div class="collapse navbar-collapse" id="ftco-nav">
                 <ul class="navbar-nav ml-auto">
-                    {{-- Link Home dinamis dengan pengecekan halaman aktif --}}
                     <li class="nav-item {{ request()->routeIs('tenant.home') ? 'active' : '' }}">
                         <a href="{{ !$isPreview ? route('tenant.home', ['subdomain' => $currentSubdomain]) : '#' }}"
-                            class="nav-link">Home</a>
+                            class="nav-link">Beranda</a>
                     </li>
+                    <li class="nav-item {{ request()->routeIs('tenant.shop') ? 'active' : '' }}">
+                        <a href="{{ !$isPreview ? route('tenant.shop', ['subdomain' => $currentSubdomain]) : '#' }}"
+                            class="nav-link">Toko</a>
+                    </li>
+                    <li class="nav-item {{ request()->routeIs('tenant.contact') ? 'active' : '' }}">
+                        <a href="{{ !$isPreview ? route('tenant.contact', ['subdomain' => $currentSubdomain]) : '#' }}"
+                            class="nav-link">Kontak</a>
+                    </li>
+                </ul>
 
-                    {{-- Dropdown Shop dengan struktur HTML yang benar --}}
-                    <li class="nav-item dropdown {{ request()->routeIs('tenant.shop*') ? 'active' : '' }}">
-                        <a class="nav-link dropdown-toggle" href="#" id="dropdown04" data-toggle="dropdown"
-                            aria-haspopup="true" aria-expanded="false">Toko</a>
-                        <div class="dropdown-menu" aria-labelledby="dropdown04">
-                            <a class="dropdown-item {{ request()->routeIs('tenant.shop') ? 'active' : '' }}"
-                                href="{{ !$isPreview ? route('tenant.shop', ['subdomain' => $currentSubdomain]) : '#' }}">
-                                Semua Produk
-                            </a>
-                            {{-- PERBAIKAN: Link dibuat tenant-aware & preview-aware --}}
-                            <a class="dropdown-item"
-                                href="{{ !$isPreview ? route('tenant.cart.index', ['subdomain' => $currentSubdomain]) : '#' }}">Keranjang</a>
-                            {{-- PERBAIKAN: Link dibuat tenant-aware & preview-aware --}}
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <div class="d-flex align-items-center h-100">
+                            {{-- Wishlist Link --}}
+                            @auth('customers')
+                                <a href="{{ !$isPreview ? route('tenant.wishlist', ['subdomain' => $currentSubdomain]) : '#' }}"
+                                    class="icon-with-badge">
+                            @else
+                                    <a href="{{ !$isPreview ? route('tenant.customer.login.form', ['subdomain' => $currentSubdomain]) : '#' }}"
+                                        class="icon-with-badge">
+                                @endauth
+                                    <i class="fas fa-heart" style="font-size: 18px; color: #000;"></i>
+                                    @if ($wishlistCount > 0)
+                                        <span class="badge">{{ $wishlistCount }}</span>
+                                    @endif
+                                </a>
+
+                                {{-- Notifikasi Link --}}
+                                @auth('customers')
+                                    <a href="{{ !$isPreview ? route('tenant.account.notifications', ['subdomain' => $currentSubdomain]) : '#' }}"
+                                        class="icon-with-badge">
+                                @else
+                                        <a href="{{ !$isPreview ? route('tenant.customer.login.form', ['subdomain' => $currentSubdomain]) : '#' }}"
+                                            class="icon-with-badge">
+                                    @endauth
+                                        <i class="fas fa-bell" style="font-size: 18px; color: #000;"></i>
+                                        @if ($notificationCount > 0)
+                                            <span class="badge">{{ $notificationCount }}</span>
+                                        @endif
+                                    </a>
+
+                                    {{-- Keranjang --}}
+                                    <a href="{{ !$isPreview ? route('tenant.cart.index', ['subdomain' => $currentSubdomain]) : '#' }}"
+                                        class="icon-with-badge">
+                                        <i class="fas fa-shopping-cart" style="font-size: 18px; color: #000;"></i>
+                                        @if ($cartCount > 0)
+                                            <span class="badge" id="cart-count">{{ $cartCount }}</span>
+                                        @endif
+                                    </a>
                         </div>
-                    </li>
-
-                    {{-- PERBAIKAN: Link dibuat tenant-aware & preview-aware --}}
-                    {{-- <li class="nav-item"><a
-                            href="{{ !$isPreview ? route('tenant.about', ['subdomain' => $currentSubdomain]) : '#' }}"
-                            class="nav-link">Tentang Kami</a></li> --}}
-                    {{-- PERBAIKAN: Link dibuat tenant-aware & preview-aware --}}
-                    <li class="nav-item"><a
-                            href="{{ !$isPreview ? route('tenant.contact', ['subdomain' => $currentSubdomain]) : '#' }}"
-                            class="nav-link">Kontak</a></li>
-
-                    {{-- Link ke halaman keranjang dengan hitungan dinamis --}}
-                    {{-- Cari bagian navigasi keranjang --}}
-                    <li class="nav-item cta cta-colored">
-                        <a href="{{ !$isPreview ? route('tenant.cart.index', ['subdomain' => $currentSubdomain]) : '#' }}"
-                            class="nav-link">
-                            <span class="icon-shopping_cart"></span>[<span id="cart-count">{{ $cartCount }}</span>]
-                        </a>
                     </li>
                 </ul>
             </div>
         </div>
     </nav>
+</body>
 
-    {{-- AKHIR BAGIAN NAVIGASI --}}
+</html>

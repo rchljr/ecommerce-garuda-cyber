@@ -32,7 +32,8 @@ class TemplateController extends Controller
             'bestSellers' => $emptyCollection,
             'newArrivals' => $emptyCollection,
             'hotSales' => $emptyCollection,
-            'currentShop' => null, // Preview tidak memiliki shop context
+            'allProducts' => $emptyCollection, 
+            'currentShop' => null,
             'isPreview' => true,
         ]);
     }
