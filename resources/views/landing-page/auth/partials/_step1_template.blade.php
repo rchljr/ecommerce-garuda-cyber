@@ -39,16 +39,16 @@
                     @endif
 
                     <input type="radio" name="template_id" value="{{ $template->id }}" class="sr-only peer" 
-                           {{ $isRecommended && $isActive ? 'checked' : '' }} 
-                           {{ !$isActive ? 'disabled' : '' }}
-                           required>
+                        {{ $isRecommended && $isActive ? 'checked' : '' }} 
+                        {{ !$isActive ? 'disabled' : '' }}
+                        required>
 
                     <div class="relative">
-                        <img src="{{ asset('storage/' . $template->image_preview) }}" 
-                             onerror="this.onerror=null;this.src='https://placehold.co/400x300/f1f5f9/cbd5e1?text=No+Image';"
-                             alt="{{ $template->name }}" class="w-full h-48 object-cover rounded-t-lg {{ !$isActive ? 'filter grayscale' : '' }}">
+                        <img src="{{ asset('images/' . $template->image_preview) }}" 
+                            onerror="this.onerror=null;this.src='https://placehold.co/400x300/f1f5f9/cbd5e1?text=No+Image';"
+                            alt="{{ $template->name }}" class="w-full h-48 object-cover rounded-t-lg {{ !$isActive ? 'filter grayscale' : '' }}">
                         
-                        {{-- PERUBAHAN: Desain overlay "Segera Hadir" yang lebih menarik --}}
+                        {{--  Desain overlay "Segera Hadir" yang lebih menarik --}}
                         @if(!$isActive)
                             <div class="absolute inset-0 bg-slate-800/70 flex flex-col items-center justify-center text-white p-4 rounded-t-lg">
                                 <svg class="w-10 h-10 mb-2 text-white/80" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
@@ -65,9 +65,9 @@
                         
                         <div class="mt-4">
                             <a href="{{ $isActive ? route('template.preview', $template) : '#' }}" 
-                               target="_blank" 
-                               class="inline-block w-full text-center font-semibold py-2 px-4 rounded-lg transition-colors 
-                                      {{ $isActive ? 'bg-gray-200 text-gray-800 hover:bg-gray-300' : 'bg-gray-100 text-gray-400 cursor-not-allowed' }}">
+                            target="_blank" 
+                            class="inline-block w-full text-center font-semibold py-2 px-4 rounded-lg transition-colors 
+                                    {{ $isActive ? 'bg-gray-200 text-gray-800 hover:bg-gray-300' : 'bg-gray-100 text-gray-400 cursor-not-allowed' }}">
                                 Lihat Preview
                             </a>
                         </div>

@@ -32,7 +32,7 @@
                                 class="block {{ !($template->status === 'active' && $isAllowedByPlan) ? 'pointer-events-none' : '' }}">
 
                                 {{-- Gambar menjadi grayscale jika tidak aktif ATAU tidak diizinkan oleh paket --}}
-                                <img src="{{ asset('storage/' . $template->image_preview) }}"
+                                <img src="{{ asset('images/' . $template->image_preview) }}"
                                     alt="Preview {{ $template->name }}"
                                     class="w-full h-56 object-cover object-top transition-transform duration-300 {{ ($template->status === 'active' && $isAllowedByPlan) ? 'group-hover:scale-105' : 'filter grayscale' }}"
                                     onerror="this.onerror=null;this.src='https://placehold.co/600x400/f1f5f9/cbd5e1?text={{ urlencode($template->name) }}';">
