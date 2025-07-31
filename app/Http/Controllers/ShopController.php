@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Product;
 use App\Models\Category;
 use App\Models\Shop; // Pastikan model Shop diimpor
-use App\Models\User; 
+use App\Models\User;
 use App\Models\Testimoni;// Pastikan model User diimpor jika digunakan
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -44,8 +44,8 @@ class ShopController extends Controller
             // Query dasar untuk produk milik toko ini
             // Eager load varian untuk harga, dan gambar jika akan ditampilkan di listing
             $query = Product::where('shop_id', $shop->id)
-                             ->where('status', 'active')
-                             ->with(['varians', 'gallery']); // Eager load gallery juga
+                ->where('status', 'active')
+                ->with(['varians', 'gallery']); // Eager load gallery juga
 
             // Terapkan filter berdasarkan sub-kategori
             if ($request->filled('category')) {
@@ -75,10 +75,10 @@ class ShopController extends Controller
                 $sortDirection = ($request->input('sort') == 'price_asc') ? 'asc' : 'desc';
 
                 $products = $query->select('products.*')
-                                  ->addSelect(DB::raw('(SELECT MIN(price) FROM varians WHERE varians.product_id = products.id) as min_variant_price'))
-                                  ->orderBy('min_variant_price', $sortDirection)
-                                  ->paginate(9)
-                                  ->withQueryString();
+                    ->addSelect(DB::raw('(SELECT MIN(price) FROM varians WHERE varians.product_id = products.id) as min_variant_price'))
+                    ->orderBy('min_variant_price', $sortDirection)
+                    ->paginate(9)
+                    ->withQueryString();
             } else {
                 // Default sorting: terbaru
                 $products = $query->latest()->paginate(9)->withQueryString();
@@ -86,9 +86,9 @@ class ShopController extends Controller
 
             // Tambahkan logging untuk produk yang dimuat
             Log::info('ShopController@index: Products loaded for shop ' . $shop->id, ['count' => $products->count()]);
-            $products->each(function($product) {
+            $products->each(function ($product) {
                 Log::debug('Product: ' . $product->name, ['varians_count' => $product->varians->count(), 'gallery_count' => $product->gallery->count(), 'image_url' => $product->image_url]);
-                $product->varians->each(function($varian) {
+                $product->varians->each(function ($varian) {
                     Log::debug('  Varian: ' . $varian->name, ['options_data' => $varian->options_data, 'image_url' => $varian->image_url, 'price' => $varian->price, 'stock' => $varian->stock]);
                 });
             });
@@ -134,7 +134,7 @@ class ShopController extends Controller
                 ->where('status', 'active')
                 ->with(['varians', 'gallery', 'subCategory.category', 'tags']) // Load semua relasi yang dibutuhkan
                 ->first();
-                // dd($product);
+            // dd($product);
 
             if (!$product) {
                 Log::warning('ShopController@show: Produk tidak ditemukan atau tidak aktif. Slug: ' . $productSlug . ', Shop ID: ' . $shop->id);
@@ -148,10 +148,10 @@ class ShopController extends Controller
                 'varians_count' => $product->varians->count(),
                 'gallery_count' => $product->gallery->count()
             ]);
-            $product->varians->each(function($varian) {
+            $product->varians->each(function ($varian) {
                 Log::debug('  Varian: ' . $varian->name, ['options_data' => $varian->options_data, 'image_url' => $varian->image_url, 'price' => $varian->price, 'stock' => $varian->stock]);
             });
-            $product->gallery->each(function($image) {
+            $product->gallery->each(function ($image) {
                 Log::debug('  Gallery Image: ' . $image->image_url);
             });
 
@@ -166,15 +166,15 @@ class ShopController extends Controller
                 ->get();
 
             $reviews = Testimoni::where('product_id', $product->id)
-                                ->where('status', 'published') // Hanya tampilkan yang sudah disetujui
-                                ->latest() // Urutkan dari yang terbaru
-                                ->get();
+                ->where('status', 'published') // Hanya tampilkan yang sudah disetujui
+                ->latest() // Urutkan dari yang terbaru
+                ->get();
 
             // 3. HITUNG RATA-RATA RATING & JUMLAH ULASAN
             $averageRating = $reviews->avg('rating');
             $reviewCount = $reviews->count();
 
-            return view($templatePath . '.details', compact('tenant', 'product', 'relatedProducts','reviews','averageRating', 'reviewCount' ));
+            return view($templatePath . '.details', compact('tenant', 'product', 'relatedProducts', 'reviews', 'averageRating', 'reviewCount'));
 
         } catch (\Throwable $e) {
             Log::error('ShopController@show: Fatal error rendering product details page.', [

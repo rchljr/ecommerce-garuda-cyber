@@ -135,6 +135,11 @@
     @php
         $isPreview = $isPreview ?? false;
         $currentSubdomain = !$isPreview ? request()->route('subdomain') : null;
+
+        // Hitung harga termurah dari varian untuk tampilan awal.
+        // Jika tidak ada varian, gunakan harga dasar produk.
+        $lowestPrice = $product->varians->min('price') ?? $product->price ?? 0;
+        $hasDifferentPrices = $product->varians->isNotEmpty() && ($product->varians->min('price') != $product->varians->max('price'));
     @endphp
 
     <section class="shop-details">

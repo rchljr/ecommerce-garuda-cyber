@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers\Mitra;
 
-use App\Http\Controllers\Controller;
-use App\Models\CustomTema;
 use App\Models\Template;
+use App\Models\CustomTema;
+use App\Models\UserPackage;
 use Illuminate\Http\Request;
+use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 
 
@@ -17,22 +18,48 @@ class TemaController extends Controller
 
     public function index()
     {
-        $templates = Template::all();
-        $tenant = Auth::user()->tenant;
+        $user = Auth::user();
+        $templates = Template::orderBy('id', 'asc')->get();
+        $tenant = $user->tenant;
+        $currentTemplateId = $tenant ? $tenant->template_id : null;
 
-        // PERBAIKAN: Pastikan variabel selalu didefinisikan.
-        $currentTemplateId = null; // Beri nilai default
+        // [LOGIKA BARU] Pengecekan paket berlangganan mitra
+        $activePackage = UserPackage::where('user_id', $user->id)
+            ->with('subscriptionPackage') // Eager load untuk mendapatkan nama paket
+            ->first();
 
-        // Hanya ambil template_id jika tenant ada
-        if ($tenant) {
-            $currentTemplateId = $tenant->template_id;
-        } else {
-            // Anda bisa menambahkan log atau pesan error di sini jika diperlukan
-            // Untuk saat ini, kita biarkan null agar halaman tidak error.
+        $isStarterPlan = false;
+        // Pastikan relasi ada sebelum mengakses propertinya
+        if ($activePackage && $activePackage->subscriptionPackage && $activePackage->subscriptionPackage->name === 'Starter Plan') {
+            $isStarterPlan = true;
         }
 
-        return view('dashboard-mitra.tema', compact('templates', 'currentTemplateId'));
+        // Menggunakan nama view yang sesuai dengan file yang Anda berikan
+        return view('dashboard-mitra.tema', compact(
+            'templates',
+            'currentTemplateId',
+            'isStarterPlan' // Kirim variabel ini ke view
+        ));
     }
+
+    // public function index()
+    // {
+    //     $templates = Template::all();
+    //     $tenant = Auth::user()->tenant;
+
+    //     // PERBAIKAN: Pastikan variabel selalu didefinisikan.
+    //     $currentTemplateId = null; // Beri nilai default
+
+    //     // Hanya ambil template_id jika tenant ada
+    //     if ($tenant) {
+    //         $currentTemplateId = $tenant->template_id;
+    //     } else {
+    //         // Anda bisa menambahkan log atau pesan error di sini jika diperlukan
+    //         // Untuk saat ini, kita biarkan null agar halaman tidak error.
+    //     }
+
+    //     return view('dashboard-mitra.tema', compact('templates', 'currentTemplateId'));
+    // }
 
     public function editor(Template $template)
     {
@@ -46,10 +73,10 @@ class TemaController extends Controller
         }
 
         // 2. Siapkan data yang dibutuhkan oleh editor
-            $shop = $user->shop;
-            if (!$shop || !$shop->subdomain) {
-                abort(404, 'Konfigurasi akun mitra tidak lengkap (shop/subdomain tidak ditemukan).');
-            }
+        $shop = $user->shop;
+        if (!$shop || !$shop->subdomain) {
+            abort(404, 'Konfigurasi akun mitra tidak lengkap (shop/subdomain tidak ditemukan).');
+        }
 
         $tema = CustomTema::firstOrNew(['user_id' => $user->id]);
 
