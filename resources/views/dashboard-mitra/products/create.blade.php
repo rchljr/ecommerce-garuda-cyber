@@ -145,48 +145,8 @@
             position: absolute;
             z-index: -1;
         }
-
-        /* PENAMBAHAN: Style untuk Modal Informasi */
-        .info-modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.6);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 10001;
-        }
-        .info-modal-content {
-            background: white;
-            padding: 2rem;
-            border-radius: 0.5rem;
-            width: 90%;
-            max-width: 600px;
-        }
-        .info-modal-content h3 {
-            font-size: 1.25rem;
-            font-weight: 600;
-            margin-bottom: 1rem;
-        }
-        .info-modal-content p {
-            margin-bottom: 1rem;
-            color: #4a5568;
-        }
-        .info-modal-content ul {
-            list-style-type: disc;
-            margin-left: 1.5rem;
-            margin-bottom: 1.5rem;
-            color: #4a5568;
-        }
-        .info-modal-content code {
-            background-color: #f3f4f6;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-family: monospace;
-        }
+        
+        /* HAPUS: Style untuk modal info lama sudah tidak diperlukan, diganti dengan Tailwind */
     </style>
 @endpush
 
@@ -268,7 +228,7 @@
                         <div class="flex items-center justify-between mb-6">
                             <div class="flex items-center gap-2">
                                 <h2 class="text-2xl font-bold text-gray-800">Varian Produk</h2>
-                                {{-- PENAMBAHAN: Tombol Info --}}
+                                {{-- Tombol Info untuk memicu modal baru --}}
                                 <button type="button" @click="infoModalOpen = true" class="text-blue-500 hover:text-blue-700 focus:outline-none">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -408,29 +368,65 @@
                         </div>
                         <p class="text-sm text-gray-600 mt-4">Total Stok Tersedia: <span class="font-bold" x-text="totalStock"></span></p>
 
-                        {{-- PENAMBAHAN: HTML untuk Modal Informasi --}}
-                        <div x-show="infoModalOpen" class="info-modal-overlay" @keydown.escape.window="infoModalOpen = false" x-cloak>
-                            <div class="info-modal-content" @click.outside="infoModalOpen = false">
-                                <h3>Cara Mengisi Varian Produk</h3>
-                                <p>Sistem varian memungkinkan Anda menjual satu produk dengan berbagai pilihan, seperti ukuran, warna, atau berat yang berbeda, di mana setiap kombinasi bisa memiliki harga dan stok sendiri.</p>
+                        <!-- UBAH: Modal Informasi Varian yang sudah di-upgrade -->
+                        <div x-show="infoModalOpen"
+                             style="display: none;"
+                             x-transition:enter="ease-out duration-300"
+                             x-transition:enter-start="opacity-0"
+                             x-transition:enter-end="opacity-100"
+                             x-transition:leave="ease-in duration-200"
+                             x-transition:leave-start="opacity-100"
+                             x-transition:leave-end="opacity-0"
+                             class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60"
+                             x-cloak>
+                            
+                            {{-- Panel Modal --}}
+                            <div @click.away="infoModalOpen = false"
+                                 x-show="infoModalOpen"
+                                 x-transition:enter="ease-out duration-300"
+                                 x-transition:enter-start="opacity-0 scale-95"
+                                 x-transition:enter-end="opacity-100 scale-100"
+                                 x-transition:leave="ease-in duration-200"
+                                 x-transition:leave-start="opacity-100 scale-100"
+                                 x-transition:leave-end="opacity-0 scale-95"
+                                 class="bg-white rounded-lg shadow-xl w-full max-w-2xl mx-4 flex flex-col">
+
+                                {{-- Header Modal --}}
+                                <div class="px-6 py-4 border-b border-gray-200">
+                                    <h3 class="text-xl font-semibold text-gray-800">
+                                        Cara Mengisi Varian Produk
+                                    </h3>
+                                </div>
                                 
-                                <strong>1. Nama Opsi Varian</strong>
-                                <p>Ini adalah nama dari pilihan yang Anda tawarkan. Contoh: <code>Warna</code>, <code>Ukuran</code>, <code>Berat</code>, <code>Satuan</code>.</p>
+                                {{-- Body Modal (Scrollable) --}}
+                                <div class="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+                                    <p class="text-gray-600">Sistem varian memungkinkan Anda menjual satu produk dengan berbagai pilihan, seperti ukuran, warna, atau berat yang berbeda, di mana setiap kombinasi bisa memiliki harga dan stok sendiri.</p>
+                                    
+                                    <div>
+                                        <strong class="text-gray-800">1. Nama Opsi Varian</strong>
+                                        <p class="text-gray-600 mt-1">Ini adalah nama dari pilihan yang Anda tawarkan. Contoh: <code>Warna</code>, <code>Ukuran</code>, <code>Berat</code>, <code>Satuan</code>.</p>
+                                    </div>
 
-                                <strong>2. Nilai Opsi</strong>
-                                <p>Ini adalah pilihan spesifik untuk "Nama Opsi" di atas. Masukkan nilai satu per satu, lalu tekan <strong>Enter</strong> atau <strong>koma</strong>.</p>
-                                
-                                <ul>
-                                    <li>Jika Nama Opsi adalah <code>Warna</code>, maka Nilai Opsinya bisa: <code>Merah</code>, <code>Biru</code>, <code>Hitam</code>.</li>
-                                    <li>Jika Nama Opsi adalah <code>Ukuran</code>, maka Nilai Opsinya bisa: <code>S</code>, <code>M</code>, <code>L</code>, <code>XL</code>.</li>
-                                    <li>Jika Nama Opsi adalah <code>Berat</code>, maka Nilai Opsinya bisa: <code>250g</code>, <code>500g</code>, <code>1kg</code>.</li>
-                                    <li>Jika Nama Opsi adalah <code>Satuan</code>, maka Nilai Opsinya bisa: <code>Pcs</code>, <code>Lusin</code>, <code>Kiloan</code>.</li>
-                                </ul>
+                                    <div>
+                                        <strong class="text-gray-800">2. Nilai Opsi</strong>
+                                        <p class="text-gray-600 mt-1">Ini adalah pilihan spesifik untuk "Nama Opsi" di atas. Masukkan nilai satu per satu, lalu tekan <strong>Enter</strong> atau <strong>koma</strong>.</p>
+                                        
+                                        <ul class="list-disc list-inside mt-2 space-y-1 text-gray-600">
+                                            <li>Jika Nama Opsi adalah <code>Warna</code>, maka Nilai Opsinya bisa: <code>Merah</code>, <code>Biru</code>, <code>Hitam</code>.</li>
+                                            <li>Jika Nama Opsi adalah <code>Ukuran</code>, maka Nilai Opsinya bisa: <code>S</code>, <code>M</code>, <code>L</code>, <code>XL</code>.</li>
+                                            <li>Jika Nama Opsi adalah <code>Berat</code>, maka Nilai Opsinya bisa: <code>250g</code>, <code>500g</code>, <code>1kg</code>.</li>
+                                            <li>Jika Nama Opsi adalah <code>Satuan</code>, maka Nilai Opsinya bisa: <code>Pcs</code>, <code>Lusin</code>, <code>Kiloan</code>.</li>
+                                        </ul>
+                                    </div>
 
-                                <p>Setelah Anda menambahkan opsi dan nilainya, tabel di bawah akan otomatis membuat semua kemungkinan kombinasi varian untuk Anda isi harga dan stoknya.</p>
+                                    <p class="text-gray-600 pt-2 border-t border-gray-200">Setelah Anda menambahkan opsi dan nilainya, tabel di bawah akan otomatis membuat semua kemungkinan kombinasi varian untuk Anda isi harga dan stoknya.</p>
+                                </div>
 
-                                <div class="text-right mt-6">
-                                    <button type="button" @click="infoModalOpen = false" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Mengerti</button>
+                                {{-- Footer Modal --}}
+                                <div class="bg-gray-50 px-6 py-3 text-right rounded-b-lg">
+                                    <button type="button" @click="infoModalOpen = false" class="px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                        Mengerti
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -624,7 +620,6 @@
         // --- Alpine.js Data Handler for Flexible Variants ---
         document.addEventListener('alpine:init', () => {
             Alpine.data('productVariantsHandler', () => ({
-                // PENAMBAHAN: Properti untuk mengontrol modal info
                 infoModalOpen: false,
                 options: [],
                 generatedVariants: [],
