@@ -31,7 +31,7 @@
                 </div>
             @empty
                 {{-- Tampilan fallback jika tidak ada data hero yang aktif di database --}}
-                <div class="slider-item" style="background-image: url('{{ asset('images/bg_1.jpg') }}');">
+                <div class="slider-item" style="background-image: url('{{ asset('template2/images/bg_1.jpg') }}');">
                     <div class="overlay"></div>
                     <div class="container">
                         <div class="row slider-text justify-content-center align-items-center" data-scrollax-parent="true">

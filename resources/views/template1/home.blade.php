@@ -208,7 +208,7 @@
                     </div>
                 </div>
             @empty
-                <div class="hero__items set-bg" data-setbg="{{ asset('template1/img/hero/hero-default.jpg') }}">
+                <div class="hero__items set-bg" data-setbg="{{ asset('template1/img/hero/hero-1.jpg') }}">
                     <div class="container">
                         <div class="row">
                             <div class="col-xl-5 col-lg-7 col-md-8">
