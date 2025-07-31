@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::table('tenants', function (Blueprint $table) {
             // Tambahkan kolom untuk menyimpan ID Meta Pixel
-            $table->string('meta_pixel_id')->nullable()->after('nama_kolom_lain');
+            $table->string('meta_pixel_id')->default('627889867030847')->after('user_id');
         });
     }
 

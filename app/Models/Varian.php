@@ -26,8 +26,6 @@ class Varian extends Model
         'status', // Contoh: 'active', 'inactive'
         'price', // Ini adalah kolom untuk harga jual yang sudah dihitung
         'stock',
-        // 'size',      // Field lama, sudah dihapus dari DB
-        // 'color',     // Field lama, sudah dihapus dari DB
         'options_data',
         'modal_price', // BARU: Tambahkan ke fillable
         'profit_percentage', // BARU: Tambahkan ke fillable

@@ -39,7 +39,8 @@ class PaymentController extends Controller
         session()->forget('newly_registered_user_id');
 
         $user = Auth::user();
-        $order = Order::with('userPackage.subscriptionPackage', 'voucher')
+        // [FIX] Mengubah cara memuat relasi dari 'userPackage' menjadi 'user.userPackage'
+        $order = Order::with('user.userPackage.subscriptionPackage', 'voucher')
             ->where('user_id', $user->id)
             ->whereIn('status', ['pending', 'waiting_payment', 'failed', 'cancelled']) // Tambahkan status gagal/batal
             ->latest()
@@ -51,7 +52,7 @@ class PaymentController extends Controller
 
         // Jalankan kalkulasi harga setiap kali halaman dimuat
         $this->recalculatePrices($order);
-        
+
         // Jika order gagal/batal, reset statusnya ke pending agar bisa coba bayar lagi
         if (in_array($order->status, ['failed', 'cancelled'])) {
             $order->update(['status' => 'pending']);
@@ -244,13 +245,14 @@ class PaymentController extends Controller
      */
     private function recalculatePrices(Order $order): array
     {
-        $userPackage = $order->userPackage;
+        // [FIX] Mengakses userPackage melalui relasi user
+        $userPackage = $order->user->userPackage;
         $subscriptionPackage = $userPackage->subscriptionPackage;
 
         $originalPrice = ($userPackage->plan_type === 'yearly')
             ? $subscriptionPackage->yearly_price
             : $subscriptionPackage->monthly_price;
-        
+
         $yearlyDiscountAmount = 0;
         if ($userPackage->plan_type === 'yearly') {
             $discountPercentage = $subscriptionPackage->discount_year ?? 0;
@@ -275,7 +277,7 @@ class PaymentController extends Controller
         }
 
         $finalPrice = $priceAfterYearlyDiscount - $voucherDiscountAmount;
-        
+
         // Update order dengan harga terbaru
         $order->total_price = round($finalPrice);
         $order->save();

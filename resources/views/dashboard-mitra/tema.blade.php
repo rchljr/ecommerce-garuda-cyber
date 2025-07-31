@@ -12,12 +12,22 @@
                     Anda dapat mengubahnya kapan saja.</p>
             </div>
 
+            @if (session('success'))
+                <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6 rounded-md" role="alert">
+                    <p>{{ session('success') }}</p>
+                </div>
+            @endif
+            @if (session('error'))
+                <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded-md" role="alert">
+                    <p>{{ session('error') }}</p>
+                </div>
+            @endif
+
             {{-- Grid for Templates --}}
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 @forelse ($templates as $template)
                     @php
-                        // [LOGIKA BARU] Tentukan apakah tema ini diizinkan berdasarkan paket langganan.
-                        // Asumsi: 'template1' adalah path unik untuk Template 1.
+                        // Tentukan apakah tema ini diizinkan berdasarkan paket langganan.
                         $isAllowedByPlan = !$isStarterPlan || ($isStarterPlan && $template->path === 'template1');
                     @endphp
 
@@ -26,18 +36,14 @@
 
                         {{-- Image Preview with Overlay --}}
                         <div class="relative group">
-                            {{-- Tautan preview hanya aktif jika template aktif DAN diizinkan oleh paket --}}
                             <a href="{{ ($template->status === 'active' && $isAllowedByPlan) ? route('template.preview', $template) : '#' }}"
                                 target="_blank"
                                 class="block {{ !($template->status === 'active' && $isAllowedByPlan) ? 'pointer-events-none' : '' }}">
 
-                                {{-- Gambar menjadi grayscale jika tidak aktif ATAU tidak diizinkan oleh paket --}}
-                                <img src="{{ asset('storage/' . $template->image_preview) }}"
-                                    alt="Preview {{ $template->name }}"
+                                <img src="{{ asset('images/' . $template->image_preview) }}" alt="Preview {{ $template->name }}"
                                     class="w-full h-56 object-cover object-top transition-transform duration-300 {{ ($template->status === 'active' && $isAllowedByPlan) ? 'group-hover:scale-105' : 'filter grayscale' }}"
                                     onerror="this.onerror=null;this.src='https://placehold.co/600x400/f1f5f9/cbd5e1?text={{ urlencode($template->name) }}';">
 
-                                {{-- Overlay hanya muncul jika template aktif DAN diizinkan oleh paket --}}
                                 @if($template->status === 'active' && $isAllowedByPlan)
                                     <div
                                         class="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
@@ -65,7 +71,6 @@
                             {{-- Action Button/Status Badge --}}
                             <div class="mt-6">
                                 @if ($template->status !== 'active')
-                                    {{-- Status: Segera Hadir --}}
                                     <div
                                         class="w-full text-center bg-gray-200 text-gray-600 font-bold py-2.5 px-4 rounded-lg flex items-center justify-center gap-2 cursor-not-allowed">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
@@ -76,7 +81,6 @@
                                         <span>Segera Hadir</span>
                                     </div>
                                 @elseif (!$isAllowedByPlan)
-                                    {{-- [LOGIKA BARU] Status: Perlu Upgrade Paket --}}
                                     <a href="#" {{-- Ganti # dengan route ke halaman langganan Anda --}}
                                         class="w-full text-center bg-yellow-400 hover:bg-yellow-500 text-yellow-900 font-bold py-2.5 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors duration-300">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20"
@@ -88,7 +92,6 @@
                                         <span>Upgrade Paket Berlangganan</span>
                                     </a>
                                 @elseif ($currentTemplateId === $template->id)
-                                    {{-- Status: Tema Sedang Aktif --}}
                                     <div
                                         class="w-full text-center bg-green-100 text-green-800 font-bold py-2.5 px-4 rounded-lg flex items-center justify-center gap-2">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20"
@@ -100,8 +103,7 @@
                                         <span>Tema Aktif</span>
                                     </div>
                                 @else
-                                    {{-- Aksi: Gunakan Template --}}
-                                    <form method="POST" action="{{ route('mitra.editor.updateTheme') }}">
+                                    <form method="POST" action="{{ route('mitra.editor.updatetheme') }}">
                                         @csrf
                                         <input type="hidden" name="template_id" value="{{ $template->id }}">
                                         <button type="submit"

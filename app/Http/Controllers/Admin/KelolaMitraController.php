@@ -9,6 +9,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
+use App\Notifications\MitraDeactivatedNotification;
+use App\Notifications\MitraReactivatedNotification;
 
 class KelolaMitraController extends Controller
 {
@@ -53,7 +55,7 @@ class KelolaMitraController extends Controller
     /**
      * Menonaktifkan paket langganan seorang mitra.
      */
-    public function deactivate(User $user) 
+    public function deactivate(User $user)
     {
         try {
             $user->load('userPackage', 'subdomain');
@@ -64,6 +66,14 @@ class KelolaMitraController extends Controller
 
                 if ($user->subdomain) {
                     $user->subdomain->update(['status' => 'pending']);
+                    $user->subdomain->update(['publication_status' => 'pending']);
+                }
+
+                try {
+                    $user->notify(new MitraDeactivatedNotification($user));
+                } catch (\Exception $e) {
+                    // Jika notifikasi gagal terkirim, proses tetap lanjut tapi catat errornya
+                    Log::error('Gagal mengirim notifikasi penonaktifan ke mitra: ' . $user->email, ['error' => $e->getMessage()]);
                 }
 
                 return back()->with('success', "Mitra '{$user->name}' berhasil dinonaktifkan.");
@@ -81,7 +91,7 @@ class KelolaMitraController extends Controller
     /**
      * Mengaktifkan kembali paket langganan seorang mitra.
      */
-    public function reactivate(User $user) 
+    public function reactivate(User $user)
     {
         try {
             $user->load('userPackage', 'subdomain');
@@ -103,6 +113,12 @@ class KelolaMitraController extends Controller
 
                 if ($user->subdomain) {
                     $user->subdomain->update(['status' => 'active']);
+                }
+
+                try {
+                    $user->notify(new MitraReactivatedNotification($user));
+                } catch (\Exception $e) {
+                    Log::error('Gagal mengirim notifikasi re-aktivasi ke mitra: ' . $user->email, ['error' => $e->getMessage()]);
                 }
 
                 return back()->with('success', "Mitra '{$user->name}' berhasil diaktifkan kembali.");

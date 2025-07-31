@@ -135,19 +135,14 @@
     @php
         $isPreview = $isPreview ?? false;
         $currentSubdomain = !$isPreview ? request()->route('subdomain') : null;
-
-        // Hitung harga termurah dari varian untuk tampilan awal.
-        // Jika tidak ada varian, gunakan harga dasar produk.
-        $lowestPrice = $product->varians->min('price') ?? $product->price ?? 0;
-        $hasDifferentPrices = $product->varians->isNotEmpty() && ($product->varians->min('price') != $product->varians->max('price'));
     @endphp
 
     <section class="shop-details">
-        <div class="product__details__pic">
+        <div class="product_details_pic">
             <div class="container">
                 <div class="row">
                     <div class="col-lg-12">
-                        <div class="product__details__breadcrumb">
+                        <div class="product_details_breadcrumb">
                             <a
                                 href="{{ !$isPreview ? route('tenant.home', ['subdomain' => $currentSubdomain]) : '#' }}">Beranda</a>
                             <a
@@ -158,7 +153,7 @@
                 </div>
                 <div class="row">
                     <div class="col-lg-6 col-md-6">
-                        <div class="product__details__pic__container">
+                        <div class="product_detailspic_container">
                             {{-- Kontainer Gambar Utama --}}
                             <div id="main-image-display" class="mb-3">
                                 {{-- Diisi oleh JavaScript --}}
@@ -171,7 +166,7 @@
                     </div>
 
                     <div class="col-lg-6 col-md-6">
-                        <div class="product__details__text">
+                        <div class="product_details_text">
                             <h4>{{ $product->name ?? 'Nama Produk' }}</h4>
                             {{-- PERUBAHAN: Rating dan jumlah ulasan dinamis --}}
                             <div class="rating">
@@ -190,13 +185,13 @@
                                 <input type="hidden" name="product_id" value="{{ $product->id }}">
                                 <input type="hidden" id="selected-variant-id" name="variant_id" value="">
 
-                                <div class="product__details__option" id="dynamic-variant-options">
+                                <div class="product_details_option" id="dynamic-variant-options">
                                     @if ($product->varians->isEmpty())
                                         <p class="text-muted">Produk ini tidak memiliki varian.</p>
                                     @endif
                                 </div>
 
-                                <div class="product__details__cart__option">
+                                <div class="product_detailscart_option">
                                     <div class="quantity">
                                         <div class="pro-qty">
                                             <input type="text" name="quantity" value="1">
@@ -207,7 +202,7 @@
                                 </div>
                             </form>
 
-                            <div class="product__details__btns__option">
+                            <div class="product_detailsbtns_option">
                                 <a href="#" class="toggle-wishlist" data-product-id="{{ $product->id }}"><i
                                         class="fa fa-heart"></i> Tambah ke Wishlist</a>
                             </div>
@@ -457,13 +452,13 @@
                 dynamicOptionContainer.innerHTML = optionsHtml;
 
                 optionNamesOrder.forEach((optionName, index) => {
-                    const selectElement = document.getElementById(`select-${optionName.toLowerCase()}`);
+                    const selectElement = document.getElementById(select-${optionName.toLowerCase()});
                     if (selectElement) {
                         selectElement.addEventListener('change', () => {
                             selectedOptions[optionName] = selectElement.value;
                             for (let i = index + 1; i < optionNamesOrder.length; i++) {
                                 selectedOptions[optionNamesOrder[i]] = '';
-                                const nextSelect = document.getElementById(`select-${optionNamesOrder[i].toLowerCase()}`);
+                                const nextSelect = document.getElementById(select-${optionNamesOrder[i].toLowerCase()});
                                 if (nextSelect) nextSelect.value = '';
                             }
                             updateOptionDropdowns(index + 1);
@@ -478,7 +473,7 @@
             function updateOptionDropdowns(startIndex = 0) {
                 for (let i = startIndex; i < optionNamesOrder.length; i++) {
                     const currentOptionName = optionNamesOrder[i];
-                    const selectElement = document.getElementById(`select-${currentOptionName.toLowerCase()}`);
+                    const selectElement = document.getElementById(select-${currentOptionName.toLowerCase()});
                     if (!selectElement) continue;
 
                     const filteredVarians = productData.varians.filter(varian => {
@@ -493,10 +488,10 @@
 
                     const availableValues = [...new Set(filteredVarians.map(v => getOptionValue(v, currentOptionName)).filter(Boolean))].sort();
                     
-                    let optionsHTML = `<option value="">Pilih ${currentOptionName}</option>`;
+                    let optionsHTML = <option value="">Pilih ${currentOptionName}</option>;
                     availableValues.forEach(value => {
                         const hasStock = filteredVarians.some(varian => getOptionValue(varian, currentOptionName) === value && varian.stock > 0);
-                        optionsHTML += `<option value="${value}" ${hasStock ? '' : 'disabled'}>${value} ${hasStock ? '' : '(Habis)'}</option>`;
+                        optionsHTML += <option value="${value}" ${hasStock ? '' : 'disabled'}>${value} ${hasStock ? '' : '(Habis)'}</option>;
                     });
                     selectElement.innerHTML = optionsHTML;
 
@@ -558,7 +553,7 @@
                     return;
                 }
                 if (currentMatchingVarian.stock < quantity) {
-                    showToast(`Stok tidak mencukupi. Tersedia: ${currentMatchingVarian.stock}`, 'error');
+                    showToast(Stok tidak mencukupi. Tersedia: ${currentMatchingVarian.stock}, 'error');
                     return;
                 }
 

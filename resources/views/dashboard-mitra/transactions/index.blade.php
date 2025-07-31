@@ -75,7 +75,7 @@
                     <select id="delivery_method" name="delivery_method"
                         class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200">
                         <option value="">Semua</option>
-                        <option value="delivery" {{ request('delivery_method') == 'delivery' ? 'selected' : '' }}>Diantar
+                        <option value="delivery" {{ request('delivery_method') == 'ship' ? 'selected' : '' }}>Diantar
                         </option>
                         <option value="pickup" {{ request('delivery_method') == 'pickup' ? 'selected' : '' }}>Dijemput di Toko
                         </option>

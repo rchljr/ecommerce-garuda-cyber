@@ -18,7 +18,7 @@ class VoucherController extends Controller
     public function index(Request $request)
     {
         $vouchers = $this->service->getPaginatedVouchers($request);
-        
+
         $search = $request->input('search');
 
         return view('dashboard-admin.kelola-voucher', compact('vouchers', 'search'));
@@ -29,13 +29,18 @@ class VoucherController extends Controller
         $validated = $request->validate([
             'voucher_code' => 'required|string|max:100|unique:vouchers,voucher_code',
             'description' => 'nullable|string',
-            'discount' => 'required|numeric|min:0',
+            'discount' => 'required|numeric|min:1', // Diskon harus minimal 1
             'min_spending' => 'required|numeric|min:0',
             'start_date' => 'required|date',
             'expired_date' => 'required|date|after_or_equal:start_date',
         ], [
-            // Tambahkan pesan custom agar lebih ramah
             'voucher_code.unique' => 'Kode voucher ini sudah digunakan. Harap gunakan kode lain.',
+            'discount.min' => 'Nilai diskon harus lebih besar dari 0.', // Pesan error baru
+            'min_spending.numeric' => 'Minimum pembelanjaan harus berupa angka.',
+            'start_date.required' => 'Tanggal mulai harus diisi.',
+            'expired_date.required' => 'Tanggal kedaluwarsa harus diisi.',
+            'expired_date.after_or_equal' => 'Tanggal kedaluwarsa harus setelah atau sama dengan tanggal mulai.',
+            'discount.required' => 'Diskon harus dalam bentuk persen.'
         ]);
 
         $validated['min_spending'] = $validated['min_spending'] ?? 0;
@@ -44,7 +49,7 @@ class VoucherController extends Controller
         if ($request->wantsJson()) {
             return response()->json(['message' => 'Voucher berhasil ditambahkan!']);
         }
-        
+
         return redirect()->route('admin.voucher.index')->with('success', 'Voucher berhasil ditambahkan.');
     }
 
@@ -53,19 +58,20 @@ class VoucherController extends Controller
         $validated = $request->validate([
             'voucher_code' => 'required|string|max:100|unique:vouchers,voucher_code,' . $id,
             'description' => 'nullable|string',
-            'discount' => 'required|numeric|min:0',
+            'discount' => 'required|numeric|min:1', // Diskon harus minimal 1
             'start_date' => 'required|date',
             'expired_date' => 'required|date|after_or_equal:start_date',
             'min_spending' => 'nullable|numeric|min:0',
         ], [
             'voucher_code.unique' => 'Kode voucher ini sudah digunakan. Harap gunakan kode lain.',
+            'discount.min' => 'Nilai diskon harus lebih besar dari 0.', // Pesan error baru
         ]);
 
         $this->service->updateVoucher($id, $validated);
         if ($request->wantsJson()) {
             return response()->json(['message' => 'Voucher berhasil diperbarui!']);
         }
-        
+
         return back()->with('success', 'Voucher berhasil diperbarui.');
     }
 

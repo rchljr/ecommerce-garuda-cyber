@@ -25,7 +25,7 @@ class SubscriptionPackageSeeder extends Seeder
         // Data paket yang akan di-seed
         $packages = [
             [
-                'name' => 'Starter Plan',
+                'package_name' => 'Starter Plan',
                 'description' => 'Solusi ideal untuk memulai dan mengembangkan bisnis online Anda dengan fitur esensial.',
                 'monthly_price' => 150000,
                 'yearly_price' => 1500000, // Asumsi diskon, misal bayar 10 bulan untuk 1 tahun
@@ -40,7 +40,7 @@ class SubscriptionPackageSeeder extends Seeder
                 ],
             ],
             [
-                'name' => 'Business Plan',
+                'package_name' => 'Business Plan',
                 'description' => 'Tingkatkan skala bisnis Anda dengan fitur canggih dan pilihan tema yang lebih eksklusif.',
                 'monthly_price' => 300000,
                 'yearly_price' => 3000000, // Asumsi diskon, misal bayar 10 bulan untuk 1 tahun
@@ -55,7 +55,7 @@ class SubscriptionPackageSeeder extends Seeder
                 ],
             ],
             [
-                'name' => 'Enterprise Plan',
+                'package_name' => 'Enterprise Plan',
                 'description' => 'Solusi terintegrasi dan dapat disesuaikan sepenuhnya untuk perusahaan skala besar.',
                 'monthly_price' => null, // Harga custom, perlu kontak
                 'yearly_price' => null,
@@ -76,7 +76,7 @@ class SubscriptionPackageSeeder extends Seeder
         foreach ($packages as $pkgData) {
             $package = SubscriptionPackage::create([
                 'id' => (string) Str::uuid(),
-                'package_name' => $pkgData['name'],
+                'package_name' => $pkgData['package_name'],
                 'description' => $pkgData['description'],
                 'monthly_price' => $pkgData['monthly_price'],
                 'yearly_price' => $pkgData['yearly_price'],

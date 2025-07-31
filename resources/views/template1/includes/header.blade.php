@@ -1,44 +1,32 @@
 @php
     $isPreview = $isPreview ?? false;
     $currentSubdomain = request()->route('subdomain');
-
-    // Ambil user yang sedang login
     $loggedInUser = Auth::user();
-
-    // Inisialisasi currentShop dan customTema
     $currentShop = null;
     $customTema = null;
 
-    // Jika user login (mitra), coba ambil shop dan customTema
     if ($loggedInUser) {
-        // Ambil objek shop dari user (tanpa eager loading customTema di sini)
         $currentShop = $loggedInUser->shop;
-
-        // Ambil customTema langsung dari user
-        // Pastikan relasi 'customTema' ada di model App\Models\User
         $customTema = $loggedInUser->customTema;
     }
 
-    // Ambil logo dan warna dari customTema, dengan fallback ke default
     $logoPath = optional($customTema)->shop_logo;
     $logoUrl = $logoPath ? asset('storage/' . $logoPath) : asset('template1/img/logo.png');
+    $primaryColor = optional($customTema)->primary_color ?? '#4F46E5';
+    $secondaryColor = optional($customTema)->secondary_color ?? '#D946EF';
 
-    $primaryColor = optional($customTema)->primary_color ?? '#4F46E5'; // Default dari form Anda
-    $secondaryColor = optional($customTema)->secondary_color ?? '#D946EF'; // Default dari form Anda
-
-    // Logika Keranjang Belanja dan Notifikasi
+    // Logika Keranjang Belanja, Notifikasi, dan Wishlist
     $cartCount = 0;
     $notificationCount = 0;
+    $wishlistCount = 0; // Tambahkan wishlist count
 
-    // Logika ini untuk customer, bukan mitra
     if (Auth::guard('customers')->check()) {
         $customerUser = Auth::guard('customers')->user();
-
-        // 1. Logika Hitung Keranjang (menggunakan service yang sudah ada)
         $cartService = app(\App\Services\CartService::class);
         $cartCount = $cartService->getCartCount();
+        $wishlistCount = $customerUser->wishlist()->count(); // Tambahkan logika hitung wishlist
 
-        // 2. Logika Hitung Notifikasi (disesuaikan dengan controller Anda)
+        // Logika Hitung Notifikasi
         $successfulPaymentsCount = \App\Models\Payment::where('user_id', $customerUser->id)
             ->whereIn('midtrans_transaction_status', ['settlement', 'capture'])
             ->count();
@@ -55,20 +43,27 @@
 {{-- --- Inject Custom Colors into CSS Variables --- --}}
 <style>
     :root {
-        --primary-color: {{ $primaryColor }};
-        --secondary-color: {{ $secondaryColor }};
+        --primary-color:
+            {{ $primaryColor }}
+        ;
+        --secondary-color:
+            {{ $secondaryColor }}
+        ;
     }
 
     .header__top__links a:hover {
         color: var(--primary-color) !important;
     }
-    .header__menu ul li.active > a,
-    .header__menu ul li:hover > a {
+
+    .header__menu ul li.active>a,
+    .header__menu ul li:hover>a {
         color: var(--primary-color);
     }
+
     .header__nav__option a span {
         background: var(--primary-color);
     }
+
     .header__nav__option a:hover {
         color: var(--primary-color);
     }
@@ -93,7 +88,9 @@
     }
 
     #notification-count,
-    #cart-count {
+    #cart-count,
+    #wishlist-count {
+        /* [MODIFIKASI] Menambahkan #wishlist-count */
         position: absolute;
         top: -6px;
         right: -9px;
@@ -108,28 +105,23 @@
         text-align: center;
     }
 
-    /* --- CSS BARU UNTUK LOGO --- */
     .header__logo img {
-        max-height: 40px; /* Atur tinggi maksimum logo */
-        width: auto; /* Biarkan lebar menyesuaikan proporsi */
-        object-fit: contain; /* Pastikan gambar tidak terpotong */
-        display: block; /* Menghilangkan spasi ekstra di bawah gambar */
+        max-height: 40px;
+        width: auto;
+        object-fit: contain;
+        display: block;
     }
 
-    /* Sesuaikan jika navbar Anda memiliki tinggi tetap, misalnya */
     .header {
-        /* min-height: 80px; */ /* Contoh: jika header memiliki tinggi minimum */
         display: flex;
-        flex-direction: column; /* BARIS PENTING: Menata item secara vertikal */
-        /* align-items: center; */ /* Hapus atau sesuaikan ini jika tidak diperlukan lagi */
+        flex-direction: column;
     }
 
     .header__logo {
         display: flex;
-        align-items: center; /* Pusatkan logo secara vertikal di dalam div-nya */
-        height: 100%; /* Agar logo mengambil tinggi penuh container */
+        align-items: center;
+        height: 100%;
     }
-    /* --- AKHIR CSS BARU --- */
 </style>
 
 <header class="header">
@@ -166,7 +158,6 @@
                                 <a href="#">Bantuan</a>
                                 <div class="header__top__dropdown">
                                     @php $customer = Auth::guard('customers')->user(); @endphp
-                                    {{-- PERBAIKAN: Mengganti foto profil dengan ikon --}}
                                     <a href="#">
                                         <i class="fa fa-user"></i> Hi, {{ strtok($customer->name, ' ') }}
                                     </a>
@@ -220,68 +211,52 @@
                                 href="{{ !$isPreview ? route('tenant.shop', ['subdomain' => $currentSubdomain]) : '#' }}">Toko</a>
                         </li>
                         <li class="{{ request()->routeIs('tenant.contact') ? 'active' : '' }}"><a
-                                href="{{ !$isPreview ? route('tenant.contact', ['subdomain' => $currentSubdomain]) : '#' }}">Kontak Kami</a>
+                                href="{{ !$isPreview ? route('tenant.contact', ['subdomain' => $currentSubdomain]) : '#' }}">Kontak
+                                Kami</a>
                         </li>
                     </ul>
                 </nav>
             </div>
             <div class="col-lg-3 col-md-3">
                 <div class="header__nav__option">
-                    <a href="{{ !$isPreview ? route('tenant.wishlist', ['subdomain' => $currentSubdomain]) : '#' }}"><i
-                            class="fa fa-heart-o"></i></a>
-                    <a class="notification-icon"
-                        href="{{ !$isPreview ? route('tenant.account.notifications', ['subdomain' => $currentSubdomain]) : '#' }}">
-                        <i class="fa fa-bell-o"></i>
-                        @if ($notificationCount > 0)
-                            <span id="notification-count">{{ $notificationCount }}</span>
-                        @endif
-                    </a>
-                    <a href="{{ !$isPreview ? route('tenant.cart.index', ['subdomain' => $currentSubdomain]) : '#' }}">
-                        <i class="fa fa-shopping-basket"></i>
-                        @if ($cartCount > 0)
-                            <span id="cart-count">{{ $cartCount }}</span>
-                        @endif
-                    </a>
+                    {{-- [FIX] Wishlist Link --}}
+                    @auth('customers')
+                        <a href="{{ !$isPreview ? route('tenant.wishlist', ['subdomain' => $currentSubdomain]) : '#' }}">
+                    @else
+                            <a
+                                href="{{ !$isPreview ? route('tenant.customer.login.form', ['subdomain' => $currentSubdomain]) : '#' }}">
+                        @endauth
+                            <i class="fa fa-heart-o"></i>
+                            @if ($wishlistCount > 0)
+                                <span id="wishlist-count">{{ $wishlistCount }}</span>
+                            @endif
+                        </a>
+
+                        {{-- [FIX] Notification Link --}}
+                        @auth('customers')
+                            <a class="notification-icon"
+                                href="{{ !$isPreview ? route('tenant.account.notifications', ['subdomain' => $currentSubdomain]) : '#' }}">
+                        @else
+                                <a class="notification-icon"
+                                    href="{{ !$isPreview ? route('tenant.customer.login.form', ['subdomain' => $currentSubdomain]) : '#' }}">
+                            @endauth
+                                <i class="fa fa-bell-o"></i>
+                                @if ($notificationCount > 0)
+                                    <span id="notification-count">{{ $notificationCount }}</span>
+                                @endif
+                            </a>
+
+                            {{-- Cart Link (No change needed) --}}
+                            <a
+                                href="{{ !$isPreview ? route('tenant.cart.index', ['subdomain' => $currentSubdomain]) : '#' }}">
+                                <i class="fa fa-shopping-basket"></i>
+                                @if ($cartCount > 0)
+                                    <span id="cart-count">{{ $cartCount }}</span>
+                                @endif
+                            </a>
                 </div>
             </div>
         </div>
         <div class="canvas__open"><i class="fa fa-bars"></i></div>
     </div>
 </header>
-
-<style>
-    .disabled-link {
-        color: #b2b2b2 !important;
-        cursor: not-allowed;
-    }
-
-    .header__nav__option a i {
-        font-size: 20px;
-        color: #111111;
-    }
-
-    .header__nav__option a {
-        position: relative;
-    }
-
-    .notification-icon {
-        position: relative;
-        display: inline-block;
-    }
-
-    #notification-count,
-    #cart-count {
-        position: absolute;
-        top: -6px;
-        right: -9px;
-        height: 18px;
-        width: 18px;
-        background: #ca1515;
-        color: #ffffff;
-        border-radius: 50%;
-        font-size: 11px;
-        font-weight: 700;
-        line-height: 18px;
-        text-align: center;
-    }
-</style>
