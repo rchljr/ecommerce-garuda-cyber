@@ -72,7 +72,7 @@ class VarianController extends Controller
             DB::commit();
 
             return redirect()->route('mitra.products.show', $product->id) // Sesuaikan rute redirect Anda
-                             ->with('success', 'Varian(s) berhasil ditambahkan!');
+                ->with('success', 'Varian(s) berhasil ditambahkan!');
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -158,7 +158,7 @@ class VarianController extends Controller
             DB::commit();
 
             return redirect()->route('mitra.products.show', $varian->product_id)
-                             ->with('success', 'Varian berhasil diperbarui.');
+                ->with('success', 'Varian berhasil diperbarui.');
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -188,7 +188,7 @@ class VarianController extends Controller
             DB::commit();
 
             return redirect()->route('mitra.products.show', $varian->product_id)
-                             ->with('success', 'Varian berhasil dihapus.');
+                ->with('success', 'Varian berhasil dihapus.');
 
         } catch (\Exception $e) {
             DB::rollBack();

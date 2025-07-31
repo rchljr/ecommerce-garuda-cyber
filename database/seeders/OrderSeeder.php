@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\Shop;
 use App\Models\Product;
 use App\Models\Order;
+use App\Models\Payment;
 use App\Models\Varian;
 use App\Models\OrderItem;
 use App\Models\Testimoni;
@@ -29,11 +30,14 @@ class OrderSeeder extends Seeder
         // 1. Kosongkan tabel terkait pesanan produk
         DB::statement('SET FOREIGN_KEY_CHECKS=0;');
         OrderItem::truncate();
+        // Hanya hapus order yang memiliki shop_id dan bukan order langganan
         Order::whereNotNull('shop_id')->where('total_price', '>', 0)->delete();
-        Testimoni::whereNotNull('product_id')->delete(); // Hapus testimoni terkait produk
+        // Hapus payment yang tidak terkait langganan
+        Payment::whereNull('subs_package_id')->delete();
+        Testimoni::whereNotNull('product_id')->delete();
         Shipping::truncate();
         DB::statement('SET FOREIGN_KEY_CHECKS=1;');
-        $this->command->info('Data pesanan produk, item, testimoni, dan pengiriman lama telah dihapus.');
+        $this->command->info('Data pesanan produk, item, payment, testimoni, dan pengiriman lama telah dihapus.');
 
         // 2. Ambil mitra yang benar dari MitraTokoSeeder
         $mitraEmails = ['mitra1@gmail.com', 'mitra2@gmail.com', 'mitra3@gmail.com'];
@@ -52,7 +56,7 @@ class OrderSeeder extends Seeder
         }
 
         // 4. Pengaturan Seeder
-        $deliveryMethods = ['delivery', 'pickup'];
+        $deliveryMethods = ['ship', 'pickup'];
         $numOrdersPerShop = 15;
 
         // 5. Looping untuk setiap mitra untuk membuat pesanan
@@ -79,16 +83,22 @@ class OrderSeeder extends Seeder
             $this->command->info("Membuat pesanan untuk toko '{$shop->shop_name}'...");
 
             for ($i = 0; $i < $numOrdersPerShop; $i++) {
+                $orderGroupId = Str::uuid(); // [MODIFIKASI] Buat Order Group ID untuk setiap pesanan
                 $deliveryMethod = $deliveryMethods[array_rand($deliveryMethods)];
                 $createdAt = Carbon::now()->subDays(rand(0, 45))->subHours(rand(0, 23));
                 $shopCode = strtoupper(substr(preg_replace('/[^a-zA-Z0-9]/', '', $shop->shop_name), 0, 3));
 
+                // Buat Order utama
                 $order = Order::create([
                     'order_number' => "{$shopCode}-" . $createdAt->format('ymd') . "-" . rand(1000, 9999),
+                    'order_group_id' => $orderGroupId, // [MODIFIKASI] Isi order_group_id
                     'user_id' => $customer->id,
                     'shop_id' => $shop->id,
                     'subdomain_id' => $subdomain->id,
-                    'total_price' => 0,
+                    'total_price' => 0, // Akan di-update
+                    'subtotal' => 0, // Akan di-update
+                    'shipping_cost' => 0, // Akan di-update
+                    'discount_amount' => 0, // Untuk seeder ini, diskon 0
                     'status' => 'completed',
                     'order_date' => $createdAt,
                     'delivery_method' => $deliveryMethod,
@@ -100,27 +110,22 @@ class OrderSeeder extends Seeder
                     'updated_at' => $createdAt,
                 ]);
 
-                $orderTotalPrice = 0;
-                // [FIX] Pastikan jumlah item tidak melebihi jumlah produk yang tersedia
+                $orderSubtotal = 0;
                 $maxItems = $mitraProducts->count();
-                $numItems = rand(1, min(3, $maxItems)); // Ambil maksimal 3 item atau sejumlah produk yang ada
+                $numItems = rand(1, min(3, $maxItems));
                 $productIdsInOrder = [];
 
+                // Buat Order Items
                 for ($j = 0; $j < $numItems; $j++) {
-                    // [FIX] Logika pengambilan produk yang lebih aman
                     $availableProducts = $mitraProducts->whereNotIn('id', $productIdsInOrder);
-
-                    if ($availableProducts->isEmpty()) {
-                        break; // Hentikan loop jika tidak ada lagi produk yang bisa dipilih
-                    }
+                    if ($availableProducts->isEmpty())
+                        break;
 
                     $product = $availableProducts->random();
-
-                    if ($product->varians->isEmpty()) {
+                    if ($product->varians->isEmpty())
                         continue;
-                    }
-                    $selectedVarian = $product->varians->random();
 
+                    $selectedVarian = $product->varians->random();
                     $quantity = rand(1, 2);
                     $itemPrice = (float) $selectedVarian->price;
 
@@ -131,20 +136,39 @@ class OrderSeeder extends Seeder
                         'quantity' => $quantity,
                         'price' => $itemPrice,
                     ]);
-                    $orderTotalPrice += ($quantity * $itemPrice);
+                    $orderSubtotal += ($quantity * $itemPrice);
                     $productIdsInOrder[] = $product->id;
                 }
 
+                // Buat data Shipping
                 $shippingCost = 0;
-                if ($deliveryMethod === 'delivery') {
+                if ($deliveryMethod === 'ship') {
                     $shippingCost = rand(10000, 30000);
                     Shipping::create(['order_id' => $order->id, 'delivery_service' => ['JNE', 'J&T', 'SiCepat'][array_rand(['JNE', 'J&T', 'SiCepat'])], 'status' => 'delivered', 'receipt_number' => 'AWB' . Str::random(12), 'shipping_cost' => $shippingCost, 'estimated_delivery' => Carbon::parse($createdAt)->addDays(rand(2, 7))]);
                 } else {
                     Shipping::create(['order_id' => $order->id, 'delivery_service' => 'Pickup', 'status' => 'picked_up', 'shipping_cost' => 0]);
                 }
 
-                $order->update(['subtotal' => $orderTotalPrice, 'shipping_cost' => $shippingCost, 'total_price' => $orderTotalPrice + $shippingCost]);
+                $grandTotal = $orderSubtotal + $shippingCost;
 
+                // Update total harga di order
+                $order->update(['subtotal' => $orderSubtotal, 'shipping_cost' => $shippingCost, 'total_price' => $grandTotal]);
+
+                // [MODIFIKASI] Buat data Payment untuk order ini
+                Payment::create([
+                    'order_group_id' => $orderGroupId,
+                    'order_id' => $order->id,
+                    'user_id' => $customer->id,
+                    'subs_package_id' => null, // Penting: null untuk pesanan produk
+                    'midtrans_order_id' => 'PAY-' . $orderGroupId,
+                    // 'transaction_id' => 'TRANS-' . Str::uuid(),
+                    'midtrans_transaction_status' => 'settlement',
+                    'midtrans_payment_type' => 'bank_transfer',
+                    'midtrans_response' => 'success',
+                    'total_payment' => $grandTotal,
+                ]);
+
+                // Buat Testimoni
                 if (!empty($productIdsInOrder)) {
                     $testimonialProductId = $productIdsInOrder[array_rand($productIdsInOrder)];
                     Testimoni::create(['user_id' => $customer->id, 'product_id' => $testimonialProductId, 'order_id' => $order->id, 'name' => $customer->name, 'content' => 'Sangat puas dengan produk dan layanan dari toko ' . $shop->shop_name . '!', 'rating' => rand(4, 5), 'status' => 'published', 'shop_id' => $shop->id]);

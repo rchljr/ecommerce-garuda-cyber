@@ -77,9 +77,6 @@ class ProductController extends Controller
             'name' => 'required|string|max:255',
             'short_description' => 'nullable|string|max:500',
             'description' => 'nullable|string',
-            // Hapus validasi modal_price dan profit_percentage dari sini (sudah di level varian)
-            // 'modal_price' => 'required|numeric|min:0',
-            // 'profit_percentage' => 'required|numeric|min:0|max:100',
             'sub_category_id' => 'required|exists:sub_categories,id',
             'main_image' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
             'gallery_images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
