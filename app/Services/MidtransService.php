@@ -24,31 +24,37 @@ class MidtransService
      *
      * @param string $midtransOrderId ID transaksi Midtrans (misal: PAY-xxxx)
      * @return object|null Respons dari Midtrans dalam bentuk object atau null jika gagal.
-     * @throws \Exception Jika terjadi error API.
+     * @throws \Exception Jika terjadi error API yang tidak terduga.
      */
     public function cancelTransaction(string $midtransOrderId): ?object
     {
         try {
             Log::info("MidtransService: Mencoba membatalkan transaksi.", ['midtrans_order_id' => $midtransOrderId]);
 
-            // Panggil static method cancel dari library Midtrans
-            // Library ini mengembalikan JSON string, bukan object.
             $responseString = Transaction::cancel($midtransOrderId);
 
-            // ====================================================================
-            // Decode string JSON menjadi object sebelum me-return
-            // Ini akan memastikan tipe data yang dikembalikan sesuai dengan
-            // deklarasi method `cancelTransaction(): ?object`
-            // ====================================================================
-            $responseObject = json_decode($responseString);
+            $responseValue = json_decode($responseString);
+
+            // [FIX] Tambahkan pengecekan untuk memastikan nilai yang dikembalikan adalah object.
+            // Jika Midtrans mengembalikan nilai yang di-decode menjadi integer atau tipe lain,
+            // kita akan menganggapnya sebagai respons yang tidak standar dan mengembalikan null.
+            if (!is_object($responseValue)) {
+                Log::warning("MidtransService: Respons dari pembatalan transaksi bukanlah sebuah object.", [
+                    'midtrans_order_id' => $midtransOrderId,
+                    'decoded_type' => gettype($responseValue),
+                    'original_response' => $responseString
+                ]);
+                // Kembalikan null untuk memenuhi return type hint (?object) dan menandakan
+                // bahwa respons tidak dapat diproses lebih lanjut, meskipun tidak ada exception.
+                return null;
+            }
 
             Log::info("MidtransService: Berhasil membatalkan transaksi.", [
                 'midtrans_order_id' => $midtransOrderId,
-                'response' => $responseObject // Log object yang sudah di-decode
+                'response' => $responseValue
             ]);
 
-            // Kembalikan object yang sudah di-decode
-            return $responseObject;
+            return $responseValue;
 
         } catch (\Exception $e) {
             // Tangani error jika transaksi tidak ditemukan, sudah diselesaikan, atau error lainnya
