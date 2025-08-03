@@ -14,13 +14,13 @@ return new class extends Migration {
             $table->uuid('id')->primary();
             $table->uuid('cart_id');
             $table->uuid('product_id');
-            $table->unsignedBigInteger('product_variant_id'); 
+            $table->uuid('product_variant_id');
             $table->integer('quantity');
             $table->timestamps();
 
             $table->foreign('product_id')->references('id')->on('products')->onDelete('cascade');
             $table->foreign('cart_id')->references('id')->on('carts')->onDelete('cascade');
-            $table->foreign('product_variant_id')->references('id')->on('product_variants')->onDelete('cascade');
+            $table->foreign('product_variant_id')->references('id')->on('varians')->onDelete('cascade');
         });
     }
 

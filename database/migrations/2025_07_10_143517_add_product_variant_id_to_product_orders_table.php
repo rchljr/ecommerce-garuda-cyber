@@ -12,13 +12,13 @@ return new class extends Migration {
     {
         Schema::table('product_orders', function (Blueprint $table) {
             // Menambahkan kolom baru untuk menyimpan ID varian
-            $table->unsignedBigInteger('product_variant_id')->nullable()->after('product_id');
+            $table->uuid('product_variant_id')->nullable()->after('product_id');
 
             // Menambahkan foreign key constraint ke tabel product_variants
             // Pastikan tabel 'product_variants' Anda sudah ada
             $table->foreign('product_variant_id')
                 ->references('id')
-                ->on('product_variants')
+                ->on('varians')
                 ->onDelete('set null'); // Jika varian dihapus, kolom ini akan menjadi NULL
         });
     }

@@ -3,6 +3,19 @@
         Options -MultiViews -Indexes
     </IfModule>
 
+    <IfModule mod_headers.c>
+        # Mencegah Clickjacking
+        Header always set X-Frame-Options "SAMEORIGIN"
+        # Mencegah MIME-sniffing
+        Header always set X-Content-Type-Options "nosniff"
+        # Mengaktifkan proteksi XSS di browser
+        Header always set X-XSS-Protection "1; mode=block"
+        # Mengontrol informasi apa yang dikirim di header Referer
+        Header always set Referrer-Policy "same-origin"
+        # (Opsional - Lanjutan) Mengaktifkan HSTS setelah memastikan semua konten via HTTPS
+        # Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+    </IfModule>
+
     RewriteEngine On
 
     # Handle Authorization Header
