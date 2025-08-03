@@ -10,7 +10,6 @@ return new class extends Migration
     {
         Schema::create('product_tag', function (Blueprint $table) {
             $table->id();
-            // PERBAIKAN: Gunakan foreignUuid untuk merujuk ke 'products.id'
             $table->foreignUuid('product_id')->constrained('products')->onDelete('cascade');
             
             // Gunakan foreignId untuk 'tag_id' (ini mengasumsikan tabel 'tags' menggunakan ID auto-increment standar)

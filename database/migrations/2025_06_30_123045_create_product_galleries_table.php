@@ -10,7 +10,6 @@ return new class extends Migration
     {
         Schema::create('product_galleries', function (Blueprint $table) {
             $table->id();
-            // PERBAIKAN: Gunakan foreignUuid untuk merujuk ke primary key tipe UUID di tabel 'products'
             $table->foreignUuid('product_id')->constrained('products')->onDelete('cascade');
 
             $table->string('image_path');

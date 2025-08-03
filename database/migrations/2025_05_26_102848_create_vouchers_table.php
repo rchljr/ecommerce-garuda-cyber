@@ -23,7 +23,6 @@ return new class extends Migration
             $table->date('start_date');
             $table->date('expired_date');
 
-            // --- KOLOM BARU YANG DISARANKAN UNTUK FITUR LENGKAP ---
             $table->decimal('discount', 15, 2)->comment('Diskon harus dalam bentuk persen'); 
             $table->integer('max_uses')->nullable()->comment('Berapa kali voucher ini bisa digunakan secara total');
             $table->integer('max_uses_per_customer')->nullable()->comment('Berapa kali satu customer bisa pakai voucher ini');
