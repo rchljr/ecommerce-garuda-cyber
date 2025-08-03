@@ -102,7 +102,7 @@ class MitraTokoSeeder extends Seeder
         Payment::create([
             'user_id' => $user->id,
             'order_id' => $order->id,
-            'order_group_id' => $orderGroupId,
+            // 'order_group_id' => $orderGroupId,
             'subs_package_id' => $package->id,
             'midtrans_order_id' => $order->id,
             'midtrans_transaction_status' => 'settlement',
@@ -178,7 +178,7 @@ class MitraTokoSeeder extends Seeder
         $orderGroupId = Str::uuid();
         $order = Order::create(['order_number' => 'SUB-' . strtoupper(Str::random(8)), 'user_id' => $user->id, 'shop_id' => $shop->id, 'order_group_id' => $orderGroupId, 'subdomain_id' => $subdomain->id, 'status' => 'completed', 'total_price' => $package->yearly_price, 'subtotal' => $package->yearly_price, 'order_date' => Carbon::now()]);
 
-        Payment::create(['user_id' => $user->id, 'order_id' => $order->id, 'order_group_id' => $orderGroupId, 'subs_package_id' => $package->id, 'midtrans_order_id' => $order->id, 'midtrans_transaction_status' => 'settlement', 'midtrans_payment_type' => 'bank_transfer', 'total_payment' => $package->yearly_price, 'midtrans_response' => json_encode(['transaction_id' => 'TRANS-' . Str::uuid(), 'status_code' => '200', 'status_message' => 'Success, transaction is found'])]);
+        Payment::create(['user_id' => $user->id, 'order_id' => $order->id, 'subs_package_id' => $package->id, 'midtrans_order_id' => $order->id, 'midtrans_transaction_status' => 'settlement', 'midtrans_payment_type' => 'bank_transfer', 'total_payment' => $package->yearly_price, 'midtrans_response' => json_encode(['transaction_id' => 'TRANS-' . Str::uuid(), 'status_code' => '200', 'status_message' => 'Success, transaction is found'])]);
 
         UserPackage::create(['user_id' => $user->id, 'subs_package_id' => $package->id, 'plan_type' => 'yearly', 'price_paid' => $package->yearly_price, 'active_date' => Carbon::now(), 'expired_date' => Carbon::now()->addYear(), 'status' => 'active']);
 
@@ -227,7 +227,7 @@ class MitraTokoSeeder extends Seeder
         $orderGroupId = Str::uuid();
         $order = Order::create(['order_number' => 'SUB-' . strtoupper(Str::random(8)), 'user_id' => $user->id, 'shop_id' => $shop->id, 'order_group_id' => $orderGroupId, 'subdomain_id' => $subdomain->id, 'status' => 'completed', 'total_price' => $package->yearly_price, 'subtotal' => $package->yearly_price, 'order_date' => Carbon::now()]);
 
-        Payment::create(['user_id' => $user->id, 'order_id' => $order->id, 'order_group_id' => $orderGroupId, 'subs_package_id' => $package->id, 'midtrans_order_id' => $order->id, 'midtrans_transaction_status' => 'settlement', 'midtrans_payment_type' => 'bank_transfer', 'total_payment' => $package->yearly_price, 'midtrans_response' => json_encode(['transaction_id' => 'TRANS-' . Str::uuid(), 'status_code' => '200', 'status_message' => 'Success, transaction is found'])]);
+        Payment::create(['user_id' => $user->id, 'order_id' => $order->id, 'subs_package_id' => $package->id, 'midtrans_order_id' => $order->id, 'midtrans_transaction_status' => 'settlement', 'midtrans_payment_type' => 'bank_transfer', 'total_payment' => $package->yearly_price, 'midtrans_response' => json_encode(['transaction_id' => 'TRANS-' . Str::uuid(), 'status_code' => '200', 'status_message' => 'Success, transaction is found'])]);
 
         UserPackage::create(['user_id' => $user->id, 'subs_package_id' => $package->id, 'plan_type' => 'yearly', 'price_paid' => $package->yearly_price, 'active_date' => Carbon::now(), 'expired_date' => Carbon::now()->addYear(), 'status' => 'active']);
 
