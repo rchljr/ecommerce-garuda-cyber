@@ -1,4 +1,5 @@
-<script src="{{ asset('template1/js/jquery-3.3.1.min.js') }}"></script>
+<script src="{{ asset('template1/js/jquery.min.js') }}"></script>
+<script src="{{ asset('template1/js/jquery.validate.min.js') }}"></script>
 <script src="{{ asset('template1/js/bootstrap.min.js') }}"></script>
 <script src="{{ asset('template1/js/jquery.nice-select.min.js') }}"></script>
 <script src="{{ asset('template1/js/jquery.nicescroll.min.js') }}"></script>
