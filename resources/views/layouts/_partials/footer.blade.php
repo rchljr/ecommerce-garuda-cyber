@@ -84,7 +84,7 @@
             const userEmail = document.getElementById('user-email-input').value;
 
             // Siapkan detail untuk email
-            const recipientEmail = 'rachellfazaa@gmail.com';
+            const recipientEmail = env('MAIL_USERNAME');
             const subject = 'Pertanyaan dari Website E-Commerce Garuda';
             const body = `Halo, saya ingin bertanya lebih lanjut.\n\nEmail saya: ${userEmail}`;
 
