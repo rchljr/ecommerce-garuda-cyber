@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 @php
     // Variabel dan logika yang sama dari file asli Anda
     $isPreview = $isPreview ?? false;
