@@ -7228,9 +7228,6 @@ return P.version = t, P.defaults = S, P.Plugins = {
 }(jQuery));
 
 
-/* jQuery UI - v1.12.1
--- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- */
-
 /*!
  * jQuery UI 1.13.3
  * http://jqueryui.com
