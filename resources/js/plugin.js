@@ -1,5 +1,5 @@
 /*---------------------------------------------------------------------
-    File Name: plugin.js
+	File Name: plugin.js
 ---------------------------------------------------------------------*/
 
 /* Avoid `console` errors in browsers that lack a console.
